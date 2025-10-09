@@ -14,13 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      approved_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          failed_login_attempts: number
+          first_name: string
+          is_verified: boolean
+          last_failed_login: string | null
+          last_login: string | null
+          last_name: string
+          password_hash: string
+          phone_number: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          failed_login_attempts?: number
+          first_name: string
+          is_verified?: boolean
+          last_failed_login?: string | null
+          last_login?: string | null
+          last_name: string
+          password_hash: string
+          phone_number?: string | null
+          user_id?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          failed_login_attempts?: number
+          first_name?: string
+          is_verified?: boolean
+          last_failed_login?: string | null
+          last_login?: string | null
+          last_name?: string
+          password_hash?: string
+          phone_number?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      verification_codes: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          is_used: boolean
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          is_used?: boolean
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_codes: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
