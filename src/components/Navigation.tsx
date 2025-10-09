@@ -66,11 +66,11 @@ const Navigation = () => {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="default">
-              Log In
+            <Button variant="ghost" size="default" asChild>
+              <a href="/login">Log In</a>
             </Button>
-            <Button variant="accent" size="default">
-              Sign Up
+            <Button variant="accent" size="default" asChild>
+              <a href="/register">Sign Up</a>
             </Button>
           </div>
 
@@ -102,11 +102,11 @@ const Navigation = () => {
               </button>
             ))}
             <div className="pt-4 space-y-3 border-t border-border">
-              <Button variant="ghost" size="default" className="w-full">
-                Log In
+              <Button variant="ghost" size="default" className="w-full" asChild>
+                <a href="/login">Log In</a>
               </Button>
-              <Button variant="accent" size="default" className="w-full">
-                Sign Up
+              <Button variant="accent" size="default" className="w-full" asChild>
+                <a href="/register">Sign Up</a>
               </Button>
             </div>
           </div>
