@@ -6,7 +6,7 @@ import { LogOut, User, Mail, Phone, Calendar } from 'lucide-react';
 import { useEffect } from 'react';
 
 const Profile = () => {
-  const { user, logout, loading } = useAuth();
+  const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,12 +15,12 @@ const Profile = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
-  if (loading || !user) {
+  if (loading || !user || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -48,7 +48,7 @@ const Profile = () => {
               <User className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Name</p>
-                <p className="font-medium">{user.first_name} {user.last_name}</p>
+                <p className="font-medium">{profile.first_name} {profile.last_name}</p>
               </div>
             </div>
 
@@ -56,7 +56,7 @@ const Profile = () => {
               <User className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Username</p>
-                <p className="font-medium">@{user.username}</p>
+                <p className="font-medium">@{profile.username}</p>
               </div>
             </div>
 
@@ -68,12 +68,12 @@ const Profile = () => {
               </div>
             </div>
 
-            {user.phone_number && (
+            {profile.phone_number && (
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{user.phone_number}</p>
+                  <p className="font-medium">{profile.phone_number}</p>
                 </div>
               </div>
             )}
@@ -83,22 +83,10 @@ const Profile = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Member Since</p>
                 <p className="font-medium">
-                  {new Date(user.created_at).toLocaleDateString()}
+                  {new Date(profile.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
-
-            {user.last_login && (
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Login</p>
-                  <p className="font-medium">
-                    {new Date(user.last_login).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 

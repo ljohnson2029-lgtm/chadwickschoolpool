@@ -1,22 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-interface User {
-  user_id: string;
-  email: string;
+interface Profile {
+  id: string;
   username: string;
-  first_name: string;
-  last_name: string;
-  phone_number?: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
   created_at: string;
-  last_login?: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
+  session: Session | null;
   loading: boolean;
-  login: (usernameOrEmail: string, password: string, rememberMe?: boolean) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,47 +32,64 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user data
-    const storedUser = localStorage.getItem('schoolpool_user');
-    const rememberMe = localStorage.getItem('schoolpool_remember');
-    
-    if (storedUser && rememberMe === 'true') {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Defer profile fetch to avoid deadlock
+        if (session?.user) {
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
 
-  const login = async (usernameOrEmail: string, password: string, rememberMe = false) => {
-    const { data, error } = await supabase.functions.invoke('auth-login', {
-      body: { usernameOrEmail, password }
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
     });
 
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'Login failed');
+    return () => subscription.unsubscribe();
+  }, []);
 
-    setUser(data.user);
-    
-    if (rememberMe) {
-      localStorage.setItem('schoolpool_user', JSON.stringify(data.user));
-      localStorage.setItem('schoolpool_remember', 'true');
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching profile:', error);
     } else {
-      sessionStorage.setItem('schoolpool_user', JSON.stringify(data.user));
-      localStorage.removeItem('schoolpool_remember');
+      setProfile(data);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('schoolpool_user');
-    localStorage.removeItem('schoolpool_remember');
-    sessionStorage.removeItem('schoolpool_user');
+    setSession(null);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );
