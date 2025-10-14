@@ -16,7 +16,7 @@ serve(async (req) => {
 
     if (!email || !code) {
       return new Response(
-        JSON.stringify({ error: 'Email and code are required' }),
+        JSON.stringify({ success: false, error: 'Email and code are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -26,8 +26,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find the most recent non-used code for this email
-    const { data, error } = await supabase
+    // Find the most recent unused code for this email
+    const { data: verification, error: fetchError } = await supabase
       .from('verification_codes')
       .select('*')
       .eq('email', email.toLowerCase())
@@ -36,41 +36,61 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (error || !data) {
+    if (fetchError) {
+      console.error('Database error:', fetchError);
+      throw new Error('Failed to verify code');
+    }
+
+    if (!verification) {
       return new Response(
-        JSON.stringify({ error: 'No verification code found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'No verification code found. Please request a new code.',
+          attemptsRemaining: 0
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if code has expired
-    if (new Date(data.expires_at) < new Date()) {
+    // Check if code is expired
+    if (new Date(verification.expires_at) < new Date()) {
       return new Response(
-        JSON.stringify({ error: 'Verification code has expired' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Verification code has expired. Please request a new code.',
+          attemptsRemaining: 0
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check attempts
-    if (data.attempts >= 3) {
+    if (verification.attempts >= 3) {
       return new Response(
-        JSON.stringify({ error: 'Too many attempts. Please request a new code.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Too many failed attempts. Please request a new code.',
+          attemptsRemaining: 0
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Verify code
-    if (data.code !== code) {
+    if (verification.code !== code) {
       // Increment attempts
       await supabase
         .from('verification_codes')
-        .update({ attempts: data.attempts + 1 })
-        .eq('id', data.id);
+        .update({ attempts: verification.attempts + 1 })
+        .eq('id', verification.id);
 
+      const remainingAttempts = 3 - (verification.attempts + 1);
+      
       return new Response(
         JSON.stringify({ 
-          error: 'Invalid verification code', 
-          attemptsRemaining: 3 - (data.attempts + 1) 
+          success: false, 
+          error: 'Invalid verification code',
+          attemptsRemaining: remainingAttempts
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -80,17 +100,19 @@ serve(async (req) => {
     await supabase
       .from('verification_codes')
       .update({ is_used: true })
-      .eq('id', data.id);
+      .eq('id', verification.id);
+
+    console.log(`Code verified successfully for ${email}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Code verified successfully' }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

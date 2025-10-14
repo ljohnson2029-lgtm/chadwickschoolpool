@@ -16,7 +16,7 @@ serve(async (req) => {
 
     if (!email) {
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
+        JSON.stringify({ approved: false, message: 'Email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -26,45 +26,50 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if email ends with @chadwickschool.org
-    if (email.toLowerCase().endsWith('@chadwickschool.org')) {
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if it's a Chadwick School email
+    if (normalizedEmail.endsWith('@chadwickschool.org')) {
+      console.log(`Approved Chadwick email: ${normalizedEmail}`);
       return new Response(
-        JSON.stringify({ approved: true, reason: 'Faculty/Staff email' }),
+        JSON.stringify({ approved: true, reason: 'Chadwick School email' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if email is in approved list
+    // Check approved_emails table
     const { data, error } = await supabase
       .from('approved_emails')
       .select('email')
-      .eq('email', email.toLowerCase())
+      .eq('email', normalizedEmail)
       .maybeSingle();
 
     if (error) {
       console.error('Database error:', error);
-      return new Response(
-        JSON.stringify({ error: 'Database error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('Failed to check email approval');
     }
 
     if (data) {
+      console.log(`Approved email from database: ${normalizedEmail}`);
       return new Response(
-        JSON.stringify({ approved: true, reason: 'Pre-approved email' }),
+        JSON.stringify({ approved: true, reason: 'Email in approved list' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`Email not approved: ${normalizedEmail}`);
     return new Response(
-      JSON.stringify({ approved: false, message: 'This email is not registered with Chadwick School. Please contact support if you believe this is an error.' }),
-      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        approved: false, 
+        message: 'This email is not approved for registration. Please contact an administrator.' 
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ approved: false, message: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
