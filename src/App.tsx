@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import EmailVerification from "./pages/EmailVerification";
+import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/verify-email" element={<EmailVerification />} />
+            <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

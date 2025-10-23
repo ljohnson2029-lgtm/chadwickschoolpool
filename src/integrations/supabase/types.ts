@@ -137,15 +137,33 @@ export type Database = {
         }
         Relationships: []
       }
+      verified_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_codes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_codes: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

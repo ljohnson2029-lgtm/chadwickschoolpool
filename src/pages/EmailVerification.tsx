@@ -80,6 +80,15 @@ const EmailVerification = () => {
       if (error) throw error;
 
       if (data?.success) {
+        // Save to database
+        const { error: dbError } = await supabase
+          .from("verified_emails")
+          .insert({ email });
+
+        if (dbError && !dbError.message.includes("duplicate")) {
+          console.error("Failed to save verified email:", dbError);
+        }
+
         setVerifiedEmails([...verifiedEmails, email]);
         setStep("success");
         toast({
@@ -209,9 +218,19 @@ const EmailVerification = () => {
                   Your email has been successfully verified
                 </p>
               </div>
-              <Button onClick={resetFlow} className="w-full" size="lg">
-                Verify Another Email
-              </Button>
+              <div className="space-y-3">
+                <Button onClick={resetFlow} className="w-full" size="lg">
+                  Verify Another Email
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = "/admin/verified-emails"} 
+                  variant="outline" 
+                  className="w-full" 
+                  size="lg"
+                >
+                  View All Verified Emails
+                </Button>
+              </div>
             </div>
           )}
         </div>
