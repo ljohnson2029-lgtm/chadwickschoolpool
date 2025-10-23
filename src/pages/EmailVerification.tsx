@@ -100,8 +100,8 @@ const EmailVerification = () => {
       }
     } catch (error: any) {
       toast({
-        title: "Verification failed",
-        description: error.message || "Invalid or expired code",
+        title: "Wrong code",
+        description: "Please try again or request a new code",
         variant: "destructive",
       });
     } finally {
