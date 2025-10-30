@@ -39,7 +39,20 @@ const Register = () => {
     setError('');
     
     try {
-      // Check if email is in approved_emails table
+      // Check if email ends with @chadwickschool.org
+      const isChadwickEmail = email.toLowerCase().endsWith('@chadwickschool.org');
+      
+      if (isChadwickEmail) {
+        setEmailApproved(true);
+        toast({
+          title: 'Email verified',
+          description: 'Your Chadwick email is approved. Please complete your registration.'
+        });
+        setLoading(false);
+        return;
+      }
+
+      // If not a Chadwick email, check if it's in the approved_emails table
       const { data, error: dbError } = await supabase
         .from('approved_emails')
         .select('email')
