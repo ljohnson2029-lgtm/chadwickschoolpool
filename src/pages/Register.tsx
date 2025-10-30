@@ -39,8 +39,10 @@ const Register = () => {
     setError('');
     
     try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
       // Check if email ends with @chadwickschool.org
-      const isChadwickEmail = email.toLowerCase().endsWith('@chadwickschool.org');
+      const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
       
       if (isChadwickEmail) {
         setEmailApproved(true);
@@ -52,11 +54,11 @@ const Register = () => {
         return;
       }
 
-      // If not a Chadwick email, check if it's in the approved_emails table
+      // If not a Chadwick email, check if it's in the approved_emails table (case-insensitive)
       const { data, error: dbError } = await supabase
         .from('approved_emails')
         .select('email')
-        .eq('email', email)
+        .ilike('email', normalizedEmail)
         .maybeSingle();
 
       if (dbError) throw dbError;
@@ -99,9 +101,11 @@ const Register = () => {
     setError('');
     
     try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
       // Create Supabase auth user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
