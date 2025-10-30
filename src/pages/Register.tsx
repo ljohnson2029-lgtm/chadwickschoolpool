@@ -1,17 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Shield, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const Register = () => {
-  const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
   const [formData, setFormData] = useState({
     username: '',
     firstName: '',
@@ -22,28 +21,41 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [canResend, setCanResend] = useState(true);
-  const [attemptsRemaining, setAttemptsRemaining] = useState(3);
+  const [emailApproved, setEmailApproved] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const checkEmail = async () => {
+  useEffect(() => {
+    if (user) {
+      navigate('/profile');
+    }
+  }, [user, navigate]);
+
+  const checkEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
     
     try {
-      const { data, error } = await supabase.functions.invoke('auth-check-email', {
-        body: { email }
-      });
+      // Check if email is in approved_emails table
+      const { data, error: dbError } = await supabase
+        .from('approved_emails')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (dbError) throw dbError;
       
-      if (data.approved) {
-        await sendVerificationCode();
-        setStep(2);
+      if (data) {
+        setEmailApproved(true);
+        toast({
+          title: 'Email verified',
+          description: 'Your email is approved. Please complete your registration.'
+        });
       } else {
-        setError(data.message || 'Email not approved for registration');
+        setError('This email is not approved for registration. Please contact your administrator.');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to verify email');
@@ -52,62 +64,9 @@ const Register = () => {
     }
   };
 
-  const sendVerificationCode = async () => {
-    setLoading(true);
-    setCanResend(false);
+  const createAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    try {
-      const { data, error } = await supabase.functions.invoke('auth-send-2fa', {
-        body: { email }
-      });
-
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error || 'Failed to send code');
-      
-      toast({
-        title: 'Code sent',
-        description: 'Check your email for the verification code'
-      });
-
-      setTimeout(() => setCanResend(true), 30000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyCode = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('auth-verify-2fa', {
-        body: { email, code }
-      });
-
-      if (error) throw error;
-      
-      if (data.success) {
-        setStep(3);
-        toast({
-          title: 'Verified',
-          description: 'Code verified successfully'
-        });
-      } else {
-        setError(data.error || 'Invalid verification code');
-        if (data.attemptsRemaining !== undefined) {
-          setAttemptsRemaining(data.attemptsRemaining);
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to verify code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createAccount = async () => {
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -160,10 +119,10 @@ const Register = () => {
 
       toast({
         title: 'Success!',
-        description: 'Account created successfully. You can now log in.'
+        description: 'Account created successfully. Logging you in...'
       });
       
-      navigate('/login');
+      navigate('/profile');
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.message || 'Failed to create account');
@@ -177,35 +136,18 @@ const Register = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold gradient-text mb-2">Join SchoolPool</h1>
-          <p className="text-muted-foreground">Create your account in 3 easy steps</p>
+          <p className="text-muted-foreground">Create your account</p>
         </div>
 
         <div className="bg-card border rounded-lg p-8 space-y-6">
-          {/* Step indicator */}
-          <div className="flex items-center justify-between mb-6">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                }`}>
-                  {s === 1 && <Mail className="h-5 w-5" />}
-                  {s === 2 && <Shield className="h-5 w-5" />}
-                  {s === 3 && <UserPlus className="h-5 w-5" />}
-                </div>
-                {s < 3 && <div className={`h-1 w-16 mx-2 ${step > s ? 'bg-primary' : 'bg-muted'}`} />}
-              </div>
-            ))}
-          </div>
-
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {/* Step 1: Email Verification */}
-          {step === 1 && (
-            <div className="space-y-4">
+          {!emailApproved ? (
+            <form onSubmit={checkEmail} className="space-y-4">
               <div>
                 <Label htmlFor="email">Email Address</Label>
                 <Input
@@ -214,73 +156,40 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
+                  required
                   className="mt-1"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Only approved emails can register
+                </p>
               </div>
               <Button 
-                onClick={checkEmail} 
+                type="submit"
                 disabled={loading || !email}
                 className="w-full"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Continue
+                Verify Email
               </Button>
-            </div>
-          )}
-
-          {/* Step 2: 2FA Code */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                We've sent a 6-digit code to <strong>{email}</strong>
-              </p>
-              <div>
-                <Label htmlFor="code">Verification Code</Label>
-                <Input
-                  id="code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="000000"
-                  maxLength={6}
-                  className="mt-1 text-center text-2xl tracking-widest"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Attempts remaining: {attemptsRemaining}
-                </p>
+            </form>
+          ) : (
+            <form onSubmit={createAccount} className="space-y-4">
+              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm text-primary font-medium">{email}</p>
               </div>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={verifyCode}
-                  disabled={loading || code.length !== 6}
-                  className="flex-1"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Verify
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={sendVerificationCode}
-                  disabled={!canResend || loading}
-                >
-                  Resend
-                </Button>
-              </div>
-            </div>
-          )}
 
-          {/* Step 3: Account Creation */}
-          {step === 3 && (
-            <div className="space-y-4">
               <div>
                 <Label htmlFor="username">Username *</Label>
                 <Input
                   id="username"
                   value={formData.username}
                   onChange={(e) => setFormData({...formData, username: e.target.value})}
-                  placeholder="3-20 alphanumeric characters"
+                  placeholder="Choose a username"
+                  required
                   className="mt-1"
                 />
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
@@ -288,6 +197,7 @@ const Register = () => {
                     id="firstName"
                     value={formData.firstName}
                     onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    required
                     className="mt-1"
                   />
                 </div>
@@ -297,20 +207,24 @@ const Register = () => {
                     id="lastName"
                     value={formData.lastName}
                     onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    required
                     className="mt-1"
                   />
                 </div>
               </div>
+              
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Phone Number (Optional)</Label>
                 <Input
                   id="phone"
+                  type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                  placeholder="Optional"
+                  placeholder="Your phone number"
                   className="mt-1"
                 />
               </div>
+              
               <div>
                 <Label htmlFor="password">Password *</Label>
                 <Input
@@ -318,10 +232,13 @@ const Register = () => {
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  placeholder="Min 8 characters"
+                  placeholder="At least 8 characters"
+                  required
+                  minLength={8}
                   className="mt-1"
                 />
               </div>
+              
               <div>
                 <Label htmlFor="confirmPassword">Confirm Password *</Label>
                 <Input
@@ -329,18 +246,33 @@ const Register = () => {
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  placeholder="Re-enter your password"
+                  required
                   className="mt-1"
                 />
               </div>
+              
               <Button 
-                onClick={createAccount}
+                type="submit"
                 disabled={loading}
                 className="w-full"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Account
               </Button>
-            </div>
+              
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setEmailApproved(false);
+                  setError('');
+                }}
+                className="w-full"
+              >
+                Change Email
+              </Button>
+            </form>
           )}
 
           <div className="text-center text-sm">
