@@ -58,7 +58,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SchoolPool <onboarding@resend.dev>',
+        from: 'Chadwick SchoolPool <noreply@chadwickschoolpool.org>',
         to: [email],
         subject: 'Your SchoolPool Verification Code',
         html: `

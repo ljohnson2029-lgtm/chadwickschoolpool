@@ -33,7 +33,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SchoolPool <onboarding@resend.dev>',
+        from: 'Chadwick SchoolPool <noreply@chadwickschoolpool.org>',
         to: [to],
         subject: subject,
         html: `<p>${message}</p>`,
