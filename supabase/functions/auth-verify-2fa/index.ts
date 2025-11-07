@@ -76,8 +76,21 @@ serve(async (req) => {
       );
     }
 
-    // Verify code
-    if (verification.code !== code) {
+    // Normalize codes and verify
+    const incomingCode = String(code).trim();
+    const expectedCode = String(verification.code).trim();
+
+    console.log('2FA verify attempt', {
+      email,
+      providedCode: incomingCode,
+      expectedCode,
+      verificationId: verification.id,
+      attempts: verification.attempts,
+      created_at: verification.created_at,
+      expires_at: verification.expires_at,
+    });
+
+    if (expectedCode !== incomingCode) {
       // Increment attempts
       await supabase
         .from('verification_codes')
