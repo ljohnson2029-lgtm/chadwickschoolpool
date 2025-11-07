@@ -26,20 +26,47 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find the most recent unused code for this email
-    const { data: verification, error: fetchError } = await supabase
+    const normalizedEmail = email.toLowerCase().trim();
+    const incomingCode = String(code).trim();
+
+    // Try to match the exact code first (unused & not expired)
+    const { data: exactVerification, error: exactFetchError } = await supabase
       .from('verification_codes')
       .select('*')
-      .eq('email', email.toLowerCase())
+      .eq('email', normalizedEmail)
+      .eq('code', incomingCode)
       .eq('is_used', false)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (fetchError) {
-      console.error('Database error:', fetchError);
+    if (exactFetchError) {
+      console.error('Database error (exact):', exactFetchError);
       throw new Error('Failed to verify code');
     }
+
+    let verification = exactVerification;
+    let isExactMatch = !!exactVerification;
+
+    // Fallback to the most recent unused code (for attempts/expired logic)
+    if (!verification) {
+      const { data: latestVerification, error: fetchError } = await supabase
+        .from('verification_codes')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Database error (latest):', fetchError);
+        throw new Error('Failed to verify code');
+      }
+
+      verification = latestVerification;
+    }
+
 
     if (!verification) {
       return new Response(
@@ -76,34 +103,31 @@ serve(async (req) => {
       );
     }
 
-    // Normalize codes and verify
-    const incomingCode = String(code).trim();
-    const expectedCode = String(verification.code).trim();
-
+    // Log attempt and decide based on exact match
     console.log('2FA verify attempt', {
       email,
       providedCode: incomingCode,
-      expectedCode,
+      expectedCode: String(verification.code).trim(),
       verificationId: verification.id,
       attempts: verification.attempts,
       created_at: verification.created_at,
       expires_at: verification.expires_at,
     });
 
-    if (expectedCode !== incomingCode) {
-      // Increment attempts
+    if (!isExactMatch) {
+      // Increment attempts on the most recent code
       await supabase
         .from('verification_codes')
         .update({ attempts: verification.attempts + 1 })
         .eq('id', verification.id);
 
       const remainingAttempts = 3 - (verification.attempts + 1);
-      
+
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: 'Invalid verification code',
-          attemptsRemaining: remainingAttempts
+          attemptsRemaining: Math.max(0, remainingAttempts),
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
