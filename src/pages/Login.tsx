@@ -32,18 +32,22 @@ const Login = () => {
     setError('');
 
     try {
-      // Step 1: Verify email/password
-      const { data: loginData, error: loginError } = await supabase.functions.invoke('auth-login', {
-        body: { usernameOrEmail: email, password }
+      // Step 1: Verify email/password with Supabase Auth
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password
       });
 
-      if (loginError || !loginData?.success) {
-        throw new Error(loginData?.error || 'Invalid email or password');
+      if (signInError) {
+        throw new Error('Invalid email or password');
       }
 
-      // Step 2: Send 2FA code
+      // Step 2: Sign out immediately (user isn't fully authenticated until 2FA is verified)
+      await supabase.auth.signOut();
+
+      // Step 3: Send 2FA code
       const { data: codeData, error: codeError } = await supabase.functions.invoke('auth-send-2fa', {
-        body: { email }
+        body: { email: email.toLowerCase().trim() }
       });
 
       if (codeError || !codeData?.success) {
@@ -66,9 +70,11 @@ const Login = () => {
     setError('');
 
     try {
+      const normalizedEmail = email.toLowerCase().trim();
+
       // Verify the 2FA code
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('auth-verify-2fa', {
-        body: { email, code }
+        body: { email: normalizedEmail, code: code.trim() }
       });
 
       if (verifyError || !verifyData?.success) {
@@ -76,13 +82,15 @@ const Login = () => {
         throw new Error(verifyData?.error || 'Invalid verification code');
       }
 
-      // Sign in with Supabase auth
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      // Now that 2FA is verified, sign in with Supabase auth
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
         password,
       });
 
-      if (error) throw error;
+      if (signInError) throw signInError;
+      
+      // Navigation will happen automatically via useAuth context
       navigate('/profile');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
