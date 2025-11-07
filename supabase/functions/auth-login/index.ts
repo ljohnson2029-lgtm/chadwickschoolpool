@@ -27,15 +27,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find user by username or email - using safe parameterized queries
-    const sanitizedInput = usernameOrEmail.toLowerCase();
-    const { data: user, error } = await supabase
+    // Find user by username or email
+    // Query for username match OR email match (email comparison is case-insensitive)
+    const { data: users, error: queryError } = await supabase
       .from('users')
       .select('*')
-      .or(`username.eq.${sanitizedInput},email.eq.${sanitizedInput}`)
-      .maybeSingle();
+      .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail.toLowerCase()}`);
 
-    if (error || !user) {
+    if (queryError) {
+      console.error('Database query error:', queryError);
+      return new Response(
+        JSON.stringify({ error: 'Database error occurred' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const user = users && users.length > 0 ? users[0] : null;
+
+    if (!user) {
+      console.log('User not found for:', usernameOrEmail);
       return new Response(
         JSON.stringify({ error: 'Invalid username/email or password' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
