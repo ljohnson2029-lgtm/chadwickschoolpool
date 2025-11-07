@@ -76,9 +76,12 @@ serve(async (req) => {
     });
 
     if (!emailResponse.ok) {
-      const emailError = await emailResponse.text();
-      console.error('Email error:', emailError);
-      throw new Error('Failed to send verification email');
+      const emailErrorText = await emailResponse.text();
+      console.error('Email error:', emailErrorText);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Failed to send verification email', provider_error: emailErrorText }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`Verification code sent to ${email}`);
