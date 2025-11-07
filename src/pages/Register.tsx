@@ -22,6 +22,9 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailApproved, setEmailApproved] = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [code, setCode] = useState('');
+  const [attemptsRemaining, setAttemptsRemaining] = useState(5);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -81,29 +84,63 @@ const Register = () => {
 
   const createAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+
+    if (!showCodeInput) {
+      // Validate base fields before sending code
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+      if (!formData.firstName || !formData.lastName || !formData.username) {
+        setError('First Name, Last Name, and Username are required');
+        return;
+      }
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      try {
+        const normalizedEmail = email.toLowerCase().trim();
+        const { data, error: sendError } = await supabase.functions.invoke('auth-send-2fa', {
+          body: { email: normalizedEmail },
+        });
+        if (sendError || data?.success === false) {
+          throw new Error(data?.error || sendError?.message || 'Failed to send verification code');
+        }
+        setShowCodeInput(true);
+        toast({ title: 'Verification code sent', description: 'Check your inbox for a 6-digit code.' });
+      } catch (err: any) {
+        console.error('Send code error:', err);
+        setError(err.message || 'Failed to send verification code');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    if (!formData.firstName || !formData.lastName || !formData.username) {
-      setError('First Name, Last Name, and Username are required');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+    // Verify code and then create the account
+    if (!code || code.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code');
       return;
     }
 
     setLoading(true);
     setError('');
-    
+
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
-      // Create Supabase auth user
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('auth-verify-2fa', {
+        body: { email: normalizedEmail, code: code.trim() },
+      });
+      if (verifyError || verifyData?.success === false) {
+        setAttemptsRemaining((prev) => prev - 1);
+        throw new Error(verifyData?.error || verifyError?.message || 'Invalid verification code');
+      }
+
+      // Create auth user after successful verification
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: formData.password,
@@ -113,15 +150,14 @@ const Register = () => {
             username: formData.username,
             first_name: formData.firstName,
             last_name: formData.lastName,
-            phone_number: formData.phoneNumber || null
-          }
-        }
+            phone_number: formData.phoneNumber || null,
+            email_verified_at: new Date().toISOString(),
+          },
+        },
       });
-
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('Failed to create user');
 
-      // Create profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -129,16 +165,11 @@ const Register = () => {
           username: formData.username,
           first_name: formData.firstName,
           last_name: formData.lastName,
-          phone_number: formData.phoneNumber || null
+          phone_number: formData.phoneNumber || null,
         });
-
       if (profileError) throw profileError;
 
-      toast({
-        title: 'Success!',
-        description: 'Account created successfully. Logging you in...'
-      });
-      
+      toast({ title: 'Success!', description: 'Account created successfully.' });
       navigate('/profile');
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -200,20 +231,20 @@ const Register = () => {
                 <Input
                   id="username"
                   value={formData.username}
-                  onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="Choose a username"
                   required
                   className="mt-1"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
                   <Input
                     id="firstName"
                     value={formData.firstName}
-                    onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     required
                     className="mt-1"
                   />
@@ -223,66 +254,85 @@ const Register = () => {
                   <Input
                     id="lastName"
                     value={formData.lastName}
-                    onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     required
                     className="mt-1"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="phone">Phone Number (Optional)</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={formData.phoneNumber}
-                  onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   placeholder="Your phone number"
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="password">Password *</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="At least 8 characters"
                   required
                   minLength={8}
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="confirmPassword">Confirm Password *</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   placeholder="Re-enter your password"
                   required
                   className="mt-1"
                 />
               </div>
-              
-              <Button 
-                type="submit"
-                disabled={loading}
-                className="w-full"
-              >
+
+              {showCodeInput && (
+                <div>
+                  <Label htmlFor="code">Verification Code</Label>
+                  <Input
+                    id="code"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit code"
+                    className="mt-1 tracking-widest text-center"
+                    required
+                  />
+                  {attemptsRemaining < 5 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Attempts remaining: {attemptsRemaining}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
+                {showCodeInput ? 'Verify Code & Create Account' : 'Send Verification Code'}
               </Button>
-              
+
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => {
                   setEmailApproved(false);
+                  setShowCodeInput(false);
+                  setCode('');
                   setError('');
                 }}
                 className="w-full"
