@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Mail, Calendar, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VerifiedEmail {
   id: string;
@@ -18,6 +19,7 @@ const AdminVerifiedEmails = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   const fetchVerifiedEmails = async () => {
     setLoading(true);
@@ -42,8 +44,21 @@ const AdminVerifiedEmails = () => {
   };
 
   useEffect(() => {
-    fetchVerifiedEmails();
-  }, []);
+    // Redirect to login if not authenticated
+    if (!authLoading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to access this page.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (user) {
+      fetchVerifiedEmails();
+    }
+  }, [user, authLoading, navigate]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -55,6 +70,20 @@ const AdminVerifiedEmails = () => {
       minute: "2-digit",
     }).format(date);
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect will happen via useEffect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 md:p-8">

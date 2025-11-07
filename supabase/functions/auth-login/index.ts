@@ -27,11 +27,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find user by username or email
+    // Find user by username or email - using safe parameterized queries
+    const sanitizedInput = usernameOrEmail.toLowerCase();
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail.toLowerCase()}`)
+      .or(`username.eq.${sanitizedInput},email.eq.${sanitizedInput}`)
       .maybeSingle();
 
     if (error || !user) {

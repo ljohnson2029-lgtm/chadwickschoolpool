@@ -11,14 +11,49 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, message } = await req.json();
+    const { email, subject, message } = await req.json();
 
-    if (!to || !subject || !message) {
+    // Validate inputs
+    if (!email || !subject || !message) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email address' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate length limits
+    if (subject.length > 200) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Subject too long (max 200 characters)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (message.length > 2000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Message too long (max 2000 characters)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Escape HTML to prevent injection
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     
@@ -34,9 +69,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Chadwick SchoolPool <noreply@chadwickschoolpool.org>',
-        to: [to],
-        subject: subject,
-        html: `<p>${message}</p>`,
+        to: [email],
+        subject: escapeHtml(subject),
+        html: `<p>${escapeHtml(message)}</p>`,
       }),
     });
 
@@ -47,7 +82,7 @@ serve(async (req) => {
     }
 
     const data = await emailResponse.json();
-    console.log(`Email sent to ${to}`);
+    console.log(`Email sent to ${email}`);
 
     return new Response(
       JSON.stringify({ success: true, data }),

@@ -6,6 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const contactFormSchema = z.object({
+  email: z.string().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  subject: z.string().min(1, "Subject is required").max(200, "Subject must be less than 200 characters"),
+  message: z.string().min(1, "Message is required").max(2000, "Message must be less than 2000 characters"),
+});
 
 export const ContactForm = () => {
   const [email, setEmail] = useState("");
@@ -18,12 +25,15 @@ export const ContactForm = () => {
     setIsLoading(true);
 
     try {
+      // Validate input
+      const validatedData = contactFormSchema.parse({
+        email,
+        subject,
+        message,
+      });
+
       const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
-          to: email,
-          subject: subject,
-          message: message,
-        },
+        body: validatedData,
       });
 
       if (error) throw error;
@@ -38,12 +48,20 @@ export const ContactForm = () => {
       setSubject("");
       setMessage("");
     } catch (error: any) {
-      console.error("Error sending email:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send email. Please try again.",
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        console.error("Error sending email:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send email. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
