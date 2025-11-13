@@ -1,34 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus } from "lucide-react";
 
 const Register = () => {
-  const [email, setEmail] = useState('');
-  const [formData, setFormData] = useState({
-    username: '',
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailApproved, setEmailApproved] = useState(false);
-  const [showCodeInput, setShowCodeInput] = useState(false);
-  const [code, setCode] = useState('');
-  const [attemptsRemaining, setAttemptsRemaining] = useState(5);
-  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  
+  const [email, setEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -36,320 +32,389 @@ const Register = () => {
     }
   }, [user, navigate]);
 
-  const checkEmail = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    
+
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      
-      // Check if email ends with @chadwickschool.org
       const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
       
-      if (isChadwickEmail) {
-        setEmailApproved(true);
-        toast({
-          title: 'Email verified',
-          description: 'Your Chadwick email is approved. Please complete your registration.'
-        });
-        setLoading(false);
-        return;
+      if (!isChadwickEmail) {
+        const { data, error: dbError } = await supabase
+          .from('approved_emails')
+          .select('email')
+          .ilike('email', normalizedEmail)
+          .maybeSingle();
+
+        if (dbError) throw dbError;
+        
+        if (!data) {
+          toast({
+            title: "Email not approved",
+            description: "This email domain is not approved for registration.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
       }
 
-      // If not a Chadwick email, check if it's in the approved_emails table (case-insensitive)
-      const { data, error: dbError } = await supabase
-        .from('approved_emails')
-        .select('email')
-        .ilike('email', normalizedEmail)
-        .maybeSingle();
+      const { error: sendError } = await supabase.functions.invoke("auth-send-2fa", {
+        body: { email: normalizedEmail },
+      });
 
-      if (dbError) throw dbError;
-      
-      if (data) {
-        setEmailApproved(true);
-        toast({
-          title: 'Email verified',
-          description: 'Your email is approved. Please complete your registration.'
-        });
-      } else {
-        setError('This email is not approved for registration. Please contact your administrator.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to verify email');
+      if (sendError) throw sendError;
+
+      toast({
+        title: "Verification code sent",
+        description: "Check your email for the verification code.",
+      });
+
+      setStep(2);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification code",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const createAccount = async (e: React.FormEvent) => {
+  const handleVerificationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("auth-verify-2fa", {
+        body: { email: email.toLowerCase().trim(), code: verificationCode },
+      });
+
+      if (error) throw error;
+      if (!data.success) {
+        toast({
+          title: "Invalid code",
+          description: data.error || "The verification code is incorrect.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast({
+        title: "Email verified",
+        description: "Now complete your account details.",
+      });
+
+      setStep(3);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!showCodeInput) {
-      // Validate base fields before sending code
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
-      if (!formData.firstName || !formData.lastName || !formData.username) {
-        setError('First Name, Last Name, and Username are required');
-        return;
-      }
-      if (formData.password.length < 8) {
-        setError('Password must be at least 8 characters');
-        return;
-      }
-
-      setLoading(true);
-      setError('');
-      try {
-        const normalizedEmail = email.toLowerCase().trim();
-        const { data, error: sendError } = await supabase.functions.invoke('auth-send-2fa', {
-          body: { email: normalizedEmail },
-        });
-        if (sendError || data?.success === false) {
-          throw new Error(data?.error || sendError?.message || 'Failed to send verification code');
-        }
-        setShowCodeInput(true);
-        toast({ title: 'Verification code sent', description: 'Check your inbox for a 6-digit code.' });
-      } catch (err: any) {
-        console.error('Send code error:', err);
-        setError(err.message || 'Failed to send verification code');
-      } finally {
-        setLoading(false);
-      }
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Verify code and then create the account
-    if (!code || code.trim().length !== 6) {
-      setError('Please enter the 6-digit verification code');
+    if (password.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
       return;
     }
 
     setLoading(true);
-    setError('');
 
     try {
-      const normalizedEmail = email.toLowerCase().trim();
-      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('auth-verify-2fa', {
-        body: { email: normalizedEmail, code: code.trim() },
-      });
-      if (verifyError || verifyData?.success === false) {
-        setAttemptsRemaining((prev) => prev - 1);
-        throw new Error(verifyData?.error || verifyError?.message || 'Invalid verification code');
-      }
-
-      // Create auth user after successful verification
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: formData.username,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone_number: formData.phoneNumber || null,
-            email_verified_at: new Date().toISOString(),
-          },
+      const { data, error } = await supabase.functions.invoke("auth-create-account", {
+        body: {
+          email: email.toLowerCase().trim(),
+          username,
+          password,
+          firstName,
+          lastName,
+          phoneNumber: phoneNumber || null,
         },
       });
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error('Failed to create user');
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username: formData.username,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone_number: formData.phoneNumber || null,
+      if (error) throw error;
+
+      if (!data.success) {
+        toast({
+          title: "Registration failed",
+          description: data.error || "Could not create account",
+          variant: "destructive",
         });
-      if (profileError) throw profileError;
+        setLoading(false);
+        return;
+      }
 
-      toast({ title: 'Success!', description: 'Account created successfully.' });
-      navigate('/profile');
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      setError(err.message || 'Failed to create account');
+      toast({
+        title: "Account created!",
+        description: "You can now log in with your credentials.",
+      });
+
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred during registration",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("auth-send-2fa", {
+        body: { email: email.toLowerCase().trim() },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Code resent",
+        description: "A new verification code has been sent to your email.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend code",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold gradient-text mb-2">Join SchoolPool</h1>
-          <p className="text-muted-foreground">Create your account</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">
+            {step === 1 && "Enter your email to get started"}
+            {step === 2 && "Verify your email address"}
+            {step === 3 && "Complete your account details"}
+          </CardDescription>
+          
+          <div className="flex items-center justify-center gap-2 mt-4">
+            {[1, 2, 3].map((s) => (
+              <div
+                key={s}
+                className={`h-2 w-12 rounded-full transition-colors ${
+                  s <= step ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            ))}
+          </div>
+        </CardHeader>
 
-        <div className="bg-card border rounded-lg p-8 space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {!emailApproved ? (
-            <form onSubmit={checkEmail} className="space-y-4">
-              <div>
+        <CardContent>
+          {step === 1 && (
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  required
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Only approved emails can register
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your.email@school.org"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Only approved school email domains can register
                 </p>
               </div>
-              <Button 
-                type="submit"
-                disabled={loading || !email}
-                className="w-full"
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Verify Email
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Checking..." : "Continue"}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+
+              <div className="text-center text-sm">
+                <span className="text-muted-foreground">Already have an account? </span>
+                <Button
+                  variant="link"
+                  className="p-0 h-auto"
+                  onClick={() => navigate("/login")}
+                >
+                  Log in
+                </Button>
+              </div>
             </form>
-          ) : (
-            <form onSubmit={createAccount} className="space-y-4">
-              <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-sm text-primary font-medium">{email}</p>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={handleVerificationSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Verification Code</Label>
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="code"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className="pl-10"
+                    maxLength={6}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  We sent a verification code to {email}
+                </p>
               </div>
 
-              <div>
-                <Label htmlFor="username">Username *</Label>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Verifying..." : "Verify Email"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center justify-between text-sm">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStep(1)}
+                  disabled={loading}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                >
+                  Resend code
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {step === 3 && (
+            <form onSubmit={handleAccountCreation} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="Choose a username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
-                  className="mt-1"
+                  disabled={loading}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name *</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    required
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    required
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number (Optional)</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="Your phone number"
-                  className="mt-1"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  disabled={loading}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="password">Password *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="At least 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={8}
-                  className="mt-1"
+                  disabled={loading}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="mt-1"
+                  disabled={loading}
                 />
               </div>
 
-              {showCodeInput && (
-                <div>
-                  <Label htmlFor="code">Verification Code</Label>
-                  <Input
-                    id="code"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6-digit code"
-                    className="mt-1 tracking-widest text-center"
-                    required
-                  />
-                  {attemptsRemaining < 5 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Attempts remaining: {attemptsRemaining}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {showCodeInput ? 'Verify Code & Create Account' : 'Send Verification Code'}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
+                <UserPlus className="ml-2 h-4 w-4" />
               </Button>
 
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => {
-                  setEmailApproved(false);
-                  setShowCodeInput(false);
-                  setCode('');
-                  setError('');
-                }}
+                size="sm"
+                onClick={() => setStep(2)}
+                disabled={loading}
                 className="w-full"
               >
-                Change Email
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
               </Button>
             </form>
           )}
-
-          <div className="text-center text-sm">
-            Already have an account?{' '}
-            <Button variant="link" onClick={() => navigate('/login')} className="p-0">
-              Log In
-            </Button>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
