@@ -32,22 +32,21 @@ const Login = () => {
     setError('');
 
     try {
-      // Step 1: Verify email/password with Supabase Auth
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password
+      // Step 1: Verify username/email and password with custom auth
+      const { data: loginData, error: loginError } = await supabase.functions.invoke('auth-login', {
+        body: { 
+          usernameOrEmail: email.toLowerCase().trim(),
+          password 
+        }
       });
 
-      if (signInError) {
-        throw new Error('Invalid email or password');
+      if (loginError || !loginData?.success) {
+        throw new Error('Invalid email/username or password');
       }
 
-      // Step 2: Sign out immediately (user isn't fully authenticated until 2FA is verified)
-      await supabase.auth.signOut();
-
-      // Step 3: Send 2FA code
+      // Step 2: Send 2FA code
       const { data: codeData, error: codeError } = await supabase.functions.invoke('auth-send-2fa', {
-        body: { email: email.toLowerCase().trim() }
+        body: { email: loginData.user.email }
       });
 
       if (codeError || !codeData?.success) {
@@ -58,7 +57,7 @@ const Login = () => {
       setShowCodeInput(true);
       setError('');
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      setError(err.message || 'Invalid email/username or password');
     } finally {
       setLoading(false);
     }
@@ -116,13 +115,13 @@ const Login = () => {
             )}
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email or Username</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Enter your email or username"
                 required
                 className="mt-1"
               />
