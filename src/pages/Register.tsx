@@ -157,7 +157,33 @@ const Register = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Parse error message from edge function response
+        const errorMessage = error.message || "An error occurred during registration";
+        
+        // Check for specific error types
+        if (errorMessage.includes("Username already taken")) {
+          toast({
+            title: "Username unavailable",
+            description: "This username is already in use. Please choose a different username.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes("Email already registered")) {
+          toast({
+            title: "Email already registered",
+            description: "An account with this email already exists. Try logging in instead.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
+        setLoading(false);
+        return;
+      }
 
       if (!data.success) {
         toast({
@@ -176,11 +202,28 @@ const Register = () => {
 
       navigate("/login");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred during registration",
-        variant: "destructive",
-      });
+      // Handle unexpected errors
+      const errorMessage = error.message || "An unexpected error occurred";
+      
+      if (errorMessage.includes("Username already taken")) {
+        toast({
+          title: "Username unavailable",
+          description: "This username is already in use. Please choose a different username.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes("Email already registered")) {
+        toast({
+          title: "Email already registered", 
+          description: "An account with this email already exists. Try logging in instead.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
