@@ -25,6 +25,8 @@ const Register = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [usernameHint, setUsernameHint] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -120,6 +122,33 @@ const Register = () => {
     }
   };
 
+  // Check if username is available via edge function
+  const checkUsernameAvailability = async () => {
+    const clean = username.trim();
+    if (!clean) {
+      setUsernameStatus('idle');
+      setUsernameHint('');
+      return;
+    }
+    setUsernameStatus('checking');
+    setUsernameHint('Checking username availability...');
+    const { data, error } = await supabase.functions.invoke('auth-check-username', {
+      body: { username: clean },
+    });
+    if (error) {
+      setUsernameStatus('idle');
+      setUsernameHint('');
+      return;
+    }
+    if (data?.available) {
+      setUsernameStatus('available');
+      setUsernameHint('Username is available');
+    } else {
+      setUsernameStatus('taken');
+      setUsernameHint('Username is already taken');
+    }
+  };
+
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -138,6 +167,20 @@ const Register = () => {
       toast({
         title: "Password requirements not met",
         description: "Password must be at least 8 characters with uppercase, lowercase, and number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure username availability before creating account
+    const cleanUsername = username.trim();
+    const { data: nameData, error: nameError } = await supabase.functions.invoke('auth-check-username', {
+      body: { username: cleanUsername },
+    });
+    if (nameError || !nameData?.available) {
+      toast({
+        title: "Username unavailable",
+        description: "This username is already in use. Please choose a different username.",
         variant: "destructive",
       });
       return;
@@ -421,10 +464,18 @@ const Register = () => {
                 <Input
                   id="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setUsernameStatus('idle');
+                    setUsernameHint('');
+                  }}
+                  onBlur={checkUsernameAvailability}
                   required
                   disabled={loading}
                 />
+                {usernameHint && (
+                  <p className="text-xs text-muted-foreground">{usernameHint}</p>
+                )}
               </div>
 
               <div className="space-y-2">
