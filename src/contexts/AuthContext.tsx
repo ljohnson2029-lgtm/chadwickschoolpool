@@ -8,6 +8,10 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   phone_number: string | null;
+  home_address: string | null;
+  car_make: string | null;
+  car_model: string | null;
+  car_seats: number | null;
   created_at: string;
   updated_at: string;
 }
