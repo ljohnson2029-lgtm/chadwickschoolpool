@@ -48,7 +48,7 @@ const ProfileSetup = () => {
   const fetchChildren = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("children")
       .select("*")
       .eq("user_id", user.id);
@@ -90,7 +90,7 @@ const ProfileSetup = () => {
 
     try {
       // Update profile
-      const { error: profileError } = await supabase
+      const { error: profileError } = await (supabase as any)
         .from("profiles")
         .update({
           home_address: homeAddress,
@@ -104,7 +104,7 @@ const ProfileSetup = () => {
       if (profileError) throw profileError;
 
       // Delete existing children and insert new ones
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from("children")
         .delete()
         .eq("user_id", user.id);
@@ -117,7 +117,7 @@ const ProfileSetup = () => {
       );
 
       if (validChildren.length > 0) {
-        const { error: childrenError } = await supabase
+        const { error: childrenError } = await (supabase as any)
           .from("children")
           .insert(
             validChildren.map(child => ({
