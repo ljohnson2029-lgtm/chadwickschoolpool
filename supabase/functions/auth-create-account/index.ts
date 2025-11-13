@@ -75,8 +75,8 @@ serve(async (req) => {
       );
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password);
+    // Hash password (using hashSync to avoid Worker issues in Edge Functions)
+    const passwordHash = bcrypt.hashSync(password);
 
     // Create user
     const { data: newUser, error: createError } = await supabase
