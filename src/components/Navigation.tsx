@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,12 +70,25 @@ const Navigation = () => {
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="default" asChild>
-              <a href="/login">Log In</a>
-            </Button>
-            <Button variant="accent" size="default" asChild>
-              <a href="/register">Sign Up</a>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="ghost" size="default" onClick={() => navigate('/dashboard')}>
+                  Dashboard
+                </Button>
+                <Button variant="accent" size="default" onClick={() => navigate('/profile')}>
+                  Profile
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="default" asChild>
+                  <a href="/login">Log In</a>
+                </Button>
+                <Button variant="accent" size="default" asChild>
+                  <a href="/register">Sign Up</a>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -102,12 +119,25 @@ const Navigation = () => {
               </button>
             ))}
             <div className="pt-4 space-y-3 border-t border-border">
-              <Button variant="ghost" size="default" className="w-full" asChild>
-                <a href="/login">Log In</a>
-              </Button>
-              <Button variant="accent" size="default" className="w-full" asChild>
-                <a href="/register">Sign Up</a>
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="ghost" size="default" className="w-full" onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </Button>
+                  <Button variant="accent" size="default" className="w-full" onClick={() => navigate('/profile')}>
+                    Profile
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="default" className="w-full" asChild>
+                    <a href="/login">Log In</a>
+                  </Button>
+                  <Button variant="accent" size="default" className="w-full" asChild>
+                    <a href="/register">Sign Up</a>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

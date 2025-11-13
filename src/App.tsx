@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import ProfileSetup from "./pages/ProfileSetup";
+import Dashboard from "./pages/Dashboard";
 import EmailVerification from "./pages/EmailVerification";
 import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
 import NotFound from "./pages/NotFound";
@@ -26,6 +28,8 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/setup" element={<ProfileSetup />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
             <Route path="*" element={<NotFound />} />

@@ -33,10 +33,15 @@ const Profile = () => {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold gradient-text">My Profile</h1>
-          <Button onClick={handleLogout} variant="outline">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/profile/setup')} variant="outline">
+              Edit Profile
+            </Button>
+            <Button onClick={handleLogout} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -95,9 +100,35 @@ const Profile = () => {
             <CardTitle>Carpool Features</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Carpool matching and messaging features coming soon!
-            </p>
+            <div className="space-y-4">
+              {profile.home_address && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Home Address</p>
+                  <p className="font-medium">{profile.home_address}</p>
+                </div>
+              )}
+              
+              {(profile.car_make || profile.car_model) && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Vehicle</p>
+                  <p className="font-medium">
+                    {profile.car_make} {profile.car_model}
+                    {profile.car_seats && ` • ${profile.car_seats} seats available`}
+                  </p>
+                </div>
+              )}
+              
+              {!profile.home_address && !profile.car_make && (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground mb-4">
+                    Complete your profile to start using carpool features!
+                  </p>
+                  <Button onClick={() => navigate('/profile/setup')}>
+                    Complete Profile
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
