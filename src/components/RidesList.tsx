@@ -5,24 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Calendar, Clock, Users } from "lucide-react";
 
-interface Ride {
-  id: string;
-  type: string;
-  pickup_location: string;
-  dropoff_location: string;
-  ride_date: string;
-  ride_time: string;
-  seats_needed: number | null;
-  seats_available: number | null;
-  route_details: string | null;
-  is_recurring: boolean;
-  recurring_days: string[] | null;
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-    username: string;
-  } | null;
-}
+  interface Ride {
+    id: string;
+    user_id: string;
+    type: string;
+    pickup_location: string;
+    dropoff_location: string;
+    ride_date: string;
+    ride_time: string;
+    seats_needed: number | null;
+    seats_available: number | null;
+    route_details: string | null;
+    is_recurring: boolean;
+    recurring_days: string[] | null;
+    profiles: {
+      first_name: string | null;
+      last_name: string | null;
+      username: string;
+    } | null;
+  }
 
 const RidesList = () => {
   const [rides, setRides] = useState<Ride[]>([]);
@@ -34,7 +35,7 @@ const RidesList = () => {
 
   const fetchRides = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("rides")
         .select("*")
         .eq("status", "active")
@@ -46,7 +47,7 @@ const RidesList = () => {
       // Fetch profile data separately for each ride
       const ridesWithProfiles = await Promise.all(
         (data || []).map(async (ride) => {
-          const { data: profileData } = await supabase
+          const { data: profileData } = await (supabase as any)
             .from("profiles")
             .select("first_name, last_name, username")
             .eq("id", ride.user_id)
@@ -59,7 +60,7 @@ const RidesList = () => {
         })
       );
 
-      setRides(ridesWithProfiles);
+      setRides(ridesWithProfiles as unknown as Ride[]);
     } catch (error) {
       console.error("Error fetching rides:", error);
     } finally {

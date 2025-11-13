@@ -40,7 +40,7 @@ const RideRequestForm = ({ onSuccess }: RideRequestFormProps) => {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase.from("rides").insert({
+      const { error } = await (supabase as any).from("rides").insert({
         user_id: user.id,
         type: "request",
         pickup_location: pickupLocation,
