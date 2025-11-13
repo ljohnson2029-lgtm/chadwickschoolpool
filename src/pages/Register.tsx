@@ -132,10 +132,12 @@ const Register = () => {
       return;
     }
 
-    if (password.length < 8) {
+    // Validate password requirements
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(password)) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long.",
+        title: "Password requirements not met",
+        description: "Password must be at least 8 characters with uppercase, lowercase, and number.",
         variant: "destructive",
       });
       return;
@@ -381,6 +383,9 @@ const Register = () => {
                   required
                   disabled={loading}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Must be 8+ characters with uppercase, lowercase, and number
+                </p>
               </div>
 
               <div className="space-y-2">
