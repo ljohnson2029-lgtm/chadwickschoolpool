@@ -78,10 +78,31 @@ serve(async (req) => {
     // Hash password (using hashSync to avoid Worker issues in Edge Functions)
     const passwordHash = bcrypt.hashSync(password);
 
-    // Create user
+    // Create Supabase Auth user first
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: email.toLowerCase(),
+      password: password,
+      email_confirm: true, // Auto-confirm since we already did 2FA verification
+      user_metadata: {
+        username,
+        first_name: firstName,
+        last_name: lastName,
+      }
+    });
+
+    if (authError) {
+      console.error('Supabase auth creation error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create auth account' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create user in custom users table
     const { data: newUser, error: createError } = await supabase
       .from('users')
       .insert({
+        user_id: authData.user.id, // Use the same ID as Supabase Auth
         email: email.toLowerCase(),
         username,
         password_hash: passwordHash,
@@ -95,10 +116,28 @@ serve(async (req) => {
 
     if (createError) {
       console.error('Database error:', createError);
+      // Rollback: delete the auth user if database insert fails
+      await supabase.auth.admin.deleteUser(authData.user.id);
       return new Response(
         JSON.stringify({ error: 'Failed to create account' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Create profile record
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        username,
+        first_name: firstName,
+        last_name: lastName,
+        phone_number: phoneNumber || null,
+      });
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      // Continue anyway - profile can be created later
     }
 
     console.log(`Account created for ${email}`);
