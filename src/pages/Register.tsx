@@ -158,8 +158,20 @@ const Register = () => {
       });
 
       if (error) {
-        // Parse error message from edge function response
-        const errorMessage = error.message || "An error occurred during registration";
+        // Extract error message from edge function response
+        // Edge functions return errors in the format: FunctionsHttpError with context.error
+        let errorMessage = "An error occurred during registration";
+        
+        try {
+          // Try to parse the error context if available
+          if (error.context && typeof error.context === 'object' && error.context.error) {
+            errorMessage = error.context.error;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } catch (e) {
+          console.error("Error parsing function error:", e);
+        }
         
         // Check for specific error types
         if (errorMessage.includes("Username already taken")) {
@@ -185,7 +197,7 @@ const Register = () => {
         return;
       }
 
-      if (!data.success) {
+      if (data && !data.success) {
         toast({
           title: "Registration failed",
           description: data.error || "Could not create account",
@@ -203,7 +215,17 @@ const Register = () => {
       navigate("/login");
     } catch (error: any) {
       // Handle unexpected errors
-      const errorMessage = error.message || "An unexpected error occurred";
+      let errorMessage = "An unexpected error occurred";
+      
+      try {
+        if (error.context && typeof error.context === 'object' && error.context.error) {
+          errorMessage = error.context.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (e) {
+        console.error("Error parsing exception:", e);
+      }
       
       if (errorMessage.includes("Username already taken")) {
         toast({
