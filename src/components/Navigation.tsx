@@ -55,10 +55,10 @@ const Navigation = () => {
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
     isScrolled
       ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
-      : "bg-transparent"
+      : "bg-background/80 backdrop-blur-md border-b border-border/30"
   }`;
 
-  const textColorClass = isScrolled || !isHomePage ? "text-foreground" : "text-white";
+  const textColorClass = "text-foreground";
   const hoverColorClass = "hover:text-primary";
 
   return (
