@@ -390,10 +390,10 @@ const Register = () => {
               </Button>
 
               <div className="text-center text-sm">
-                <span className="text-muted-foreground">Already have an account? </span>
+                <span className="text-foreground/70">Already have an account? </span>
                 <Button
-                  variant="link"
-                  className="p-0 h-auto"
+                  variant="ghost"
+                  className="p-0 h-auto font-semibold text-primary hover:text-primary/80"
                   onClick={() => navigate("/login")}
                 >
                   Log in
@@ -447,10 +447,11 @@ const Register = () => {
                 </Button>
                 <Button
                   type="button"
-                  variant="link"
+                  variant="ghost"
                   size="sm"
                   onClick={handleResendCode}
                   disabled={loading}
+                  className="text-primary hover:text-primary/80"
                 >
                   Resend code
                 </Button>

@@ -175,12 +175,12 @@ const Login = () => {
             </Button>
 
             <div className="text-center space-y-2">
-              <Button variant="link" className="text-sm text-muted-foreground hover:text-primary">
+              <Button variant="ghost" className="text-sm text-foreground/70 hover:text-foreground">
                 Forgot Password?
               </Button>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-foreground/70">
                 Don't have an account?{' '}
-                <Button variant="link" onClick={() => navigate('/register')} className="p-0 h-auto text-primary hover:underline">
+                <Button variant="ghost" onClick={() => navigate('/register')} className="p-0 h-auto font-semibold text-primary hover:text-primary/80">
                   Sign up
                 </Button>
               </p>
@@ -237,7 +237,7 @@ const Login = () => {
                 setCode('');
                 setError('');
               }}
-              className="w-full text-muted-foreground hover:text-primary"
+              className="w-full text-foreground/70 hover:text-foreground"
             >
               ← Back to login
             </Button>
