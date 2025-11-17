@@ -177,4 +177,33 @@ All colors MUST be HSL.
       border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
     }
   }
+
+  /* Page Transitions */
+  .page-transition {
+    animation: pageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes pageSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .page-fade-in {
+    animation: pageFadeIn 0.3s ease-out;
+  }
+
+  @keyframes pageFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }

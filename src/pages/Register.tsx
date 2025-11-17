@@ -319,10 +319,15 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center hero-gradient p-4 page-transition">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blob" style={{ animationDelay: "5s" }} />
+      </div>
+
+      <Card className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl border-white/20 shadow-2xl animate-fade-up">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardTitle className="text-2xl text-center text-foreground">Create Account</CardTitle>
           <CardDescription className="text-center">
             {step === 1 && "Enter your email to get started"}
             {step === 2 && "Verify your email address"}
@@ -333,8 +338,8 @@ const Register = () => {
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`h-2 w-12 rounded-full transition-colors ${
-                  s <= step ? "bg-primary" : "bg-muted"
+                className={`h-2 w-12 rounded-full transition-all duration-300 ${
+                  s <= step ? "bg-gradient-to-r from-primary to-secondary" : "bg-muted"
                 }`}
               />
             ))}
@@ -364,7 +369,11 @@ const Register = () => {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                disabled={loading}
+              >
                 {loading ? "Checking..." : "Continue"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -405,7 +414,11 @@ const Register = () => {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                disabled={loading}
+              >
                 {loading ? "Verifying..." : "Verify Email"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -516,7 +529,11 @@ const Register = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                disabled={loading}
+              >
                 {loading ? "Creating Account..." : "Create Account"}
                 <UserPlus className="ml-2 h-4 w-4" />
               </Button>
