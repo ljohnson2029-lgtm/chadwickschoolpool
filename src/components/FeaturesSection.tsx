@@ -1,10 +1,10 @@
-import { School, Users, Lock, Calendar, Shield, Smartphone } from "lucide-react";
+import { Lock, Users, MessageSquare, Calendar, Shield, Smartphone } from "lucide-react";
 
 const features = [
   {
-    icon: School,
-    title: "Veracross Integration",
-    description: "Login with your existing Chadwick credentials for seamless verification and enhanced security.",
+    icon: Lock,
+    title: "Two-Factor Authentication",
+    description: "Secure your account with robust 2FA protection, adding an extra layer of security with every login.",
     gradient: "from-blue-500 to-cyan-500",
   },
   {
@@ -14,7 +14,7 @@ const features = [
     gradient: "from-teal to-emerald-500",
   },
   {
-    icon: Lock,
+    icon: MessageSquare,
     title: "Secure Messaging",
     description: "Connect safely with verified families through our encrypted messaging system built for privacy.",
     gradient: "from-purple-500 to-pink-500",
@@ -28,7 +28,7 @@ const features = [
   {
     icon: Shield,
     title: "Safety First",
-    description: "Verified members-only platform with admin approval, background checks, and secure data handling.",
+    description: "Verified members-only platform with admin approval and secure data handling for peace of mind.",
     gradient: "from-green-500 to-teal-600",
   },
   {
@@ -41,14 +41,14 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section id="features" className="py-24 lg:py-32 bg-soft-gray">
+    <section id="features" className="py-24 lg:py-32 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-navy mb-6 animate-fade-up">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">
             Why Choose SchoolPool?
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-teal to-teal-light mx-auto rounded-full" />
+          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full" />
         </div>
 
         {/* Features Grid */}
@@ -58,7 +58,7 @@ const FeaturesSection = () => {
             return (
               <div
                 key={index}
-                className="group relative bg-white rounded-3xl p-8 border border-gray-100 hover:border-teal/50 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl animate-fade-up"
+                className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl animate-fade-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Icon */}
@@ -69,15 +69,15 @@ const FeaturesSection = () => {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-2xl font-bold text-navy mb-4 group-hover:text-teal transition-colors">
+                <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-charcoal/80 leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
 
                 {/* Hover Glow Effect */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal/0 to-teal/0 group-hover:from-teal/5 group-hover:to-transparent transition-all duration-300 pointer-events-none" />
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-transparent transition-all duration-300 pointer-events-none" />
               </div>
             );
           })}

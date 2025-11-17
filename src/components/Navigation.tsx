@@ -54,12 +54,12 @@ const Navigation = () => {
 
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
     isScrolled
-      ? "bg-white/80 backdrop-blur-xl border-b border-border/50 shadow-lg"
+      ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
       : "bg-transparent"
   }`;
 
-  const textColorClass = isScrolled || !isHomePage ? "text-navy" : "text-white";
-  const hoverColorClass = isScrolled || !isHomePage ? "hover:text-teal" : "hover:text-teal";
+  const textColorClass = isScrolled || !isHomePage ? "text-foreground" : "text-white";
+  const hoverColorClass = "hover:text-primary";
 
   return (
     <nav className={navClasses}>
@@ -105,7 +105,7 @@ const Navigation = () => {
                 </Button>
                 <Button
                   onClick={() => navigate("/profile")}
-                  className="rounded-full px-6 py-2 bg-gradient-to-r from-teal to-teal-light text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
+                  className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
                 >
                   Profile
                 </Button>
@@ -117,15 +117,15 @@ const Navigation = () => {
                   onClick={() => navigate("/login")}
                   className={`rounded-full px-6 border-2 transition-all duration-250 hover:scale-105 hover:-translate-y-0.5 ${
                     isScrolled || !isHomePage
-                      ? "border-navy text-navy hover:bg-navy hover:text-white"
-                      : "border-white text-white hover:bg-white hover:text-navy"
+                      ? "border-foreground text-foreground hover:bg-foreground hover:text-background"
+                      : "border-white text-white hover:bg-white hover:text-foreground"
                   }`}
                 >
                   Log In
                 </Button>
                 <Button
                   onClick={() => navigate("/register")}
-                  className="rounded-full px-7 py-2.5 bg-gradient-to-r from-teal to-teal-light text-white hover:scale-105 hover:shadow-2xl hover:-translate-y-1 hover:brightness-110 transition-all duration-250 shadow-lg"
+                  className="rounded-full px-7 py-2.5 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-2xl hover:-translate-y-1 hover:brightness-110 transition-all duration-250 shadow-lg"
                 >
                   Sign Up
                 </Button>
@@ -149,13 +149,13 @@ const Navigation = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-navy/95 backdrop-blur-xl border-t border-white/10 animate-fade-in">
+        <div className="md:hidden bg-foreground/95 backdrop-blur-xl border-t border-border animate-fade-in">
           <div className="px-4 py-6 space-y-1">
             {navItems.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                className="block w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {item.label}
@@ -171,7 +171,7 @@ const Navigation = () => {
                       navigate("/dashboard");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-white border-white/20 hover:bg-white/10"
+                    className="w-full text-background border-background/20 hover:bg-background/10"
                   >
                     Dashboard
                   </Button>
@@ -180,7 +180,7 @@ const Navigation = () => {
                       navigate("/profile");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full bg-gradient-to-r from-teal to-teal-light text-white"
+                    className="w-full bg-gradient-to-r from-primary to-secondary text-white"
                   >
                     Profile
                   </Button>
@@ -193,7 +193,7 @@ const Navigation = () => {
                       navigate("/login");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-white border border-white/30 hover:bg-white/10"
+                    className="w-full text-background border border-background/30 hover:bg-background/10"
                   >
                     Log In
                   </Button>
@@ -202,7 +202,7 @@ const Navigation = () => {
                       navigate("/register");
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full bg-gradient-to-r from-teal to-teal-light text-white"
+                    className="w-full bg-gradient-to-r from-primary to-secondary text-white"
                   >
                     Sign Up
                   </Button>

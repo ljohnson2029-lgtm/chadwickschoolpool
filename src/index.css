@@ -8,93 +8,85 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Brand Colors - Premium Design System */
-    --navy: 212 100% 16%;              /* Deep Navy Blue #0A2540 */
-    --navy-light: 212 40% 25%;         /* Lighter navy variant */
-    --teal: 170 100% 42%;              /* Bright Teal #00D4AA */
-    --teal-light: 170 100% 52%;        /* Lighter teal */
-    --teal-glow: 170 100% 65%;         /* Teal glow effect */
-    --coral: 6 100% 70%;               /* Warm Coral #FF6B6B */
-    --charcoal: 215 22% 20%;           /* Charcoal #2D3748 */
-    --soft-gray: 210 20% 98%;          /* Soft Gray #F7FAFC */
-    --success: 142 71% 45%;            /* Vibrant Green #48BB78 */
-    --warning: 45 93% 47%;             /* Amber #ECC94B */
-    
-    /* Core Design Tokens */
     --background: 0 0% 100%;
-    --foreground: 212 100% 16%;        /* Navy for text */
+    --foreground: 215 25% 27%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 22% 20%;
+    --card-foreground: 215 25% 27%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 212 100% 16%;
+    --popover-foreground: 215 25% 27%;
 
-    --primary: 170 100% 42%;           /* Teal */
+    --primary: 210 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 170 100% 95%;
-    --primary-glow: 170 100% 65%;
+    --primary-light: 210 100% 95%;
+    --primary-glow: 210 100% 65%;
 
-    --secondary: 212 100% 16%;         /* Navy */
+    --secondary: 150 60% 45%;
     --secondary-foreground: 0 0% 100%;
-    --secondary-light: 212 40% 95%;
+    --secondary-light: 150 60% 95%;
 
-    --muted: 210 20% 96%;
+    --muted: 215 20% 96%;
     --muted-foreground: 215 15% 50%;
 
-    --accent: 6 100% 70%;              /* Coral */
+    --accent: 35 90% 55%;
     --accent-foreground: 0 0% 100%;
-    --accent-light: 6 100% 95%;
+    --accent-light: 35 90% 95%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 215 20% 90%;
     --input: 215 20% 90%;
-    --ring: 170 100% 42%;
+    --ring: 210 100% 50%;
 
     --radius: 0.75rem;
 
-    /* Premium Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(170 100% 42%) 0%, hsl(170 100% 52%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(212 100% 16%) 0%, hsl(250 60% 25%) 100%);
-    --gradient-navy-purple: linear-gradient(135deg, hsl(212 100% 16%) 0%, hsl(250 30% 18%) 100%);
-    --gradient-teal: linear-gradient(135deg, hsl(170 100% 42%) 0%, hsl(170 100% 48%) 100%);
-    --gradient-coral: linear-gradient(135deg, hsl(6 100% 70%) 0%, hsl(6 100% 75%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(210 100% 65%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(150 60% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(35 90% 55%) 0%, hsl(35 90% 65%) 100%);
 
-    /* Elegant Shadows */
-    --shadow-soft: 0 4px 20px rgba(10, 37, 64, 0.06);
-    --shadow-medium: 0 8px 30px rgba(10, 37, 64, 0.12);
-    --shadow-lift: 0 20px 60px rgba(10, 37, 64, 0.15);
-    --shadow-elegant: 0 10px 30px -10px rgba(0, 212, 170, 0.3);
-    --shadow-glow: 0 0 40px rgba(0, 212, 170, 0.4);
-    --shadow-hover: 0 20px 60px rgba(0, 212, 170, 0.25);
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -2px hsl(215 25% 27% / 0.08);
+    --shadow-medium: 0 8px 30px -4px hsl(215 25% 27% / 0.12);
+    --shadow-strong: 0 20px 50px -10px hsl(210 100% 50% / 0.25);
 
-    /* Premium Transitions */
+    /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    --transition-quick: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 212 50% 8%;
+    --background: 215 30% 8%;
     --foreground: 0 0% 98%;
-    --card: 212 40% 12%;
+
+    --card: 215 25% 12%;
     --card-foreground: 0 0% 98%;
-    --popover: 212 40% 12%;
+
+    --popover: 215 25% 12%;
     --popover-foreground: 0 0% 98%;
-    --primary: 170 100% 52%;
+
+    --primary: 210 100% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 212 60% 25%;
+    --primary-light: 210 100% 15%;
+
+    --secondary: 150 60% 50%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 212 30% 20%;
-    --muted-foreground: 210 15% 65%;
-    --accent: 6 100% 75%;
+    --secondary-light: 150 60% 15%;
+
+    --muted: 215 20% 20%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 35 90% 60%;
     --accent-foreground: 0 0% 100%;
-    --border: 212 30% 20%;
-    --input: 212 30% 20%;
-    --ring: 170 100% 52%;
+    --accent-light: 35 90% 15%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 20%;
+    --input: 215 20% 20%;
+    --ring: 210 100% 55%;
   }
 }
 
@@ -118,8 +110,7 @@ All colors MUST be HSL.
   }
 
   .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 50%, hsl(var(--secondary)) 100%);
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
   }
 
   .hover-lift {
@@ -131,7 +122,7 @@ All colors MUST be HSL.
   }
 
   .hero-gradient {
-    background: linear-gradient(135deg, hsl(212 100% 16%) 0%, hsl(250 30% 18%) 100%);
+    background: linear-gradient(135deg, hsl(210 100% 50%) 0%, hsl(250 40% 40%) 100%);
   }
 
   .floating-animation {

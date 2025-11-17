@@ -25,9 +25,9 @@ const HeroSection = () => {
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden hero-gradient">
       {/* Animated Background Blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-teal/10 rounded-full blob" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blob" style={{ animationDelay: "5s" }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-teal/5 rounded-full blob" style={{ animationDelay: "10s" }} />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blob" style={{ animationDelay: "5s" }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-primary/5 rounded-full blob" style={{ animationDelay: "10s" }} />
       </div>
 
       {/* Animated Grid Pattern */}
@@ -40,7 +40,7 @@ const HeroSection = () => {
             {/* Heading */}
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-tight tracking-tight animate-fade-up">
               Safe, Simple School Carpooling
-              <span className="block text-teal mt-2">for Chadwick School Families</span>
+              <span className="block text-primary mt-2">for Chadwick School Families</span>
             </h1>
 
             {/* Subtitle */}
@@ -59,7 +59,7 @@ const HeroSection = () => {
               <Button
                 onClick={() => navigate("/register")}
                 size="lg"
-                className="text-lg px-10 py-6 rounded-full bg-gradient-to-r from-teal to-teal-light text-white hover:scale-105 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-xl"
+                className="text-lg px-10 py-6 rounded-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 shadow-xl"
               >
                 Get Started
               </Button>
@@ -85,7 +85,7 @@ const HeroSection = () => {
                   className="flex items-center gap-2 text-white/90 animate-fade-up"
                   style={{ animationDelay: `${400 + index * 100}ms` }}
                 >
-                  <CheckCircle className="w-5 h-5 text-teal" />
+                  <CheckCircle className="w-5 h-5 text-primary" />
                   <span className="text-sm sm:text-base">{item.text}</span>
                 </div>
               ))}
@@ -105,8 +105,8 @@ const HeroSection = () => {
                   {/* Route Card */}
                   <div className="bg-white rounded-2xl p-6 shadow-xl animate-fade-in">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-teal/10 rounded-full flex items-center justify-center">
-                        <Calendar className="w-6 h-6 text-teal" />
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Calendar className="w-6 h-6 text-primary" />
                       </div>
                       <div className="flex-1">
                         <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
@@ -121,8 +121,8 @@ const HeroSection = () => {
                     style={{ animationDelay: "200ms" }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-coral/10 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-6 h-6 text-coral" />
+                      <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+                        <MessageSquare className="w-6 h-6 text-accent" />
                       </div>
                       <div className="flex-1">
                         <div className="h-3 bg-gray-200 rounded w-full mb-2" />
@@ -150,8 +150,8 @@ const HeroSection = () => {
               </div>
 
               {/* Decorative Circles */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-teal/20 rounded-full blur-2xl animate-glow" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-coral/20 rounded-full blur-2xl animate-glow" style={{ animationDelay: "1s" }} />
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full blur-2xl animate-glow" />
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-accent/20 rounded-full blur-2xl animate-glow" style={{ animationDelay: "1s" }} />
             </div>
           </div>
         </div>

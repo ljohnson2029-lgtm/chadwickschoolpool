@@ -3,18 +3,18 @@ import { Shield, Lock, UserCheck, MessageSquare, Eye, Database } from "lucide-re
 const securityFeatures = [
   {
     icon: UserCheck,
-    title: "Veracross Verification",
-    description: "All students and staff are verified through Chadwick's Veracross system for guaranteed authenticity.",
+    title: "Two-Factor Authentication",
+    description: "All accounts are protected with robust 2FA, ensuring only verified users can access the platform.",
   },
   {
     icon: Shield,
-    title: "Two-Factor Authentication",
-    description: "Parents benefit from robust 2FA protection, adding an extra layer of security to every account.",
+    title: "Admin Verification",
+    description: "Every new account undergoes manual review and approval by administrators before activation.",
   },
   {
     icon: Lock,
     title: "Admin Approval Process",
-    description: "Every new account undergoes manual review and approval by administrators before activation.",
+    description: "Every new member is carefully vetted and approved to maintain our trusted community standards.",
   },
   {
     icon: MessageSquare,
@@ -38,8 +38,8 @@ const SafetySection = () => {
     <section id="safety" className="py-24 lg:py-32 relative overflow-hidden hero-gradient">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 right-10 w-64 h-64 bg-teal/10 rounded-full blur-3xl animate-glow" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: "2s" }} />
+        <div className="absolute top-10 right-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-glow" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: "2s" }} />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -61,23 +61,23 @@ const SafetySection = () => {
             return (
               <div
                 key={index}
-                className="group relative bg-white/8 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-teal/50 hover:bg-white/12 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
+                className="group relative bg-white/8 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-primary/50 hover:bg-white/12 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Glow Effect on Hover */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal/0 to-teal/0 group-hover:from-teal/10 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* Icon */}
                 <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-teal/20 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                    <Icon className="w-8 h-8 text-teal" />
+                  <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                    <Icon className="w-8 h-8 text-primary" />
                   </div>
                   {/* Pulse Effect */}
-                  <div className="absolute inset-0 w-16 h-16 bg-teal/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-75" />
+                  <div className="absolute inset-0 w-16 h-16 bg-primary/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-75" />
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal transition-colors">
+                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
                 <p className="text-white/70 leading-relaxed text-sm">
@@ -91,7 +91,7 @@ const SafetySection = () => {
         {/* Security Badge */}
         <div className="mt-20 text-center animate-fade-up" style={{ animationDelay: "600ms" }}>
           <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-8 py-4">
-            <Shield className="w-6 h-6 text-teal animate-glow" />
+            <Shield className="w-6 h-6 text-primary animate-glow" />
             <span className="text-white font-semibold text-lg">
               Enterprise-Grade Security Standards
             </span>
