@@ -32,7 +32,6 @@ const Login = () => {
     setError('');
 
     try {
-      // Step 1: Verify username/email and password with custom auth
       const { data: loginData, error: loginError } = await supabase.functions.invoke('auth-login', {
         body: { 
           usernameOrEmail: email.toLowerCase().trim(),
@@ -44,7 +43,6 @@ const Login = () => {
         throw new Error('Invalid email/username or password');
       }
 
-      // Step 2: Send 2FA code
       const { data: codeData, error: codeError } = await supabase.functions.invoke('auth-send-2fa', {
         body: { email: loginData.user.email }
       });
@@ -53,7 +51,6 @@ const Login = () => {
         throw new Error('Failed to send verification code');
       }
 
-      // Show code input screen
       setShowCodeInput(true);
       setError('');
     } catch (err: any) {
@@ -71,7 +68,6 @@ const Login = () => {
     try {
       const normalizedEmail = email.toLowerCase().trim();
 
-      // Verify the 2FA code
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('auth-verify-2fa', {
         body: { email: normalizedEmail, code: code.trim() }
       });
@@ -81,7 +77,6 @@ const Login = () => {
         throw new Error(verifyData?.error || 'Invalid verification code');
       }
 
-      // Now that 2FA is verified, sign in with Supabase auth
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -89,7 +84,6 @@ const Login = () => {
 
       if (signInError) throw signInError;
       
-      // Navigation will happen automatically via useAuth context
       navigate('/profile');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
@@ -99,15 +93,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blob" style={{ animationDelay: "5s" }} />
+      </div>
+      
+      <div className="relative z-10 w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center">
-          <h1 className="text-4xl font-bold gradient-text mb-2">Welcome Back</h1>
-          <p className="text-muted-foreground">Log in to your SchoolPool account</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Welcome Back</h1>
+          <p className="text-white/80">Log in to your SchoolPool account</p>
         </div>
 
         {!showCodeInput ? (
-          <form onSubmit={handleLogin} className="bg-card border rounded-lg p-8 space-y-6">
+          <form onSubmit={handleLogin} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-6 shadow-2xl">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -115,7 +114,7 @@ const Login = () => {
             )}
 
             <div>
-              <Label htmlFor="email">Email or Username</Label>
+              <Label htmlFor="email" className="text-foreground">Email or Username</Label>
               <Input
                 id="email"
                 type="text"
@@ -128,7 +127,7 @@ const Login = () => {
             </div>
 
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -139,31 +138,29 @@ const Login = () => {
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Continue
             </Button>
 
             <div className="text-center space-y-2">
-              <Button variant="link" className="text-sm">
+              <Button variant="link" className="text-sm text-muted-foreground hover:text-primary">
                 Forgot Password?
               </Button>
-              <div className="text-sm">
+              <p className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
-                <Button variant="link" onClick={() => navigate('/register')} className="p-0">
-                  Sign Up
+                <Button variant="link" onClick={() => navigate('/register')} className="p-0 h-auto text-primary hover:underline">
+                  Sign up
                 </Button>
-              </div>
+              </p>
             </div>
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} className="bg-card border rounded-lg p-8 space-y-6">
-            <div className="text-center mb-4">
-              <p className="text-sm text-muted-foreground">
-                We've sent a verification code to <strong>{email}</strong>
-              </p>
-            </div>
-
+          <form onSubmit={handleVerifyCode} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-6 shadow-2xl animate-fade-in">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -173,8 +170,17 @@ const Login = () => {
               </Alert>
             )}
 
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <span className="text-2xl">📧</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                We've sent a verification code to your email
+              </p>
+            </div>
+
             <div>
-              <Label htmlFor="code">Verification Code</Label>
+              <Label htmlFor="code" className="text-foreground">Verification Code</Label>
               <Input
                 id="code"
                 type="text"
@@ -187,25 +193,27 @@ const Login = () => {
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verify & Log In
             </Button>
 
-            <div className="text-center">
-              <Button 
-                variant="link" 
-                onClick={() => {
-                  setShowCodeInput(false);
-                  setCode('');
-                  setError('');
-                  setAttemptsRemaining(3);
-                }}
-                className="text-sm"
-              >
-                Back to login
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowCodeInput(false);
+                setCode('');
+                setError('');
+              }}
+              className="w-full text-muted-foreground hover:text-primary"
+            >
+              ← Back to login
+            </Button>
           </form>
         )}
       </div>
