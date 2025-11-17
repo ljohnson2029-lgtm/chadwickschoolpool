@@ -128,8 +128,8 @@ const Login = () => {
       
       <div className="relative z-10 w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-white/80">Log in to your SchoolPool account</p>
+          <h1 className="text-4xl font-bold text-primary-foreground mb-2">Welcome Back</h1>
+          <p className="text-primary-foreground/80">Log in to your SchoolPool account</p>
         </div>
 
         {!showCodeInput ? (
@@ -168,7 +168,7 @@ const Login = () => {
             <Button 
               type="submit" 
               disabled={loading} 
-              className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Continue
@@ -223,7 +223,7 @@ const Login = () => {
             <Button 
               type="submit" 
               disabled={loading} 
-              className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verify & Log In
