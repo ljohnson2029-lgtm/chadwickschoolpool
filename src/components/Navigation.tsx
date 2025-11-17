@@ -72,9 +72,9 @@ const Navigation = () => {
           >
             <div className="relative">
               <Car className="w-8 h-8" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal rounded-full animate-glow" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-glow" />
             </div>
-            <span className="gradient-text">SchoolPool</span>
+            <span className={textColorClass}>SchoolPool</span>
           </button>
 
           {/* Desktop Navigation */}
@@ -99,7 +99,7 @@ const Navigation = () => {
                   variant="ghost"
                   size="default"
                   onClick={() => navigate("/dashboard")}
-                  className={`transition-all duration-250 ${textColorClass} hover:bg-teal/10`}
+                  className={`transition-all duration-250 ${textColorClass} hover:bg-primary/10`}
                 >
                   Dashboard
                 </Button>
