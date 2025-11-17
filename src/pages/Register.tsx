@@ -46,18 +46,16 @@ const Register = () => {
       setIsStudentEmail(isChadwickEmail);
       
       if (!isChadwickEmail) {
-        const { data, error: dbError } = await supabase
-          .from('approved_emails')
-          .select('email')
-          .ilike('email', normalizedEmail)
-          .maybeSingle();
+        const { data: check, error: checkError } = await supabase.functions.invoke("auth-check-email", {
+          body: { email: normalizedEmail },
+        });
 
-        if (dbError) throw dbError;
-        
-        if (!data) {
+        if (checkError) throw checkError;
+
+        if (!check?.approved) {
           toast({
             title: "Email not approved",
-            description: "This email domain is not approved for registration.",
+            description: check?.message ?? "This email is not approved for registration.",
             variant: "destructive",
           });
           setLoading(false);
