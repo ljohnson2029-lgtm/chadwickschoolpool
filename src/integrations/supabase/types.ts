@@ -32,10 +32,41 @@ export type Database = {
         }
         Relationships: []
       }
+      children: {
+        Row: {
+          age: number
+          created_at: string | null
+          id: string
+          name: string
+          school: string
+          user_id: string
+        }
+        Insert: {
+          age: number
+          created_at?: string | null
+          id?: string
+          name: string
+          school: string
+          user_id: string
+        }
+        Update: {
+          age?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          school?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          car_make: string | null
+          car_model: string | null
+          car_seats: number | null
           created_at: string
           first_name: string | null
+          home_address: string | null
           id: string
           last_name: string | null
           phone_number: string | null
@@ -43,8 +74,12 @@ export type Database = {
           username: string
         }
         Insert: {
+          car_make?: string | null
+          car_model?: string | null
+          car_seats?: number | null
           created_at?: string
           first_name?: string | null
+          home_address?: string | null
           id: string
           last_name?: string | null
           phone_number?: string | null
@@ -52,13 +87,68 @@ export type Database = {
           username: string
         }
         Update: {
+          car_make?: string | null
+          car_model?: string | null
+          car_seats?: number | null
           created_at?: string
           first_name?: string | null
+          home_address?: string | null
           id?: string
           last_name?: string | null
           phone_number?: string | null
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      rides: {
+        Row: {
+          created_at: string | null
+          dropoff_location: string
+          id: string
+          is_recurring: boolean | null
+          pickup_location: string
+          recurring_days: string[] | null
+          ride_date: string
+          ride_time: string
+          route_details: string | null
+          seats_available: number | null
+          seats_needed: number | null
+          status: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dropoff_location: string
+          id?: string
+          is_recurring?: boolean | null
+          pickup_location: string
+          recurring_days?: string[] | null
+          ride_date: string
+          ride_time: string
+          route_details?: string | null
+          seats_available?: number | null
+          seats_needed?: number | null
+          status?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dropoff_location?: string
+          id?: string
+          is_recurring?: boolean | null
+          pickup_location?: string
+          recurring_days?: string[] | null
+          ride_date?: string
+          ride_time?: string
+          route_details?: string | null
+          seats_available?: number | null
+          seats_needed?: number | null
+          status?: string | null
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
