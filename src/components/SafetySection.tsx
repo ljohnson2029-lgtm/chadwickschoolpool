@@ -42,42 +42,44 @@ const SafetySection = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-20">
+          <div className="inline-block mb-6 px-6 py-2 bg-primary/10 rounded-full">
+            <span className="text-primary font-semibold text-sm uppercase tracking-wider">Security First</span>
+          </div>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">
             Your Family's Safety Comes First
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Built with multiple layers of security to protect what matters most
           </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
+          <div className="w-24 h-1 bg-gradient-to-r from-secondary to-primary mx-auto rounded-full mt-6" />
         </div>
 
-        {/* Security Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Security Features Grid - Compact Cards with Icons Left */}
+        <div className="max-w-4xl mx-auto space-y-4">
           {securityFeatures.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <div
                 key={index}
-                className="group relative bg-white rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="group flex items-start gap-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-l-4 border-primary hover:border-secondary hover:shadow-xl transition-all duration-300 animate-fade-up"
+                style={{ animationDelay: `${index * 80}ms` }}
               >
-                {/* Glow Effect on Hover */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-transparent transition-opacity duration-300" />
-
                 {/* Icon */}
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                    <Icon className="w-8 h-8 text-white" />
+                <div className="flex-shrink-0">
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  {feature.description}
-                </p>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
             );
           })}
@@ -85,7 +87,7 @@ const SafetySection = () => {
 
         {/* Security Badge */}
         <div className="mt-20 text-center animate-fade-up" style={{ animationDelay: "600ms" }}>
-          <div className="inline-flex items-center gap-3 bg-card backdrop-blur-xl border border-border rounded-full px-8 py-4 shadow-lg">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-primary/10 to-secondary/10 backdrop-blur-xl border border-border rounded-full px-8 py-4 shadow-lg">
             <Shield className="w-6 h-6 text-primary" />
             <span className="text-foreground font-semibold text-lg">
               Enterprise-Grade Security Standards

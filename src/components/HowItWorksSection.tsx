@@ -49,51 +49,53 @@ const HowItWorksSection = () => {
           <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
         </div>
 
-        {/* Desktop Timeline */}
-        <div className="hidden lg:block relative">
-          {/* Connecting Line */}
-          <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-secondary to-primary" 
-               style={{ 
-                 width: 'calc(100% - 128px)', 
-                 left: '64px',
-                 background: 'repeating-linear-gradient(90deg, hsl(var(--primary)) 0px, hsl(var(--primary)) 10px, transparent 10px, transparent 20px)'
-               }} 
-          />
+        {/* Desktop - Vertical Stepper Layout */}
+        <div className="hidden lg:block max-w-3xl mx-auto">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={index}
+                className="relative flex gap-8 items-center mb-12 last:mb-0 animate-fade-up"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                {/* Connecting Line */}
+                {index < steps.length - 1 && (
+                  <div className="absolute left-16 top-32 bottom-0 w-1 bg-gradient-to-b from-primary to-secondary ml-0.5" />
+                )}
 
-          {/* Steps */}
-          <div className="grid grid-cols-4 gap-8">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={index}
-                  className="relative flex flex-col items-center text-center animate-fade-up"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  {/* Number Badge */}
-                  <div className="relative z-10 w-32 h-32 mb-6 animate-bounce-in" style={{ animationDelay: `${index * 150}ms` }}>
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full opacity-20 blur-xl animate-glow" />
-                    <div className="relative w-full h-full bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-xl">
+                {/* Number Badge - Larger */}
+                <div className="relative z-10 flex-shrink-0">
+                  <div className="relative w-32 h-32">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-full opacity-20 blur-xl" />
+                    <div className="relative w-full h-full bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl">
                       {step.number}
                     </div>
                   </div>
-
-                  {/* Icon */}
-                  <div className="mb-6 bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-                    <Icon className="w-12 h-12 text-primary" />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-foreground mb-3">
-                    {step.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {step.description}
-                  </p>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Content Card */}
+                <div className="flex-1 bg-white rounded-3xl p-8 border-2 border-border hover:border-primary/50 hover:shadow-2xl transition-all duration-300 group">
+                  <div className="flex items-start gap-6">
+                    {/* Icon */}
+                    <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-10 h-10 text-primary" />
+                    </div>
+                    
+                    {/* Text */}
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                        {step.title}
+                      </h3>
+                      <p className="text-muted-foreground leading-relaxed text-lg">
+                        {step.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Mobile/Tablet Layout */}

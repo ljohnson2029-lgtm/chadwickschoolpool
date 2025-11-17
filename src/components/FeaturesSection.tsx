@@ -48,36 +48,36 @@ const FeaturesSection = () => {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Powerful features designed to make carpooling safe, simple, and efficient
           </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
+          <div className="w-24 h-1 bg-gradient-to-r from-accent via-primary to-secondary mx-auto rounded-full mt-6" />
         </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Features Grid - Alternating Layout */}
+        <div className="space-y-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
+            const isEven = index % 2 === 0;
             return (
               <div
                 key={index}
-                className="group relative bg-white rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl animate-fade-up"
+                className={`group flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-center bg-white rounded-3xl p-8 border border-border hover:border-primary/50 hover:shadow-2xl transition-all duration-300 animate-fade-up`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Icon */}
-                <div className="mb-6">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary p-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                <div className="flex-shrink-0">
+                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-secondary p-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
                     <Icon className="w-full h-full text-white" />
                   </div>
                 </div>
 
                 {/* Content */}
-                <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-
-                {/* Hover Glow Effect */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/5 group-hover:to-transparent transition-all duration-300 pointer-events-none" />
+                <div className={`flex-1 ${isEven ? 'md:text-left' : 'md:text-right'} text-center`}>
+                  <h3 className="text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed text-lg">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
             );
           })}
