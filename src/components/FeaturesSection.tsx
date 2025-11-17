@@ -5,50 +5,50 @@ const features = [
     icon: Lock,
     title: "Two-Factor Authentication",
     description: "Secure your account with robust 2FA protection, adding an extra layer of security with every login.",
-    gradient: "from-blue-500 to-cyan-500",
   },
   {
     icon: Users,
     title: "Smart Matching",
     description: "Find families along your route with our intelligent matching algorithm that considers location and schedule.",
-    gradient: "from-teal to-emerald-500",
   },
   {
     icon: MessageSquare,
     title: "Secure Messaging",
     description: "Connect safely with verified families through our encrypted messaging system built for privacy.",
-    gradient: "from-purple-500 to-pink-500",
   },
   {
     icon: Calendar,
     title: "Easy Scheduling",
     description: "Coordinate pickups and drop-offs effortlessly with intuitive scheduling tools and calendar sync.",
-    gradient: "from-orange-500 to-red-500",
   },
   {
     icon: Shield,
     title: "Safety First",
     description: "Verified members-only platform with admin approval and secure data handling for peace of mind.",
-    gradient: "from-green-500 to-teal-600",
   },
   {
     icon: Smartphone,
     title: "Mobile Friendly",
     description: "Access SchoolPool anytime, anywhere on any device with our responsive, mobile-optimized platform.",
-    gradient: "from-indigo-500 to-blue-600",
   },
 ];
 
 const FeaturesSection = () => {
   return (
-    <section id="features" className="py-24 lg:py-32 bg-muted/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="features" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,212,170,0.05),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(212,100,250,0.05),transparent_50%)]" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-20">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">
             Why Choose SchoolPool?
           </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full" />
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Powerful features designed to make carpooling safe, simple, and efficient
+          </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
         </div>
 
         {/* Features Grid */}
@@ -58,12 +58,12 @@ const FeaturesSection = () => {
             return (
               <div
                 key={index}
-                className="group relative bg-card rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl animate-fade-up"
+                className="group relative bg-white rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl animate-fade-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Icon */}
                 <div className="mb-6">
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${feature.gradient} p-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}>
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary p-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
                     <Icon className="w-full h-full text-white" />
                   </div>
                 </div>
