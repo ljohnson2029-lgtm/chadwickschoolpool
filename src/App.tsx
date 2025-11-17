@@ -17,6 +17,8 @@ import Dashboard from "./pages/Dashboard";
 import EmailVerification from "./pages/EmailVerification";
 import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
 import NotFound from "./pages/NotFound";
+import StudentLinking from "./pages/StudentLinking";
+import ParentApprovals from "./pages/ParentApprovals";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
+            <Route path="/student-linking" element={<StudentLinking />} />
+            <Route path="/parent-approvals" element={<ParentApprovals />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

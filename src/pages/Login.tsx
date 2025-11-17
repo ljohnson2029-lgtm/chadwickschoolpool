@@ -84,6 +84,33 @@ const Login = () => {
 
       if (signInError) throw signInError;
       
+      // Check if user is a student
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'student')
+          .maybeSingle();
+
+        if (roleData) {
+          // Check if student has approved parent link
+          const { data: linkData } = await supabase
+            .from('student_parent_links')
+            .select('status')
+            .eq('student_id', user.id)
+            .eq('status', 'approved')
+            .maybeSingle();
+
+          if (!linkData) {
+            // Student without approved parent link
+            navigate('/student-linking');
+            return;
+          }
+        }
+      }
+      
       navigate('/profile');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
