@@ -79,7 +79,7 @@ export default function StudentLinking() {
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('user_id')
-        .eq('email', parentEmail.toLowerCase())
+        .ilike('email', parentEmail.trim())
         .maybeSingle();
 
       if (userError || !userData) {
