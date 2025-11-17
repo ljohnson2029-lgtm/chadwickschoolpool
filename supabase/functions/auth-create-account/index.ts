@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, username, password, firstName, lastName, phoneNumber } = await req.json();
+    const { email, username, password, firstName, lastName, phoneNumber, userType } = await req.json();
 
     // Validate required fields
     if (!email || !username || !password || !firstName || !lastName) {
@@ -140,13 +140,38 @@ serve(async (req) => {
       // Continue anyway - profile can be created later
     }
 
-    console.log(`Account created for ${email}`);
+    // Determine and assign user role
+    const normalizedEmail = email.toLowerCase();
+    let role = 'parent'; // Default role
+    
+    if (normalizedEmail.endsWith('@chadwickschool.org')) {
+      role = 'student';
+    } else if (userType) {
+      // If userType is provided (parent/staff), use it
+      role = userType;
+    }
+
+    // Create user role
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role: role,
+      });
+
+    if (roleError) {
+      console.error('Role assignment error:', roleError);
+      // Continue anyway - role can be assigned later
+    }
+
+    console.log(`Account created for ${email} with role: ${role}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Account created successfully',
-        userId: newUser.user_id 
+        userId: newUser.user_id,
+        role: role,
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -27,6 +27,8 @@ const Register = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameHint, setUsernameHint] = useState('');
+  const [isStudentEmail, setIsStudentEmail] = useState(false);
+  const [userType, setUserType] = useState<'parent' | 'staff'>('parent');
 
   useEffect(() => {
     if (user) {
@@ -41,6 +43,7 @@ const Register = () => {
     try {
       const normalizedEmail = email.toLowerCase().trim();
       const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
+      setIsStudentEmail(isChadwickEmail);
       
       if (!isChadwickEmail) {
         const { data, error: dbError } = await supabase
@@ -197,6 +200,7 @@ const Register = () => {
           firstName,
           lastName,
           phoneNumber: phoneNumber || null,
+          userType: isStudentEmail ? 'student' : userType,
         },
       });
 
@@ -252,10 +256,19 @@ const Register = () => {
 
       toast({
         title: "Account created!",
-        description: "You can now log in with your credentials.",
+        description: isStudentEmail 
+          ? "Please link your account to your parent for approval." 
+          : "You can now log in with your credentials.",
       });
 
-      navigate("/login");
+      if (isStudentEmail) {
+        // For student accounts, redirect to linking page after a short delay
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      } else {
+        navigate("/login");
+      }
     } catch (error: any) {
       // Handle unexpected errors
       let errorMessage = "An unexpected error occurred";
@@ -501,6 +514,43 @@ const Register = () => {
                   disabled={loading}
                 />
               </div>
+
+              {isStudentEmail && (
+                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                    🎓 Student Account Detected
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You'll need parent approval to access the platform. After registration, you'll be able to send a link request to your parent.
+                  </p>
+                </div>
+              )}
+
+              {!isStudentEmail && (
+                <div className="space-y-2">
+                  <Label>Account Type</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={userType === 'parent' ? 'default' : 'outline'}
+                      onClick={() => setUserType('parent')}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      👨‍👩‍👧‍👦 Parent
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={userType === 'staff' ? 'default' : 'outline'}
+                      onClick={() => setUserType('staff')}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      👔 Staff
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
