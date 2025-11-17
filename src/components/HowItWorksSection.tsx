@@ -33,9 +33,9 @@ const HowItWorksSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section id="how-it-works" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+    <section id="how-it-works" className="py-24 lg:py-32 bg-gradient-to-br from-primary/5 via-white to-secondary/5 relative overflow-hidden">
       {/* Background Decoration */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,212,170,0.05),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(212,100,250,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,212,170,0.08),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(212,100,250,0.08),transparent_50%)]" />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
