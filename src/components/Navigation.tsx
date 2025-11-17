@@ -45,11 +45,11 @@ const Navigation = () => {
   };
 
   const navItems = [
-    { label: "Home", id: "home" },
-    { label: "About", id: "mission" },
-    { label: "Features", id: "features" },
-    { label: "Safety", id: "safety" },
-    { label: "How It Works", id: "how-it-works" },
+    { label: "Home", path: "/" },
+    { label: "About", path: "/about" },
+    { label: "Features", path: "/features" },
+    { label: "Safety", path: "/safety" },
+    { label: "How It Works", path: "/how-it-works" },
   ];
 
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -67,7 +67,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <button
-            onClick={() => scrollToSection("home")}
+            onClick={() => navigate("/")}
             className={`flex items-center gap-2 text-2xl font-bold transition-all duration-300 ${textColorClass} hover:scale-105`}
           >
             <div className="relative">
@@ -81,12 +81,12 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
               <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
+                key={item.path}
+                onClick={() => navigate(item.path)}
                 className={`relative text-[15px] font-medium transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-105 group`}
               >
                 {item.label}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-teal transition-all duration-200 group-hover:w-full" />
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
               </button>
             ))}
           </div>
@@ -153,8 +153,11 @@ const Navigation = () => {
           <div className="px-4 py-6 space-y-1">
             {navItems.map((item, index) => (
               <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setIsMobileMenuOpen(false);
+                }}
                 className="block w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
                 style={{ animationDelay: `${index * 50}ms` }}
               >

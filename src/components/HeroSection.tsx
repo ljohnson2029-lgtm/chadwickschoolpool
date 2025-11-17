@@ -5,16 +5,6 @@ import { ChevronDown, Shield, MessageSquare, Calendar, CheckCircle } from "lucid
 const HeroSection = () => {
   const navigate = useNavigate();
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-    }
-  };
-
   const trustIndicators = [
     { icon: Shield, text: "Verified Chadwick families" },
     { icon: MessageSquare, text: "Secure messaging" },
@@ -64,13 +54,13 @@ const HeroSection = () => {
                 Get Started
               </Button>
               <Button
-                onClick={() => scrollToSection("how-it-works")}
+                onClick={() => navigate("/how-it-works")}
                 size="lg"
                 variant="ghost"
                 className="text-lg px-8 py-6 rounded-full bg-white/10 backdrop-blur-lg border-2 border-white/20 text-white hover:bg-white/20 hover:border-white hover:-translate-y-0.5 transition-all duration-300"
               >
                 Learn More
-                <ChevronDown className="ml-2 h-5 w-5 animate-bounce" />
+                <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
 
@@ -159,7 +149,7 @@ const HeroSection = () => {
 
       {/* Scroll Indicator */}
       <button
-        onClick={() => scrollToSection("features")}
+        onClick={() => navigate("/features")}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition-colors scroll-bounce"
       >
         <ChevronDown className="w-8 h-8" />
