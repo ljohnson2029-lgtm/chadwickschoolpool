@@ -1,91 +1,100 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Shield, CheckCircle, Mail, MessageCircle, Lock, Users } from "lucide-react";
+import { Shield, Lock, UserCheck, MessageSquare, Eye, Database } from "lucide-react";
+
+const securityFeatures = [
+  {
+    icon: UserCheck,
+    title: "Veracross Verification",
+    description: "All students and staff are verified through Chadwick's Veracross system for guaranteed authenticity.",
+  },
+  {
+    icon: Shield,
+    title: "Two-Factor Authentication",
+    description: "Parents benefit from robust 2FA protection, adding an extra layer of security to every account.",
+  },
+  {
+    icon: Lock,
+    title: "Admin Approval Process",
+    description: "Every new account undergoes manual review and approval by administrators before activation.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Secure Messaging",
+    description: "All communications are encrypted end-to-end, ensuring your conversations remain private.",
+  },
+  {
+    icon: Eye,
+    title: "Active Monitoring",
+    description: "Our team actively monitors platform activity to maintain a safe, trusted community environment.",
+  },
+  {
+    icon: Database,
+    title: "Encrypted Data Storage",
+    description: "Your personal information is protected with enterprise-grade encryption at rest and in transit.",
+  },
+];
 
 const SafetySection = () => {
-  const safetyFeatures = [
-    {
-      icon: Mail,
-      title: "Veracross Email Verification",
-      description: "All users must authenticate using their official Chadwick Veracross email with 2-factor authentication, ensuring every member is a verified school family.",
-    },
-    {
-      icon: MessageCircle,
-      title: "Built-in Communication",
-      description: "Secure messaging system allows parents to coordinate directly, discuss schedules, and build trust before committing to a carpool arrangement.",
-    },
-    {
-      icon: Users,
-      title: "Community Trust",
-      description: "Connect only with other Chadwick families. Our exclusive network ensures you're carpooling within your trusted school community.",
-    },
-    {
-      icon: Lock,
-      title: "Privacy Protected",
-      description: "Your personal information is kept secure. Share only what you're comfortable with, and communicate through our protected platform.",
-    },
-  ];
-
   return (
-    <section id="safety" className="bg-background">
-      <div className="section-container">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary/10 mb-6">
-            <Shield className="w-8 h-8 text-secondary" />
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">Safety First</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Your family's safety and security is our top priority. Every feature is designed with trust and verification at its core.
+    <section id="safety" className="py-24 lg:py-32 relative overflow-hidden hero-gradient">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 right-10 w-64 h-64 bg-teal/10 rounded-full blur-3xl animate-glow" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: "2s" }} />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-20">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 animate-fade-up">
+            Your Family's Safety Comes First
+          </h2>
+          <div className="w-24 h-1 bg-teal mx-auto rounded-full mb-6" />
+          <p className="text-xl text-white/80 max-w-3xl mx-auto">
+            Built with multiple layers of security to protect what matters most
           </p>
         </div>
 
-        {/* Main Verification Highlight */}
-        <Card className="mb-12 border-2 border-secondary/20 bg-secondary/5 shadow-lg">
-          <CardContent className="p-8 md:p-12">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="flex-shrink-0">
-                <div className="w-20 h-20 rounded-full bg-secondary/10 flex items-center justify-center">
-                  <CheckCircle className="w-10 h-10 text-secondary" />
+        {/* Security Features Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {securityFeatures.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <div
+                key={index}
+                className="group relative bg-white/8 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-teal/50 hover:bg-white/12 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Glow Effect on Hover */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal/0 to-teal/0 group-hover:from-teal/10 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Icon */}
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 bg-teal/20 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                    <Icon className="w-8 h-8 text-teal" />
+                  </div>
+                  {/* Pulse Effect */}
+                  <div className="absolute inset-0 w-16 h-16 bg-teal/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-75" />
                 </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-3">100% School-Verified Families</h3>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Every member of SchoolPool must verify their identity through their official Chadwick Veracross email with 2-factor authentication. This ensures that only legitimate Chadwick families can access the platform, creating a trusted and secure environment for everyone.
+
+                {/* Content */}
+                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-white/70 leading-relaxed text-sm">
+                  {feature.description}
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Safety Features Grid */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {safetyFeatures.map((feature, index) => (
-            <Card key={index} className="hover-lift">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <feature.icon className="w-6 h-6 text-primary" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Trust Badge */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-muted border-2 border-border">
-            <Shield className="w-5 h-5 text-secondary" />
-            <span className="font-semibold">Trusted by Chadwick Families</span>
-            <Shield className="w-5 h-5 text-secondary" />
+        {/* Security Badge */}
+        <div className="mt-20 text-center animate-fade-up" style={{ animationDelay: "600ms" }}>
+          <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-8 py-4">
+            <Shield className="w-6 h-6 text-teal animate-glow" />
+            <span className="text-white font-semibold text-lg">
+              Enterprise-Grade Security Standards
+            </span>
           </div>
         </div>
       </div>
