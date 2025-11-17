@@ -62,8 +62,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify password
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    // Verify password (using compareSync to avoid Worker issues in Edge Functions)
+    const passwordMatch = bcrypt.compareSync(password, user.password_hash);
 
     if (!passwordMatch) {
       // Update failed login attempts
