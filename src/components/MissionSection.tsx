@@ -18,58 +18,72 @@ const MissionSection = () => {
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
+          <div className="inline-block mb-6 px-6 py-2 bg-secondary/10 rounded-full">
+            <span className="text-secondary font-semibold text-sm uppercase tracking-wider">Our Story</span>
+          </div>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">Our Mission</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Building a stronger, more connected Chadwick community through collaborative transportation
           </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
+          <div className="w-24 h-1 bg-gradient-to-r from-secondary via-primary to-accent mx-auto rounded-full mt-6" />
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          {/* For Students */}
-          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300">
-            <CardHeader>
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl">Created by Students, For Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                We understand the challenges of CUP requirements firsthand. SchoolPool was designed to make getting to school easier, more sustainable, and more enjoyable by connecting students and families who share the same journey.
-              </p>
-            </CardContent>
-          </Card>
+        <div className="grid lg:grid-cols-2 gap-8 mb-16">
+          {/* Left Column - Two Cards */}
+          <div className="space-y-8">
+            {/* For Students */}
+            <Card className="hover:shadow-2xl hover:-translate-y-1 border-2 border-border hover:border-primary/50 transition-all duration-300 animate-fade-up bg-gradient-to-br from-white to-primary/5">
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">Created by Students, For Students</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed text-lg">
+                  We understand the challenges of CUP requirements firsthand. SchoolPool was designed to make getting to school easier, more sustainable, and more enjoyable by connecting students and families who share the same journey.
+                </p>
+              </CardContent>
+            </Card>
 
-          {/* For Parents */}
-          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300" style={{ animationDelay: "150ms" }}>
-            <CardHeader>
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
-                <Heart className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-2xl">For Parents</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                Give back to your community while freeing up valuable personal time. SchoolPool helps you coordinate with other families, reduce your driving responsibilities, and contribute to a more sustainable future for our children.
-              </p>
-            </CardContent>
-          </Card>
+            {/* For Parents */}
+            <Card className="hover:shadow-2xl hover:-translate-y-1 border-2 border-border hover:border-secondary/50 transition-all duration-300 animate-fade-up bg-gradient-to-br from-white to-secondary/5" style={{ animationDelay: "150ms" }}>
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-lg">
+                    <Heart className="w-8 h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">For Parents</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed text-lg">
+                  Give back to your community while freeing up valuable personal time. SchoolPool helps you coordinate with other families, reduce your driving responsibilities, and contribute to a more sustainable future for our children.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Why Parents Love It */}
-          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300" style={{ animationDelay: "300ms" }}>
+          {/* Right Column - Large Card */}
+          <Card className="hover:shadow-2xl hover:-translate-y-1 border-2 border-border hover:border-accent/50 transition-all duration-300 animate-fade-up bg-gradient-to-br from-white to-accent/5 lg:row-span-2" style={{ animationDelay: "300ms" }}>
             <CardHeader>
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
-                <CheckCircle className="w-8 h-8 text-white" />
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg">
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl">Why Parents Love SchoolPool</CardTitle>
               </div>
-              <CardTitle className="text-2xl">Why Parents Love SchoolPool</CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {parentBenefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <benefit.icon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">{benefit.text}</span>
+                  <li key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white/50 hover:bg-white/80 transition-colors">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg flex items-center justify-center">
+                      <benefit.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground text-lg pt-1">{benefit.text}</span>
                   </li>
                 ))}
               </ul>
