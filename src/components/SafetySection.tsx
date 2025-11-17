@@ -35,23 +35,20 @@ const securityFeatures = [
 
 const SafetySection = () => {
   return (
-    <section id="safety" className="py-24 lg:py-32 relative overflow-hidden hero-gradient">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 right-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-glow" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: "2s" }} />
-      </div>
+    <section id="safety" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,212,170,0.05),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(212,100,250,0.05),transparent_50%)]" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 animate-fade-up">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">
             Your Family's Safety Comes First
           </h2>
-          <div className="w-24 h-1 bg-teal mx-auto rounded-full mb-6" />
-          <p className="text-xl text-white/80 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Built with multiple layers of security to protect what matters most
           </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
         </div>
 
         {/* Security Features Grid */}
@@ -61,26 +58,24 @@ const SafetySection = () => {
             return (
               <div
                 key={index}
-                className="group relative bg-white/8 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-primary/50 hover:bg-white/12 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
+                className="group relative bg-white rounded-3xl p-8 border border-border hover:border-primary/50 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl animate-fade-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Glow Effect on Hover */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-transparent transition-opacity duration-300" />
 
                 {/* Icon */}
                 <div className="relative mb-6">
-                  <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
-                    <Icon className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                    <Icon className="w-8 h-8 text-white" />
                   </div>
-                  {/* Pulse Effect */}
-                  <div className="absolute inset-0 w-16 h-16 bg-primary/20 rounded-2xl animate-ping opacity-0 group-hover:opacity-75" />
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors">
+                <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-white/70 leading-relaxed text-sm">
+                <p className="text-muted-foreground leading-relaxed text-sm">
                   {feature.description}
                 </p>
               </div>
@@ -90,9 +85,9 @@ const SafetySection = () => {
 
         {/* Security Badge */}
         <div className="mt-20 text-center animate-fade-up" style={{ animationDelay: "600ms" }}>
-          <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-8 py-4">
-            <Shield className="w-6 h-6 text-primary animate-glow" />
-            <span className="text-white font-semibold text-lg">
+          <div className="inline-flex items-center gap-3 bg-card backdrop-blur-xl border border-border rounded-full px-8 py-4 shadow-lg">
+            <Shield className="w-6 h-6 text-primary" />
+            <span className="text-foreground font-semibold text-lg">
               Enterprise-Grade Security Standards
             </span>
           </div>

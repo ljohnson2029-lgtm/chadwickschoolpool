@@ -12,21 +12,25 @@ const MissionSection = () => {
   ];
 
   return (
-    <section id="mission" className="bg-muted/30">
-      <div className="section-container">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">Our Mission</h2>
+    <section id="mission" className="py-24 lg:py-32 bg-white relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,212,170,0.05),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(212,100,250,0.05),transparent_50%)]" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-20">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up">Our Mission</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Building a stronger, more connected Chadwick community through collaborative transportation
           </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full mt-6" />
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           {/* For Students */}
-          <Card className="hover-lift border-2">
+          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300">
             <CardHeader>
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
+                <Users className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-2xl">Created by Students, For Students</CardTitle>
             </CardHeader>
@@ -38,10 +42,10 @@ const MissionSection = () => {
           </Card>
 
           {/* For Parents */}
-          <Card className="hover-lift border-2">
+          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300" style={{ animationDelay: "150ms" }}>
             <CardHeader>
-              <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
-                <Heart className="w-6 h-6 text-secondary" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
+                <Heart className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-2xl">For Parents</CardTitle>
             </CardHeader>
@@ -53,10 +57,10 @@ const MissionSection = () => {
           </Card>
 
           {/* Why Parents Love It */}
-          <Card className="hover-lift border-2 bg-accent/5">
+          <Card className="hover-lift border-2 animate-fade-up hover:-translate-y-2 transition-all duration-300" style={{ animationDelay: "300ms" }}>
             <CardHeader>
-              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-                <CheckCircle className="w-6 h-6 text-accent" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-4 shadow-lg">
+                <CheckCircle className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-2xl">Why Parents Love SchoolPool</CardTitle>
             </CardHeader>
@@ -64,7 +68,7 @@ const MissionSection = () => {
               <ul className="space-y-3">
                 {parentBenefits.map((benefit, index) => (
                   <li key={index} className="flex items-start gap-3">
-                    <benefit.icon className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
+                    <benefit.icon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <span className="text-muted-foreground">{benefit.text}</span>
                   </li>
                 ))}
