@@ -41,7 +41,7 @@ serve(async (req) => {
     const { data, error } = await supabase
       .from('approved_emails')
       .select('email')
-      .eq('email', normalizedEmail)
+      .ilike('email', normalizedEmail)
       .maybeSingle();
 
     if (error) {
