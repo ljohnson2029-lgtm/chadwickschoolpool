@@ -382,7 +382,7 @@ const Register = () => {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 disabled={loading}
               >
                 {loading ? "Checking..." : "Continue"}
@@ -427,7 +427,7 @@ const Register = () => {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 disabled={loading}
               >
                 {loading ? "Verifying..." : "Verify Email"}
@@ -580,7 +580,7 @@ const Register = () => {
 
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 disabled={loading}
               >
                 {loading ? "Creating Account..." : "Create Account"}
