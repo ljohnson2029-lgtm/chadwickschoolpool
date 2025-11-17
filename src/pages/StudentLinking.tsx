@@ -34,7 +34,7 @@ export default function StudentLinking() {
       .from('student_parent_links')
       .select(`
         *,
-        parent:profiles!student_parent_links_parent_id_fkey(username, first_name, last_name)
+        parent:profiles(username, first_name, last_name)
       `)
       .eq('student_id', user.id)
       .order('created_at', { ascending: false });
@@ -59,6 +59,22 @@ export default function StudentLinking() {
 
     setLoading(true);
     try {
+      // Check if parent email is approved
+      const normalizedEmail = parentEmail.toLowerCase();
+      const { data: emailCheckData } = await supabase.functions.invoke('auth-check-email', {
+        body: { email: normalizedEmail }
+      });
+
+      if (!emailCheckData?.approved) {
+        toast({
+          title: 'Email Not Approved',
+          description: 'This parent email is not approved for the platform. They need to be added by an administrator first.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       // Find parent by email
       const { data: userData, error: userError } = await supabase
         .from('users')
