@@ -145,13 +145,9 @@ const Navigation = () => {
             ) : (
               <>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => navigate("/login")}
-                  className={`rounded-full px-6 border-2 transition-all duration-250 hover:scale-105 hover:-translate-y-0.5 ${
-                    isScrolled || !isHomePage
-                      ? "border-foreground text-foreground hover:bg-foreground hover:text-background"
-                      : "border-white text-white hover:bg-white hover:text-foreground"
-                  }`}
+                  className="rounded-full px-6 transition-all duration-250 hover:scale-105 hover:-translate-y-0.5"
                 >
                   Log In
                 </Button>
