@@ -61,7 +61,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if email already exists
+    // Check if email already exists in custom users table
     const { data: existingEmail } = await supabase
       .from('users')
       .select('email')
@@ -75,10 +75,23 @@ serve(async (req) => {
       );
     }
 
+    // Check if user exists in Supabase Auth
+    const { data: existingAuthUser } = await supabase.auth.admin.listUsers();
+    const authUserExists = existingAuthUser?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    if (authUserExists) {
+      // Clean up orphaned auth user (exists in auth but not in users table)
+      const orphanedUser = existingAuthUser.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      if (orphanedUser) {
+        await supabase.auth.admin.deleteUser(orphanedUser.id);
+        console.log(`Cleaned up orphaned auth user for ${email}`);
+      }
+    }
+
     // Hash password (using hashSync to avoid Worker issues in Edge Functions)
     const passwordHash = bcrypt.hashSync(password);
 
-    // Create Supabase Auth user first
+    // Create Supabase Auth user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: email.toLowerCase(),
       password: password,
@@ -93,8 +106,8 @@ serve(async (req) => {
     if (authError) {
       console.error('Supabase auth creation error:', authError);
       return new Response(
-        JSON.stringify({ error: 'Failed to create auth account' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Email already in use. Please try logging in instead.' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
