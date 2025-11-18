@@ -157,7 +157,12 @@ serve(async (req) => {
     const normalizedEmail = email.toLowerCase();
     let role = 'parent'; // Default role
     
-    if (normalizedEmail.endsWith('@chadwickschool.org')) {
+    // Exempt parent accounts (staff/faculty with @chadwickschool.org emails)
+    const parentExemptions = ['ljohnson2029@chadwickschool.org'];
+    
+    if (parentExemptions.includes(normalizedEmail)) {
+      role = 'parent';
+    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
       role = 'student';
     } else if (userType) {
       // If userType is provided (parent/staff), use it
