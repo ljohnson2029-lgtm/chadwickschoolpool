@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Car } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -66,12 +72,27 @@ const Navigation = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const navItems = [
+  // Define navigation item type
+  type NavItem = {
+    label: string;
+    path: string;
+    authRequired?: boolean;
+    parentOnly?: boolean;
+  };
+
+  // Main navigation items (always visible)
+  const mainNavItems: NavItem[] = [
     { label: "Home", path: "/" },
-    { label: "About", path: "/about" },
     { label: "Features", path: "/features" },
+    { label: "Dashboard", path: "/dashboard", authRequired: true },
+  ];
+
+  // Additional navigation items (in hamburger menu)
+  const moreNavItems: NavItem[] = [
+    { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "Student Approvals", path: "/parent-approvals", parentOnly: true },
   ];
 
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -99,49 +120,31 @@ const Navigation = () => {
             <span className={textColorClass}>SchoolPool</span>
           </button>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`relative text-[15px] font-medium transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-105 group`}
-              >
-                {item.label}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-full" />
-              </button>
-            ))}
-          </div>
-
-          {/* Desktop CTA Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <>
+          {/* Desktop Navigation - 5 Main Items + More Menu */}
+          <div className="hidden md:flex items-center space-x-6">
+            {/* Main Navigation Buttons */}
+            {mainNavItems.map((item) => {
+              if (item.authRequired && !user) return null;
+              return (
                 <Button
+                  key={item.path}
                   variant="ghost"
-                  size="default"
-                  onClick={() => navigate("/dashboard")}
-                  className={`transition-all duration-250 ${textColorClass} hover:bg-primary/10`}
+                  onClick={() => navigate(item.path)}
+                  className={`relative text-[15px] font-medium transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-105`}
                 >
-                  Dashboard
+                  {item.label}
                 </Button>
-                {isParent && (
-                  <Button
-                    variant="ghost"
-                    size="default"
-                    onClick={() => navigate("/parent-approvals")}
-                    className={`transition-all duration-250 ${textColorClass} hover:bg-primary/10`}
-                  >
-                    Student Approvals
-                  </Button>
-                )}
-                <Button
-                  onClick={() => navigate("/profile")}
-                  className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
-                >
-                  Profile
-                </Button>
-              </>
+              );
+            })}
+
+            {/* Profile/Login Button */}
+            {user ? (
+              <Button
+                onClick={() => navigate("/profile")}
+                className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
+              >
+                Profile
+              </Button>
             ) : (
               <>
                 <Button
@@ -159,6 +162,33 @@ const Navigation = () => {
                 </Button>
               </>
             )}
+
+            {/* More Menu (Hamburger) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`transition-all duration-200 ${textColorClass} hover:bg-primary/10`}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-background border-border z-[100]">
+                {moreNavItems.map((item) => {
+                  if (item.parentOnly && !isParent) return null;
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className="cursor-pointer"
+                    >
+                      {item.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu Button */}
@@ -179,43 +209,35 @@ const Navigation = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-foreground/95 backdrop-blur-xl border-t border-border animate-fade-in">
           <div className="px-4 py-6 space-y-1">
-            {navItems.map((item, index) => (
-              <button
-                key={item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="block w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {[...mainNavItems, ...moreNavItems].map((item, index) => {
+              if (item.authRequired && !user) return null;
+              if (item.parentOnly && !isParent) return null;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
             
             <div className="pt-4 space-y-3">
               {user ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      navigate("/dashboard");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full text-background border-background/20 hover:bg-background/10"
-                  >
-                    Dashboard
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      navigate("/profile");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full bg-gradient-to-r from-primary to-secondary text-white"
-                  >
-                    Profile
-                  </Button>
-                </>
+                <Button
+                  onClick={() => {
+                    navigate("/profile");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-primary to-secondary text-white"
+                >
+                  Profile
+                </Button>
               ) : (
                 <>
                   <Button
