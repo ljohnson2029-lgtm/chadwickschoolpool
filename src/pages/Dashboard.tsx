@@ -12,6 +12,8 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -19,13 +21,32 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setUserRole(data?.role || null);
+      setRoleLoading(false);
+    };
+
+    fetchUserRole();
+  }, [user]);
+
   const handleRideCreated = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  if (loading || !user) {
+  if (loading || roleLoading || !user) {
     return <div>Loading...</div>;
   }
+
+  const isStudent = userRole === 'student';
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,25 +54,34 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Carpool Dashboard</h1>
 
-        <Tabs defaultValue="browse" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="browse">Browse Rides</TabsTrigger>
-            <TabsTrigger value="request">Request a Ride</TabsTrigger>
-            <TabsTrigger value="offer">Offer a Ride</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="browse">
+        {isStudent ? (
+          <div className="space-y-6">
+            <p className="text-muted-foreground">
+              Students cannot create ride requests or offers. Please have your parent manage rides on your behalf.
+            </p>
             <RidesList key={refreshKey} />
-          </TabsContent>
+          </div>
+        ) : (
+          <Tabs defaultValue="browse" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="browse">Browse Rides</TabsTrigger>
+              <TabsTrigger value="request">Request a Ride</TabsTrigger>
+              <TabsTrigger value="offer">Offer a Ride</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="request">
-            <RideRequestForm onSuccess={handleRideCreated} />
-          </TabsContent>
+            <TabsContent value="browse">
+              <RidesList key={refreshKey} />
+            </TabsContent>
 
-          <TabsContent value="offer">
-            <RideOfferForm onSuccess={handleRideCreated} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="request">
+              <RideRequestForm onSuccess={handleRideCreated} />
+            </TabsContent>
+
+            <TabsContent value="offer">
+              <RideOfferForm onSuccess={handleRideCreated} />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );

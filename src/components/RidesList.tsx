@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,19 +27,62 @@ import { MapPin, Calendar, Clock, Users } from "lucide-react";
   }
 
 const RidesList = () => {
+  const { user } = useAuth();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRides();
-  }, []);
+    const fetchUserRole = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setUserRole(data?.role || null);
+    };
+
+    fetchUserRole();
+  }, [user]);
+
+  useEffect(() => {
+    if (userRole !== null) {
+      fetchRides();
+    }
+  }, [userRole]);
 
   const fetchRides = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      let rideUserIds: string[] = [];
+
+      // If parent, get rides from linked students
+      if (userRole === 'parent' && user) {
+        const { data: links } = await supabase
+          .from('student_parent_links')
+          .select('student_id')
+          .eq('parent_id', user.id)
+          .eq('status', 'approved');
+
+        if (links && links.length > 0) {
+          rideUserIds = links.map(link => link.student_id);
+        }
+      }
+
+      // Build the query
+      let query = supabase
         .from("rides")
         .select("*")
-        .eq("status", "active")
+        .eq("status", "active");
+
+      // If parent with linked students, filter by those student IDs
+      if (userRole === 'parent' && rideUserIds.length > 0) {
+        query = query.in('user_id', rideUserIds);
+      }
+
+      const { data, error } = await query
         .order("ride_date", { ascending: true })
         .order("ride_time", { ascending: true });
 
