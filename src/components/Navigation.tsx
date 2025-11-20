@@ -92,6 +92,7 @@ const Navigation = () => {
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "Linked Accounts", path: "/linked-accounts", authRequired: true },
     { label: "Student Approvals", path: "/parent-approvals", parentOnly: true },
   ];
 
