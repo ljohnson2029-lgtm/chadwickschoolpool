@@ -19,6 +19,7 @@ import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
 import NotFound from "./pages/NotFound";
 import StudentLinking from "./pages/StudentLinking";
 import ParentApprovals from "./pages/ParentApprovals";
+import LinkedAccounts from "./pages/LinkedAccounts";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
             <Route path="/student-linking" element={<StudentLinking />} />
             <Route path="/parent-approvals" element={<ParentApprovals />} />
+            <Route path="/linked-accounts" element={<LinkedAccounts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
