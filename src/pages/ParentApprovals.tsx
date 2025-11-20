@@ -28,25 +28,50 @@ export default function ParentApprovals() {
     if (!user) return;
     
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // First get the link requests with student profile info
+    const { data: links, error: linksError } = await supabase
       .from('student_parent_links')
       .select(`
         *,
-        student:profiles!student_parent_links_student_id_fkey(username, first_name, last_name)
+        student:profiles!student_parent_links_student_id_fkey(id, username, first_name, last_name)
       `)
       .eq('parent_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching link requests:', error);
+    if (linksError) {
+      console.error('Error fetching link requests:', linksError);
       toast({
         title: 'Error',
         description: 'Failed to load student requests',
         variant: 'destructive',
       });
-    } else {
-      setLinkRequests(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Now fetch email addresses for each student from users table
+    if (links && links.length > 0) {
+      const studentIds = links.map(link => link.student?.id).filter(Boolean);
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('user_id, email')
+        .in('user_id', studentIds);
+
+      // Merge email data into link requests
+      const enrichedLinks = links.map(link => ({
+        ...link,
+        student: {
+          ...link.student,
+          email: usersData?.find(u => u.user_id === link.student?.id)?.email || 'N/A'
+        }
+      }));
+      
+      setLinkRequests(enrichedLinks);
+    } else {
+      setLinkRequests(links || []);
+    }
+    
     setLoading(false);
   };
 
@@ -116,6 +141,9 @@ export default function ParentApprovals() {
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           @{link.student?.username}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {link.student?.email}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
                           Requested {new Date(link.created_at).toLocaleDateString()}
