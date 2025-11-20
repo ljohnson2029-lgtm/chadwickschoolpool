@@ -75,35 +75,25 @@ export default function StudentLinking() {
         return;
       }
 
-      // Find parent by email
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('user_id')
-        .ilike('email', parentEmail.trim())
-        .maybeSingle();
+      // Look up parent using secure backend function
+      const { data: lookupData, error: lookupError } = await supabase.functions.invoke('lookup-parent', {
+        body: { email: parentEmail.trim() }
+      });
 
-      if (userError || !userData) {
+      if (lookupError) {
         toast({
-          title: 'Parent Not Found',
-          description: 'No account found with this email. Please ask your parent to register first.',
+          title: 'Error',
+          description: 'Failed to lookup parent account. Please try again.',
           variant: 'destructive',
         });
         setLoading(false);
         return;
       }
 
-      // Check if parent has the parent role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userData.user_id)
-        .eq('role', 'parent')
-        .maybeSingle();
-
-      if (roleError || !roleData) {
+      if (!lookupData?.found) {
         toast({
-          title: 'Invalid Parent Account',
-          description: 'This account is not registered as a parent.',
+          title: 'Parent Not Found',
+          description: lookupData?.message || 'No account found with this email. Please ask your parent to register first.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -115,7 +105,7 @@ export default function StudentLinking() {
         .from('student_parent_links')
         .insert({
           student_id: user?.id,
-          parent_id: userData.user_id,
+          parent_id: lookupData.user_id,
           status: 'pending',
         });
 
