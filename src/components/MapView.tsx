@@ -276,9 +276,9 @@ const MapView: React.FC<MapViewProps> = ({
             'line-cap': 'round'
           },
           paint: {
-            'line-color': 'hsl(var(--primary))',
-            'line-width': 4,
-            'line-opacity': 0.75
+            'line-color': '#3b82f6', // Blue color for the route
+            'line-width': 5,
+            'line-opacity': 0.8
           }
         });
       });
