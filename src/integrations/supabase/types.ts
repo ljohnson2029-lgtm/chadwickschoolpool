@@ -152,6 +152,48 @@ export type Database = {
         }
         Relationships: []
       }
+      schools: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          school_type: string | null
+          state: string
+          updated_at: string
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          school_type?: string | null
+          state: string
+          updated_at?: string
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          school_type?: string | null
+          state?: string
+          updated_at?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       student_parent_links: {
         Row: {
           approved_at: string | null
