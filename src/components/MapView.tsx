@@ -35,6 +35,7 @@ const MapView: React.FC<MapViewProps> = ({
   const [schools, setSchools] = useState<School[]>([]);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'hybrid'>('streets');
+  const [terrainEnabled, setTerrainEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     // Fetch Mapbox token from edge function
@@ -114,9 +115,49 @@ const MapView: React.FC<MapViewProps> = ({
       'top-right'
     );
 
-    // Enable 3D buildings layer
+    // Enable 3D terrain and buildings
     map.current.on('load', () => {
       if (!map.current) return;
+
+      // Add terrain source (3D elevation data)
+      map.current.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14
+      });
+
+      // Set terrain on the map
+      if (terrainEnabled) {
+        map.current.setTerrain({ 
+          source: 'mapbox-dem', 
+          exaggeration: 1.5 // Makes hills more visible
+        });
+      }
+
+      // Add sky layer for realistic atmosphere
+      map.current.addLayer({
+        id: 'sky',
+        type: 'sky',
+        paint: {
+          'sky-type': 'atmosphere',
+          'sky-atmosphere-sun': [0.0, 0.0],
+          'sky-atmosphere-sun-intensity': 15
+        }
+      });
+
+      // Add hillshade layer to visualize terrain relief
+      map.current.addLayer({
+        id: 'hillshade',
+        type: 'hillshade',
+        source: 'mapbox-dem',
+        layout: { visibility: terrainEnabled ? 'visible' : 'none' },
+        paint: {
+          'hillshade-shadow-color': '#473B24',
+          'hillshade-illumination-direction': 315,
+          'hillshade-exaggeration': 0.8
+        }
+      }, 'waterway-label');
 
       // Add 3D building layer
       const layers = map.current.getStyle().layers;
@@ -244,10 +285,32 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       map.current?.remove();
     };
-  }, [userLocation, pickupLocation, dropoffLocation, routeGeometry, mapboxToken, mapStyle, initialZoom]);
+  }, [userLocation, pickupLocation, dropoffLocation, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
 
   const changeMapStyle = (newStyle: 'streets' | 'satellite' | 'hybrid') => {
     setMapStyle(newStyle);
+  };
+
+  const toggleTerrain = () => {
+    if (!map.current) return;
+    
+    const newTerrainState = !terrainEnabled;
+    setTerrainEnabled(newTerrainState);
+    
+    if (newTerrainState) {
+      map.current.setTerrain({ 
+        source: 'mapbox-dem', 
+        exaggeration: 1.5 
+      });
+      if (map.current.getLayer('hillshade')) {
+        map.current.setLayoutProperty('hillshade', 'visibility', 'visible');
+      }
+    } else {
+      map.current.setTerrain(null);
+      if (map.current.getLayer('hillshade')) {
+        map.current.setLayoutProperty('hillshade', 'visibility', 'none');
+      }
+    }
   };
 
   if (!mapboxToken) {
@@ -271,35 +334,47 @@ const MapView: React.FC<MapViewProps> = ({
       {/* Map style controls */}
       {showStyleControls && (
         <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2 space-y-1 z-10">
+          <div className="space-y-1 pb-2 border-b border-border">
+            <button
+              onClick={() => changeMapStyle('streets')}
+              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                mapStyle === 'streets'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Streets
+            </button>
+            <button
+              onClick={() => changeMapStyle('satellite')}
+              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                mapStyle === 'satellite'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => changeMapStyle('hybrid')}
+              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                mapStyle === 'hybrid'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Hybrid
+            </button>
+          </div>
           <button
-            onClick={() => changeMapStyle('streets')}
+            onClick={toggleTerrain}
             className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-              mapStyle === 'streets'
+              terrainEnabled
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted'
             }`}
           >
-            Streets
-          </button>
-          <button
-            onClick={() => changeMapStyle('satellite')}
-            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-              mapStyle === 'satellite'
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            Satellite
-          </button>
-          <button
-            onClick={() => changeMapStyle('hybrid')}
-            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-              mapStyle === 'hybrid'
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
-          >
-            Hybrid
+            {terrainEnabled ? '3D Terrain ✓' : '3D Terrain'}
           </button>
         </div>
       )}
