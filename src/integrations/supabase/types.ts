@@ -155,27 +155,33 @@ export type Database = {
       student_parent_links: {
         Row: {
           approved_at: string | null
+          code_expires_at: string | null
           created_at: string | null
           id: string
           parent_id: string
           status: string
           student_id: string
+          verification_code: string | null
         }
         Insert: {
           approved_at?: string | null
+          code_expires_at?: string | null
           created_at?: string | null
           id?: string
           parent_id: string
           status?: string
           student_id: string
+          verification_code?: string | null
         }
         Update: {
           approved_at?: string | null
+          code_expires_at?: string | null
           created_at?: string | null
           id?: string
           parent_id?: string
           status?: string
           student_id?: string
+          verification_code?: string | null
         }
         Relationships: [
           {

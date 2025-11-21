@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Menu, X, Car } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isParent, setIsParent] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,6 +34,7 @@ const Navigation = () => {
     const checkUserRole = async () => {
       if (!user) {
         setIsParent(false);
+        setUserRole(null);
         return;
       }
       
@@ -39,10 +42,12 @@ const Navigation = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .eq('role', 'parent')
         .maybeSingle();
       
-      setIsParent(!!data);
+      if (data) {
+        setUserRole(data.role);
+        setIsParent(data.role === 'parent');
+      }
     };
     
     checkUserRole();
@@ -140,12 +145,26 @@ const Navigation = () => {
 
             {/* Profile/Login Button */}
             {user ? (
-              <Button
-                onClick={() => navigate("/profile")}
-                className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
-              >
-                Profile
-              </Button>
+              <div className="flex items-center gap-3">
+                {userRole && (
+                  <Badge 
+                    variant={userRole === 'student' ? 'secondary' : 'default'}
+                    className={`hidden sm:flex ${
+                      userRole === 'student' 
+                        ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' 
+                        : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+                    }`}
+                  >
+                    {userRole === 'student' ? 'Student - View Only' : 'Parent Account'}
+                  </Badge>
+                )}
+                <Button
+                  onClick={() => navigate("/profile")}
+                  className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
+                >
+                  Profile
+                </Button>
+              </div>
             ) : (
               <>
                 <Button

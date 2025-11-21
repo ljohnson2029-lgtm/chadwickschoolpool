@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import Navigation from '@/components/Navigation';
@@ -15,6 +17,7 @@ export default function ParentApprovals() {
   const [linkRequests, setLinkRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [verificationCodes, setVerificationCodes] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (!user) {
@@ -76,6 +79,42 @@ export default function ParentApprovals() {
   };
 
   const handleApproval = async (linkId: string, approve: boolean) => {
+    if (approve) {
+      // Check if code is provided for approval
+      const enteredCode = verificationCodes[linkId]?.trim();
+      const linkRequest = linkRequests.find(req => req.id === linkId);
+      
+      if (!enteredCode) {
+        toast({
+          title: 'Code Required',
+          description: 'Please enter the verification code from your email',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Verify code matches
+      if (enteredCode !== linkRequest.verification_code) {
+        toast({
+          title: 'Invalid Code',
+          description: 'The verification code you entered is incorrect',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check if code is expired
+      const expiresAt = new Date(linkRequest.code_expires_at);
+      if (expiresAt < new Date()) {
+        toast({
+          title: 'Code Expired',
+          description: 'This verification code has expired. Please ask the student to send a new request.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setProcessingId(linkId);
     try {
       const { error } = await supabase
@@ -91,9 +130,18 @@ export default function ParentApprovals() {
       toast({
         title: approve ? 'Student Approved' : 'Request Rejected',
         description: approve 
-          ? 'The student can now access the platform' 
+          ? 'The student can now access the platform and view rides you schedule for them' 
           : 'The link request has been rejected',
       });
+
+      // Clear the code input
+      if (approve) {
+        setVerificationCodes(prev => {
+          const newCodes = { ...prev };
+          delete newCodes[linkId];
+          return newCodes;
+        });
+      }
 
       fetchLinkRequests();
     } catch (error: any) {
@@ -162,28 +210,51 @@ export default function ParentApprovals() {
                       </div>
                       
                       {link.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => handleApproval(link.id, false)}
-                            disabled={processingId === link.id}
-                          >
-                            {processingId === link.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Reject'
-                            )}
-                          </Button>
-                          <Button
-                            onClick={() => handleApproval(link.id, true)}
-                            disabled={processingId === link.id}
-                          >
-                            {processingId === link.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Approve'
-                            )}
-                          </Button>
+                        <div className="ml-4 min-w-[300px]">
+                          <div className="space-y-3">
+                            <div>
+                              <Label htmlFor={`code-${link.id}`}>Verification Code</Label>
+                              <Input
+                                id={`code-${link.id}`}
+                                placeholder="Enter 6-digit code"
+                                maxLength={6}
+                                value={verificationCodes[link.id] || ''}
+                                onChange={(e) => setVerificationCodes(prev => ({
+                                  ...prev,
+                                  [link.id]: e.target.value.replace(/\D/g, '')
+                                }))}
+                                className="font-mono text-center text-lg tracking-widest"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Enter the code from your email
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleApproval(link.id, false)}
+                                disabled={processingId === link.id}
+                                className="flex-1"
+                              >
+                                {processingId === link.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Reject'
+                                )}
+                              </Button>
+                              <Button
+                                onClick={() => handleApproval(link.id, true)}
+                                disabled={processingId === link.id}
+                                className="flex-1"
+                              >
+                                {processingId === link.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  'Approve'
+                                )}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
