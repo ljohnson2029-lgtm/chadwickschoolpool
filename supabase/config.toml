@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.send-email]
 verify_jwt = false
 
+[functions.send-link-verification]
+verify_jwt = false
+
 [functions.auth-login]
 verify_jwt = false
 

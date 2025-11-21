@@ -100,13 +100,31 @@ export default function StudentLinking() {
         return;
       }
 
-      // Create link request
+      // Generate 6-digit verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+      // Get student profile info for email
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user?.id)
+        .maybeSingle();
+
+      const studentName = profileData 
+        ? `${profileData.first_name} ${profileData.last_name}`
+        : 'Your child';
+
+      // Create link request with verification code
       const { error: linkError } = await supabase
         .from('student_parent_links')
         .insert({
           student_id: user?.id,
           parent_id: lookupData.user_id,
           status: 'pending',
+          verification_code: verificationCode,
+          code_expires_at: expiresAt.toISOString(),
         });
 
       if (linkError) {
@@ -119,14 +137,30 @@ export default function StudentLinking() {
         } else {
           throw linkError;
         }
-      } else {
-        toast({
-          title: 'Request Sent',
-          description: 'Your parent will receive a notification to approve your account.',
-        });
-        setParentEmail('');
-        fetchLinkRequests();
+        setLoading(false);
+        return;
       }
+
+      // Send verification email to parent
+      const { error: emailError } = await supabase.functions.invoke('send-link-verification', {
+        body: {
+          parentEmail: normalizedEmail,
+          studentName,
+          code: verificationCode,
+        }
+      });
+
+      if (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail the whole process if email fails
+      }
+
+      toast({
+        title: 'Request Sent!',
+        description: `We've sent a verification code to ${normalizedEmail}. Your parent needs to enter it to approve the connection.`,
+      });
+      setParentEmail('');
+      fetchLinkRequests();
     } catch (error: any) {
       console.error('Error requesting parent link:', error);
       toast({
