@@ -36,6 +36,7 @@ const MapView: React.FC<MapViewProps> = ({
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'hybrid'>('streets');
   const [terrainEnabled, setTerrainEnabled] = useState<boolean>(true);
+  const [controlsExpanded, setControlsExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     // Fetch Mapbox token from edge function
@@ -333,49 +334,78 @@ const MapView: React.FC<MapViewProps> = ({
       
       {/* Map style controls */}
       {showStyleControls && (
-        <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2 space-y-1 z-10">
-          <div className="space-y-1 pb-2 border-b border-border">
-            <button
-              onClick={() => changeMapStyle('streets')}
-              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-                mapStyle === 'streets'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted'
-              }`}
-            >
-              Streets
-            </button>
-            <button
-              onClick={() => changeMapStyle('satellite')}
-              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-                mapStyle === 'satellite'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted'
-              }`}
-            >
-              Satellite
-            </button>
-            <button
-              onClick={() => changeMapStyle('hybrid')}
-              className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-                mapStyle === 'hybrid'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted'
-              }`}
-            >
-              Hybrid
-            </button>
-          </div>
+        <div className="absolute top-4 left-4 z-10">
+          {/* Toggle button - always visible */}
           <button
-            onClick={toggleTerrain}
-            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-              terrainEnabled
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted'
-            }`}
+            onClick={() => setControlsExpanded(!controlsExpanded)}
+            className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2 hover:bg-muted transition-colors mb-2"
+            aria-label="Toggle map controls"
           >
-            {terrainEnabled ? '3D Terrain ✓' : '3D Terrain'}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform ${controlsExpanded ? 'rotate-180' : ''}`}
+            >
+              <path d="M3 12h18" />
+              <path d="M3 6h18" />
+              <path d="M3 18h18" />
+            </svg>
           </button>
+
+          {/* Collapsible controls panel */}
+          {controlsExpanded && (
+            <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2 space-y-1 animate-in slide-in-from-left-2">
+              <div className="space-y-1 pb-2 border-b border-border">
+                <button
+                  onClick={() => changeMapStyle('streets')}
+                  className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                    mapStyle === 'streets'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  Streets
+                </button>
+                <button
+                  onClick={() => changeMapStyle('satellite')}
+                  className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                    mapStyle === 'satellite'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  Satellite
+                </button>
+                <button
+                  onClick={() => changeMapStyle('hybrid')}
+                  className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                    mapStyle === 'hybrid'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted'
+                  }`}
+                >
+                  Hybrid
+                </button>
+              </div>
+              <button
+                onClick={toggleTerrain}
+                className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+                  terrainEnabled
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
+                }`}
+              >
+                {terrainEnabled ? '3D Terrain ✓' : '3D Terrain'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
