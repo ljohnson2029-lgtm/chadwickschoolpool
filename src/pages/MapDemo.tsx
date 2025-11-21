@@ -22,11 +22,30 @@ const MapDemo: React.FC = () => {
 
   const handleCalculateRoute = async () => {
     if (pickupLocation && dropoffLocation) {
-      await calculateRoute(
+      const route = await calculateRoute(
         { latitude: pickupLocation.latitude, longitude: pickupLocation.longitude },
         { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude }
       );
+      
+      // Log route info for debugging
+      if (route) {
+        console.log('Route calculated:', {
+          distance: formatDistance(route.distance),
+          duration: formatDuration(route.duration),
+          hasGeometry: !!route.geometry
+        });
+      }
     }
+  };
+
+  // Quick test route to Chadwick School
+  const setRouteToChadwick = () => {
+    setPickupAddress('26800 Academy Drive, Palos Verdes Peninsula, CA');
+    setPickupLocation({
+      latitude: 33.77667,
+      longitude: -118.36111,
+      address: '26800 Academy Drive, Palos Verdes Peninsula, CA'
+    });
   };
 
   return (
@@ -64,6 +83,11 @@ const MapDemo: React.FC = () => {
                   }}
                   placeholder="Enter pickup address"
                 />
+                {pickupLocation && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📍 {pickupLocation.address}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -79,6 +103,24 @@ const MapDemo: React.FC = () => {
                   }}
                   placeholder="Enter dropoff address"
                 />
+                {dropoffLocation && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📍 {dropoffLocation.address}
+                  </p>
+                )}
+              </div>
+
+              {/* Quick actions */}
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-2">Quick Actions:</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={setRouteToChadwick}
+                  className="w-full text-xs"
+                >
+                  Set Chadwick as Pickup
+                </Button>
               </div>
 
               <Button
@@ -92,19 +134,33 @@ const MapDemo: React.FC = () => {
 
               {routeInfo && (
                 <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <h3 className="font-semibold">Route Information</h3>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Route Information
+                  </h3>
                   <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Distance:</span>{' '}
-                      {formatDistance(routeInfo.distance)}
+                    <p className="flex justify-between">
+                      <span className="text-muted-foreground">Distance:</span>
+                      <span className="font-medium">{formatDistance(routeInfo.distance)}</span>
                     </p>
-                    <p>
-                      <span className="font-medium">Duration:</span>{' '}
-                      {formatDuration(routeInfo.duration)}
+                    <p className="flex justify-between">
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="font-medium">{formatDuration(routeInfo.duration)}</span>
                     </p>
                   </div>
                 </div>
               )}
+
+              {/* Instructions */}
+              <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
+                <p className="font-medium">How to use:</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>Enter pickup address and click 📍</li>
+                  <li>Enter dropoff address and click 📍</li>
+                  <li>Click "Calculate Route"</li>
+                  <li>View route on map with distance/time</li>
+                </ol>
+              </div>
             </CardContent>
           </Card>
 
