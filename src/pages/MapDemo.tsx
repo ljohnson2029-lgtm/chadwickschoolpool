@@ -35,7 +35,7 @@ const MapDemo: React.FC = () => {
         <div>
           <h1 className="text-4xl font-bold mb-2">Map & Route Planning</h1>
           <p className="text-muted-foreground">
-            Find schools, plan routes, and calculate distances for your carpools
+            Full visual map with roads, buildings, houses, and terrain for the entire South Bay area
           </p>
         </div>
 
@@ -112,7 +112,7 @@ const MapDemo: React.FC = () => {
             <CardHeader>
               <CardTitle>Interactive Map</CardTitle>
               <CardDescription>
-                View schools (orange), pickup (green), and dropoff (red) locations
+                Real map with all roads, buildings & houses. Switch between Streets, Satellite & Hybrid views. Schools (orange), pickup (green), dropoff (red)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -126,7 +126,9 @@ const MapDemo: React.FC = () => {
                   longitude: dropoffLocation.longitude
                 } : undefined}
                 routeGeometry={routeInfo?.geometry}
-                height="500px"
+                height="600px"
+                showStyleControls={true}
+                initialZoom={14}
               />
             </CardContent>
           </Card>
