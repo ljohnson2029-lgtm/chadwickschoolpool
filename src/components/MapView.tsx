@@ -17,6 +17,8 @@ interface MapViewProps {
   dropoffLocation?: { latitude: number; longitude: number };
   routeGeometry?: any;
   height?: string;
+  showStyleControls?: boolean;
+  initialZoom?: number;
 }
 
 const MapView: React.FC<MapViewProps> = ({ 
@@ -24,12 +26,15 @@ const MapView: React.FC<MapViewProps> = ({
   pickupLocation, 
   dropoffLocation,
   routeGeometry,
-  height = '400px' 
+  height = '400px',
+  showStyleControls = true,
+  initialZoom = 13
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
   const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'hybrid'>('streets');
 
   useEffect(() => {
     // Fetch Mapbox token from edge function
@@ -63,15 +68,96 @@ const MapView: React.FC<MapViewProps> = ({
       return [-118.3964, 33.7447] as [number, number];
     };
 
+    // Get the correct map style based on current selection
+    const getMapStyle = () => {
+      switch (mapStyle) {
+        case 'satellite':
+          return 'mapbox://styles/mapbox/satellite-streets-v12';
+        case 'hybrid':
+          return 'mapbox://styles/mapbox/satellite-streets-v12';
+        case 'streets':
+        default:
+          return 'mapbox://styles/mapbox/streets-v12';
+      }
+    };
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: getMapStyle(),
       center: getCenterPoint(),
-      zoom: 12
+      zoom: initialZoom,
+      pitch: 45, // Tilt the map for 3D effect
+      bearing: 0,
+      antialias: true // Enable smoother rendering
     });
 
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    // Add navigation controls (zoom, rotation, pitch)
+    map.current.addControl(new mapboxgl.NavigationControl({
+      visualizePitch: true
+    }), 'top-right');
+
+    // Add scale control
+    map.current.addControl(new mapboxgl.ScaleControl({
+      maxWidth: 100,
+      unit: 'imperial'
+    }), 'bottom-left');
+
+    // Add geolocate control (find my location)
+    map.current.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true
+        },
+        trackUserLocation: true,
+        showUserHeading: true
+      }),
+      'top-right'
+    );
+
+    // Enable 3D buildings layer
+    map.current.on('load', () => {
+      if (!map.current) return;
+
+      // Add 3D building layer
+      const layers = map.current.getStyle().layers;
+      const labelLayerId = layers?.find(
+        (layer) => layer.type === 'symbol' && layer.layout && layer.layout['text-field']
+      )?.id;
+
+      map.current.addLayer(
+        {
+          id: '3d-buildings',
+          source: 'composite',
+          'source-layer': 'building',
+          filter: ['==', 'extrude', 'true'],
+          type: 'fill-extrusion',
+          minzoom: 15,
+          paint: {
+            'fill-extrusion-color': '#aaa',
+            'fill-extrusion-height': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'height']
+            ],
+            'fill-extrusion-base': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'min_height']
+            ],
+            'fill-extrusion-opacity': 0.6
+          }
+        },
+        labelLayerId
+      );
+    });
 
     // Fetch schools
     const fetchSchools = async () => {
@@ -158,7 +244,11 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       map.current?.remove();
     };
-  }, [userLocation, pickupLocation, dropoffLocation, routeGeometry, mapboxToken]);
+  }, [userLocation, pickupLocation, dropoffLocation, routeGeometry, mapboxToken, mapStyle, initialZoom]);
+
+  const changeMapStyle = (newStyle: 'streets' | 'satellite' | 'hybrid') => {
+    setMapStyle(newStyle);
+  };
 
   if (!mapboxToken) {
     return (
@@ -172,11 +262,48 @@ const MapView: React.FC<MapViewProps> = ({
   }
 
   return (
-    <div 
-      ref={mapContainer} 
-      className="w-full rounded-lg overflow-hidden border border-border" 
-      style={{ height }}
-    />
+    <div className="relative w-full" style={{ height }}>
+      <div 
+        ref={mapContainer} 
+        className="w-full h-full rounded-lg overflow-hidden border border-border"
+      />
+      
+      {/* Map style controls */}
+      {showStyleControls && (
+        <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2 space-y-1 z-10">
+          <button
+            onClick={() => changeMapStyle('streets')}
+            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+              mapStyle === 'streets'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            Streets
+          </button>
+          <button
+            onClick={() => changeMapStyle('satellite')}
+            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+              mapStyle === 'satellite'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            Satellite
+          </button>
+          <button
+            onClick={() => changeMapStyle('hybrid')}
+            className={`w-full px-3 py-2 text-sm rounded transition-colors ${
+              mapStyle === 'hybrid'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+            }`}
+          >
+            Hybrid
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
