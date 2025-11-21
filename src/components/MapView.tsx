@@ -214,17 +214,19 @@ const MapView: React.FC<MapViewProps> = ({
 
       const schoolData = data || [];
       
-      // Add school markers
-      schoolData.forEach((school) => {
+      // Only add marker for Chadwick School
+      const chadwickSchool = schoolData.find(school => school.name === 'Chadwick School');
+      
+      if (chadwickSchool) {
         new mapboxgl.Marker({ color: '#f59e0b' })
-          .setLngLat([school.longitude, school.latitude])
+          .setLngLat([chadwickSchool.longitude, chadwickSchool.latitude])
           .setPopup(
             new mapboxgl.Popup().setHTML(
-              `<div><strong>${school.name}</strong><br/>${school.address}</div>`
+              `<div><strong>${chadwickSchool.name}</strong><br/>${chadwickSchool.address}</div>`
             )
           )
           .addTo(map.current!);
-      });
+      }
 
       setSchools(schoolData);
     };
