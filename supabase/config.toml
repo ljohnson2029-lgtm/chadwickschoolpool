@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.auth-check-username]
 verify_jwt = false
+
+[functions.geocode-address]
+verify_jwt = false
+
+[functions.calculate-route]
+verify_jwt = false
+
+[functions.get-mapbox-token]
+verify_jwt = false
