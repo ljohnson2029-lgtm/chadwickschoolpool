@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Menu, X, Car } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationDropdown } from "./NotificationDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,6 +208,7 @@ const Navigation = () => {
                     {userRole === 'student' ? 'Student - View Only' : 'Parent Account'}
                   </Badge>
                 )}
+                <NotificationDropdown />
                 <Button
                   onClick={() => navigate("/profile")}
                   className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"

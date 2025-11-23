@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, X, Unlink, Users } from "lucide-react";
+import { createNotification, NotificationMessages } from "@/lib/notifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -171,15 +172,26 @@ export default function StudentLinking() {
       }
 
       // Create link request
-      const { error: insertError } = await supabase
+      const { data: newLink, error: insertError } = await supabase
         .from('account_links')
         .insert({
           student_id: user?.id,
           parent_id: parentId,
           status: 'pending',
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Create notification for parent
+      const studentName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'A student';
+      await createNotification(
+        parentId,
+        'link_request',
+        NotificationMessages.linkRequest(studentName, user?.email || ''),
+        newLink.id
+      );
 
       toast({
         title: "Request Sent!",
@@ -202,12 +214,29 @@ export default function StudentLinking() {
 
   const handleCancelRequest = async (linkId: string) => {
     try {
+      // Get link details before deleting
+      const { data: linkData } = await supabase
+        .from('account_links')
+        .select('parent_id')
+        .eq('id', linkId)
+        .single();
+
       const { error } = await supabase
         .from('account_links')
         .delete()
         .eq('id', linkId);
 
       if (error) throw error;
+
+      // Notify parent that request was cancelled
+      if (linkData?.parent_id) {
+        const studentName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'A student';
+        await createNotification(
+          linkData.parent_id,
+          'student_unlinked',
+          NotificationMessages.studentUnlinked(studentName)
+        );
+      }
 
       toast({
         title: "Request Cancelled",
@@ -229,12 +258,29 @@ export default function StudentLinking() {
     if (!unlinkingId) return;
 
     try {
+      // Get link details before deleting
+      const { data: linkData } = await supabase
+        .from('account_links')
+        .select('parent_id')
+        .eq('id', unlinkingId)
+        .single();
+
       const { error } = await supabase
         .from('account_links')
         .delete()
         .eq('id', unlinkingId);
 
       if (error) throw error;
+
+      // Notify parent that student unlinked
+      if (linkData?.parent_id) {
+        const studentName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'A student';
+        await createNotification(
+          linkData.parent_id,
+          'student_unlinked',
+          NotificationMessages.studentUnlinked(studentName)
+        );
+      }
 
       toast({
         title: "Unlinked",
