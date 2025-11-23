@@ -83,30 +83,39 @@ export default function ParentApprovals() {
     try {
       const { data: links, error } = await supabase
         .from('account_links')
-        .select(`
-          id,
-          student_id,
-          status,
-          created_at,
-          users!account_links_student_id_fkey (
-            email,
-            first_name,
-            last_name
-          )
-        `)
+        .select('id, student_id, status, created_at')
         .eq('parent_id', user?.id);
 
       if (error) throw error;
 
-      const formattedLinks = links?.map((link: any) => ({
-        id: link.id,
-        student_id: link.student_id,
-        student_email: link.users.email,
-        student_first_name: link.users.first_name,
-        student_last_name: link.users.last_name,
-        status: link.status,
-        created_at: link.created_at,
-      })) || [];
+      // Fetch student details separately
+      const studentIds = links?.map(link => link.student_id).filter(Boolean) || [];
+      let studentDetails: any = {};
+      
+      if (studentIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('user_id, email, first_name, last_name')
+          .in('user_id', studentIds);
+        
+        studentDetails = (usersData || []).reduce((acc: any, user: any) => {
+          acc[user.user_id] = user;
+          return acc;
+        }, {});
+      }
+
+      const formattedLinks = links?.map((link: any) => {
+        const student = studentDetails[link.student_id];
+        return {
+          id: link.id,
+          student_id: link.student_id,
+          student_email: student?.email || 'Unknown',
+          student_first_name: student?.first_name || '',
+          student_last_name: student?.last_name || '',
+          status: link.status,
+          created_at: link.created_at,
+        };
+      }) || [];
 
       setPendingRequests(formattedLinks.filter((l: LinkedStudent) => l.status === 'pending'));
       setLinkedStudents(formattedLinks.filter((l: LinkedStudent) => l.status === 'approved'));

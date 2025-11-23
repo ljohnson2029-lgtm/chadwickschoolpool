@@ -60,30 +60,39 @@ export default function StudentLinking() {
     try {
       const { data: links, error } = await supabase
         .from('account_links')
-        .select(`
-          id,
-          parent_id,
-          status,
-          created_at,
-          users!account_links_parent_id_fkey (
-            email,
-            first_name,
-            last_name
-          )
-        `)
+        .select('id, parent_id, status, created_at')
         .eq('student_id', user?.id);
 
       if (error) throw error;
 
-      const formattedLinks = links?.map((link: any) => ({
-        id: link.id,
-        parent_id: link.parent_id,
-        parent_email: link.users.email,
-        parent_first_name: link.users.first_name,
-        parent_last_name: link.users.last_name,
-        status: link.status,
-        created_at: link.created_at,
-      })) || [];
+      // Fetch parent details separately
+      const parentIds = links?.map(link => link.parent_id).filter(Boolean) || [];
+      let parentDetails: any = {};
+      
+      if (parentIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('user_id, email, first_name, last_name')
+          .in('user_id', parentIds);
+        
+        parentDetails = (usersData || []).reduce((acc: any, user: any) => {
+          acc[user.user_id] = user;
+          return acc;
+        }, {});
+      }
+
+      const formattedLinks = links?.map((link: any) => {
+        const parent = parentDetails[link.parent_id];
+        return {
+          id: link.id,
+          parent_id: link.parent_id,
+          parent_email: parent?.email || 'Unknown',
+          parent_first_name: parent?.first_name || '',
+          parent_last_name: parent?.last_name || '',
+          status: link.status,
+          created_at: link.created_at,
+        };
+      }) || [];
 
       setPendingRequests(formattedLinks.filter((l: LinkedParent) => l.status === 'pending'));
       setLinkedParents(formattedLinks.filter((l: LinkedParent) => l.status === 'approved'));
@@ -126,7 +135,7 @@ export default function StudentLinking() {
     try {
       // Check if parent exists using edge function
       const { data: parentData, error: lookupError } = await supabase.functions.invoke('lookup-parent', {
-        body: { parentEmail: parentEmail.toLowerCase() },
+        body: { email: parentEmail.toLowerCase() },
       });
 
       if (lookupError) throw lookupError;
