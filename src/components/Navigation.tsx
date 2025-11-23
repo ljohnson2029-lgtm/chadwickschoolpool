@@ -132,7 +132,7 @@ const Navigation = () => {
   const mainNavItems: NavItem[] = [
     { label: "Home", path: "/" },
     { label: "Features", path: "/features" },
-    { label: "Dashboard", path: "/dashboard", authRequired: true },
+    { label: userRole === 'student' ? "Family Carpools" : "Dashboard", path: "/dashboard", authRequired: true },
   ];
 
   // Additional navigation items (in hamburger menu)

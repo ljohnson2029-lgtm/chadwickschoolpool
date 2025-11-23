@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Calendar, Clock, Users } from "lucide-react";
+import { MapPin, Calendar, Clock, Users, User } from "lucide-react";
 
   interface Ride {
     id: string;
@@ -56,18 +56,18 @@ const RidesList = () => {
 
   const fetchRides = async () => {
     try {
-      let rideUserIds: string[] = [];
+      let parentIds: string[] = [];
 
-      // If parent, get rides from linked students
-      if (userRole === 'parent' && user) {
+      // If student, get rides from linked parents
+      if (userRole === 'student' && user) {
         const { data: links } = await supabase
-          .from('student_parent_links')
-          .select('student_id')
-          .eq('parent_id', user.id)
+          .from('account_links')
+          .select('parent_id')
+          .eq('student_id', user.id)
           .eq('status', 'approved');
 
         if (links && links.length > 0) {
-          rideUserIds = links.map(link => link.student_id);
+          parentIds = links.map(link => link.parent_id);
         }
       }
 
@@ -77,9 +77,16 @@ const RidesList = () => {
         .select("*")
         .eq("status", "active");
 
-      // If parent with linked students, filter by those student IDs
-      if (userRole === 'parent' && rideUserIds.length > 0) {
-        query = query.in('user_id', rideUserIds);
+      // If student with linked parents, only show parent's rides
+      if (userRole === 'student') {
+        if (parentIds.length > 0) {
+          query = query.in('user_id', parentIds);
+        } else {
+          // No linked parents, show no rides
+          setRides([]);
+          setLoading(false);
+          return;
+        }
       }
 
       const { data, error } = await query
@@ -132,15 +139,25 @@ const RidesList = () => {
       ? `${ride.profiles.first_name || ""} ${ride.profiles.last_name || ""}`.trim() || ride.profiles.username
       : "Unknown";
 
+    const isOwnRide = ride.user_id === user?.id;
+    const showParentBadge = userRole === 'student' && !isOwnRide;
+
     return (
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
               <CardTitle className="text-lg">{parentName}</CardTitle>
-              <Badge variant={ride.type === "offer" ? "default" : "secondary"} className="mt-2">
-                {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
-              </Badge>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant={ride.type === "offer" ? "default" : "secondary"}>
+                  {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
+                </Badge>
+                {showParentBadge && (
+                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                    Created by {parentName}
+                  </Badge>
+                )}
+              </div>
             </div>
             {ride.is_recurring && (
               <Badge variant="outline">Recurring</Badge>
@@ -208,8 +225,16 @@ const RidesList = () => {
 
       <TabsContent value="all" className="mt-6">
         {rides.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No rides available yet. Be the first to post one!
+          <div className="text-center py-12">
+            <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium mb-2">
+              {userRole === 'student' ? 'No Family Carpools Yet' : 'No Rides Available'}
+            </p>
+            <p className="text-muted-foreground">
+              {userRole === 'student' 
+                ? "Link to your parent's account to see their carpools" 
+                : "Be the first to post a ride!"}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
