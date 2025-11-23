@@ -102,6 +102,11 @@ const Navigation = () => {
     { label: "Student Approvals", path: "/parent-approvals", parentOnly: true },
   ];
 
+  // Student-specific navigation items
+  const studentNavItems: NavItem[] = [
+    { label: "Link to Parent", path: "/student-linking", authRequired: true },
+  ];
+
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
     isScrolled
       ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
@@ -208,6 +213,15 @@ const Navigation = () => {
                     </DropdownMenuItem>
                   );
                 })}
+                {user && userRole === 'student' && studentNavItems.map((item) => (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className="cursor-pointer"
+                  >
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -230,7 +244,7 @@ const Navigation = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-foreground/95 backdrop-blur-xl border-t border-border animate-fade-in">
           <div className="px-4 py-6 space-y-1">
-            {[...mainNavItems, ...moreNavItems].map((item, index) => {
+            {[...mainNavItems, ...moreNavItems, ...(userRole === 'student' ? studentNavItems : [])].map((item, index) => {
               if (item.authRequired && !user) return null;
               if (item.parentOnly && !isParent) return null;
               return (

@@ -1,285 +1,417 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, UserPlus, X, Unlink, Users } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Navigation from '@/components/Navigation';
 
+interface LinkedParent {
+  id: string;
+  parent_id: string;
+  parent_email: string;
+  parent_first_name: string;
+  parent_last_name: string;
+  status: string;
+  created_at: string;
+}
+
 export default function StudentLinking() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [parentEmail, setParentEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [linkRequests, setLinkRequests] = useState<any[]>([]);
-  const [fetchingLinks, setFetchingLinks] = useState(true);
+  
+  const [parentEmail, setParentEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<LinkedParent[]>([]);
+  const [linkedParents, setLinkedParents] = useState<LinkedParent[]>([]);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(true);
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
+    if (!loading && (!user || profile?.account_type !== 'student')) {
+      navigate('/');
     }
-    fetchLinkRequests();
-  }, [user, navigate]);
+  }, [user, profile, loading, navigate]);
 
-  const fetchLinkRequests = async () => {
-    if (!user) return;
-    
-    setFetchingLinks(true);
-    const { data, error } = await supabase
-      .from('student_parent_links')
-      .select(`
-        *,
-        parent:profiles(username, first_name, last_name)
-      `)
-      .eq('student_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching link requests:', error);
-    } else {
-      setLinkRequests(data || []);
+  useEffect(() => {
+    if (user && profile?.account_type === 'student') {
+      fetchLinks();
     }
-    setFetchingLinks(false);
+  }, [user, profile]);
+
+  const fetchLinks = async () => {
+    setIsLoadingLinks(true);
+    try {
+      const { data: links, error } = await supabase
+        .from('account_links')
+        .select(`
+          id,
+          parent_id,
+          status,
+          created_at,
+          users!account_links_parent_id_fkey (
+            email,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('student_id', user?.id);
+
+      if (error) throw error;
+
+      const formattedLinks = links?.map((link: any) => ({
+        id: link.id,
+        parent_id: link.parent_id,
+        parent_email: link.users.email,
+        parent_first_name: link.users.first_name,
+        parent_last_name: link.users.last_name,
+        status: link.status,
+        created_at: link.created_at,
+      })) || [];
+
+      setPendingRequests(formattedLinks.filter((l: LinkedParent) => l.status === 'pending'));
+      setLinkedParents(formattedLinks.filter((l: LinkedParent) => l.status === 'approved'));
+    } catch (error) {
+      console.error('Error fetching links:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load linking information",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingLinks(false);
+    }
   };
 
-  const handleRequestParentLink = async () => {
-    if (!parentEmail.trim()) {
+  const validateEmail = (email: string): string | null => {
+    if (!email) return "Please enter an email address";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
+    if (email.toLowerCase().endsWith('@chadwickschool.org')) {
+      return "This email belongs to a student account. Please enter a parent's email.";
+    }
+    return null;
+  };
+
+  const handleSendRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const validationError = validateEmail(parentEmail);
+    if (validationError) {
       toast({
-        title: 'Email Required',
-        description: 'Please enter your parent\'s email address',
-        variant: 'destructive',
+        title: "Invalid Email",
+        description: validationError,
+        variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
+    setIsSubmitting(true);
+
     try {
-      // Check if parent email is approved
-      const normalizedEmail = parentEmail.toLowerCase();
-      const { data: emailCheckData } = await supabase.functions.invoke('auth-check-email', {
-        body: { email: normalizedEmail }
+      // Check if parent exists using edge function
+      const { data: parentData, error: lookupError } = await supabase.functions.invoke('lookup-parent', {
+        body: { parentEmail: parentEmail.toLowerCase() },
       });
 
-      if (!emailCheckData?.approved) {
+      if (lookupError) throw lookupError;
+
+      if (!parentData?.exists) {
         toast({
-          title: 'Email Not Approved',
-          description: 'This parent email is not approved for the platform. They need to be added by an administrator first.',
-          variant: 'destructive',
+          title: "Parent Not Found",
+          description: "No account found with this email",
+          variant: "destructive",
         });
-        setLoading(false);
         return;
       }
 
-      // Look up parent using secure backend function
-      const { data: lookupData, error: lookupError } = await supabase.functions.invoke('lookup-parent', {
-        body: { email: parentEmail.trim() }
-      });
+      const parentId = parentData.userId;
 
-      if (lookupError) {
-        toast({
-          title: 'Error',
-          description: 'Failed to lookup parent account. Please try again.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (!lookupData?.found) {
-        toast({
-          title: 'Parent Not Found',
-          description: lookupData?.message || 'No account found with this email. Please ask your parent to register first.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Generate 6-digit verification code
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-
-      // Get student profile info for email
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user?.id)
+      // Check for existing link
+      const { data: existingLink, error: checkError } = await supabase
+        .from('account_links')
+        .select('status')
+        .eq('student_id', user?.id)
+        .eq('parent_id', parentId)
         .maybeSingle();
 
-      const studentName = profileData 
-        ? `${profileData.first_name} ${profileData.last_name}`
-        : 'Your child';
+      if (checkError) throw checkError;
 
-      // Create link request with verification code
-      const { error: linkError } = await supabase
-        .from('student_parent_links')
+      if (existingLink) {
+        if (existingLink.status === 'pending') {
+          toast({
+            title: "Request Already Sent",
+            description: "You already have a pending request with this parent",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (existingLink.status === 'approved') {
+          toast({
+            title: "Already Linked",
+            description: "You're already linked to this parent",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Create link request
+      const { error: insertError } = await supabase
+        .from('account_links')
         .insert({
           student_id: user?.id,
-          parent_id: lookupData.user_id,
+          parent_id: parentId,
           status: 'pending',
-          verification_code: verificationCode,
-          code_expires_at: expiresAt.toISOString(),
         });
 
-      if (linkError) {
-        if (linkError.code === '23505') {
-          toast({
-            title: 'Request Already Exists',
-            description: 'You have already sent a request to this parent.',
-            variant: 'destructive',
-          });
-        } else {
-          throw linkError;
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Send verification email to parent
-      const { error: emailError } = await supabase.functions.invoke('send-link-verification', {
-        body: {
-          parentEmail: normalizedEmail,
-          studentName,
-          code: verificationCode,
-        }
-      });
-
-      if (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Don't fail the whole process if email fails
-      }
+      if (insertError) throw insertError;
 
       toast({
-        title: 'Request Sent!',
-        description: `We've sent a verification code to ${normalizedEmail}. Your parent needs to enter it to approve the connection.`,
+        title: "Request Sent!",
+        description: `Link request sent to ${parentEmail}`,
       });
-      setParentEmail('');
-      fetchLinkRequests();
-    } catch (error: any) {
-      console.error('Error requesting parent link:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to send parent link request',
-        variant: 'destructive',
-      });
-    }
-    setLoading(false);
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-      case 'rejected':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+      setParentEmail("");
+      fetchLinks();
+    } catch (error) {
+      console.error('Error sending link request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send link request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const hasApprovedLink = linkRequests.some(link => link.status === 'approved');
+  const handleCancelRequest = async (linkId: string) => {
+    try {
+      const { error } = await supabase
+        .from('account_links')
+        .delete()
+        .eq('id', linkId);
 
-  useEffect(() => {
-    if (hasApprovedLink) {
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      if (error) throw error;
+
+      toast({
+        title: "Request Cancelled",
+        description: "Link request has been cancelled",
+      });
+
+      fetchLinks();
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel request",
+        variant: "destructive",
+      });
     }
-  }, [hasApprovedLink, navigate]);
+  };
+
+  const handleUnlink = async () => {
+    if (!unlinkingId) return;
+
+    try {
+      const { error } = await supabase
+        .from('account_links')
+        .delete()
+        .eq('id', unlinkingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Unlinked",
+        description: "You have been unlinked from this parent",
+      });
+
+      fetchLinks();
+    } catch (error) {
+      console.error('Error unlinking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink",
+        variant: "destructive",
+      });
+    } finally {
+      setUnlinkingId(null);
+    }
+  };
+
+  if (loading || isLoadingLinks) {
+    return (
+      <>
+        <Navigation />
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </>
+    );
+  }
+
+  if (!user || profile?.account_type !== 'student') {
+    return null;
+  }
 
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pt-20 px-4">
-        <div className="container max-w-2xl mx-auto py-12">
-          <Card>
+        <div className="container max-w-4xl mx-auto py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">Link to Parent Account</h1>
+            <p className="text-muted-foreground">
+              Connect with your parent's account to let them schedule rides for you
+            </p>
+          </div>
+
+          <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-2xl">Student Account - Parent Approval Required</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Send Link Request
+              </CardTitle>
               <CardDescription>
-                As a Chadwick student, you need parent approval to access the platform. Enter your parent's email to send a link request.
+                Enter the email your parent used to register (not @chadwickschool.org)
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {hasApprovedLink ? (
-                <div className="text-center py-8">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Account Approved!</h3>
-                  <p className="text-muted-foreground">Redirecting to dashboard...</p>
+            <CardContent>
+              <form onSubmit={handleSendRequest} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="parentEmail">Parent's Email Address</Label>
+                  <Input
+                    id="parentEmail"
+                    type="email"
+                    placeholder="parent@example.com"
+                    value={parentEmail}
+                    onChange={(e) => setParentEmail(e.target.value)}
+                    disabled={isSubmitting}
+                  />
                 </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Parent's Email Address</label>
-                      <Input
-                        type="email"
-                        placeholder="parent@example.com"
-                        value={parentEmail}
-                        onChange={(e) => setParentEmail(e.target.value)}
-                        disabled={loading}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleRequestParentLink}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending Request...
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Request Parent Approval
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Your Link Requests</h3>
-                    {fetchingLinks ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      </div>
-                    ) : linkRequests.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No requests sent yet</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {linkRequests.map((link) => (
-                          <div
-                            key={link.id}
-                            className="flex items-center justify-between p-4 border rounded-lg"
-                          >
-                            <div>
-                              <p className="font-medium">
-                                {link.parent?.first_name} {link.parent?.last_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Requested {new Date(link.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(link.status)}
-                              <span className="text-sm capitalize">{link.status}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending Request...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Send Link Request
+                    </>
+                  )}
+                </Button>
+              </form>
             </CardContent>
           </Card>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Pending Requests</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingRequests.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No pending requests</p>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-start justify-between p-3 border rounded-lg"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm">{request.parent_email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sent {new Date(request.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancelRequest(request.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Linked Parents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {linkedParents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    You haven't linked to any parents yet
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {linkedParents.map((parent) => (
+                      <div
+                        key={parent.id}
+                        className="flex items-start justify-between p-3 border rounded-lg"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm">
+                            {parent.parent_first_name} {parent.parent_last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {parent.parent_email}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUnlinkingId(parent.id)}
+                        >
+                          <Unlink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <AlertDialog open={!!unlinkingId} onOpenChange={() => setUnlinkingId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Unlink from Parent?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to unlink from this parent? You'll no longer see their carpools.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleUnlink}>Unlink</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </>
