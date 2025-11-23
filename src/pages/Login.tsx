@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import Navigation from '@/components/Navigation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -120,9 +121,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
+    <>
+      <Navigation />
+      <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition pt-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blob" style={{ animationDelay: "5s" }} />
       </div>
       
@@ -245,6 +248,7 @@ const Login = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

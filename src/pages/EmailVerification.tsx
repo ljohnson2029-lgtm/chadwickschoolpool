@@ -5,6 +5,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Mail } from "lucide-react";
+import Navigation from "@/components/Navigation";
 
 const EmailVerification = () => {
   const [step, setStep] = useState<"email" | "code" | "success">("email");
@@ -117,10 +118,12 @@ const EmailVerification = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">Email Verification</h1>
+    <>
+      <Navigation />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4 pt-20">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-2">Email Verification</h1>
           <p className="text-muted-foreground">
             {step === "email" && "Enter your email to receive a verification code"}
             {step === "code" && "Enter the 6-digit code sent to your email"}
@@ -250,6 +253,7 @@ const EmailVerification = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
