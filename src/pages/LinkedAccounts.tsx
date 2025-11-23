@@ -174,11 +174,11 @@ export default function LinkedAccounts() {
         <div className="container max-w-4xl mx-auto py-12">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">My Linked Accounts</CardTitle>
+              <CardTitle className="text-2xl">My Account Links</CardTitle>
               <CardDescription>
                 {userRole === 'student' 
-                  ? 'View the parent accounts linked to your account'
-                  : 'View the student accounts linked to your account'}
+                  ? 'View all parent accounts and link request statuses'
+                  : 'View all student accounts linked to your account. To manage pending requests, go to Manage Students.'}
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus } from "lucide-react";
+import Navigation from "@/components/Navigation";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -330,9 +331,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center hero-gradient p-4 page-transition">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
+    <>
+      <Navigation />
+      <div className="min-h-screen flex items-center justify-center hero-gradient p-4 page-transition pt-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blob" style={{ animationDelay: "5s" }} />
       </div>
 
@@ -603,6 +606,7 @@ const Register = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 
