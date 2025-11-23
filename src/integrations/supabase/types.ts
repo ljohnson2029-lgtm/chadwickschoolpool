@@ -475,6 +475,7 @@ export type Database = {
           student_last_name: string
         }[]
       }
+      get_user_email: { Args: { user_user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -486,6 +487,7 @@ export type Database = {
         Args: { parent_user_id: string; student_user_id: string }
         Returns: boolean
       }
+      is_student_email: { Args: { user_email: string }; Returns: boolean }
       is_valid_parent_email: { Args: { email: string }; Returns: boolean }
       is_valid_student_email: { Args: { email: string }; Returns: boolean }
     }
