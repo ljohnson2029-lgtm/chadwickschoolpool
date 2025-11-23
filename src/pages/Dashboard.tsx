@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Users, Link as LinkIcon } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
@@ -43,7 +46,14 @@ const Dashboard = () => {
   };
 
   if (loading || roleLoading || !user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    );
   }
 
   const isStudent = userRole === 'student';
@@ -51,36 +61,65 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Carpool Dashboard</h1>
-
+      <div className="container mx-auto px-4 py-8 pt-24">
         {isStudent ? (
           <div className="space-y-6">
-            <p className="text-muted-foreground">
-              Students cannot create ride requests or offers. Please have your parent manage rides on your behalf.
-            </p>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">My Family's Carpools</h1>
+              <p className="text-muted-foreground">
+                View carpools created by your linked parents
+              </p>
+            </div>
+            
+            <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-blue-900 dark:text-blue-100">Student View</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    You can view carpools created by your linked parents. To create or edit carpools, ask your parent to do so on your behalf.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => navigate('/student-linking')}
+                  >
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Link to Parent
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
             <RidesList key={refreshKey} />
           </div>
         ) : (
-          <Tabs defaultValue="browse" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="browse">Browse Rides</TabsTrigger>
-              <TabsTrigger value="request">Request a Ride</TabsTrigger>
-              <TabsTrigger value="offer">Offer a Ride</TabsTrigger>
-            </TabsList>
+          <div className="space-y-6">
+            <h1 className="text-3xl font-bold mb-8">Carpool Dashboard</h1>
 
-            <TabsContent value="browse">
-              <RidesList key={refreshKey} />
-            </TabsContent>
+            <Tabs defaultValue="browse" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="browse">Browse Rides</TabsTrigger>
+                <TabsTrigger value="request">Request a Ride</TabsTrigger>
+                <TabsTrigger value="offer">Offer a Ride</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="request">
-              <RideRequestForm onSuccess={handleRideCreated} />
-            </TabsContent>
+              <TabsContent value="browse">
+                <RidesList key={refreshKey} />
+              </TabsContent>
 
-            <TabsContent value="offer">
-              <RideOfferForm onSuccess={handleRideCreated} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="request">
+                <RideRequestForm onSuccess={handleRideCreated} />
+              </TabsContent>
+
+              <TabsContent value="offer">
+                <RideOfferForm onSuccess={handleRideCreated} />
+              </TabsContent>
+            </Tabs>
+          </div>
         )}
       </div>
     </div>

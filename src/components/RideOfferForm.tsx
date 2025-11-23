@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 
 interface RideOfferFormProps {
   onSuccess: () => void;
@@ -19,6 +22,8 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [canCreate, setCanCreate] = useState(true);
 
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
@@ -29,6 +34,24 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
 
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data?.email) {
+        setUserEmail(data.email);
+        setCanCreate(canCreateCarpool(data.email));
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
+
   const toggleDay = (day: string) => {
     setRecurringDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
@@ -38,6 +61,16 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Double-check permissions
+    if (!canCreate) {
+      toast({
+        title: "Permission Denied",
+        description: getStudentPermissionError("create ride offers"),
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSubmitting(true);
 
@@ -83,6 +116,24 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
       setSubmitting(false);
     }
   };
+
+  if (!canCreate) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Offer a Ride</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {getStudentPermissionError("create ride offers")}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
