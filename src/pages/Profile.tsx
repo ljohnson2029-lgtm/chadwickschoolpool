@@ -2,7 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, Mail, Phone, Calendar } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users } from 'lucide-react';
 import { useEffect } from 'react';
 
 const Profile = () => {
@@ -46,7 +47,25 @@ const Profile = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Personal Information</CardTitle>
+              <Badge 
+                variant={profile.account_type === 'student' ? 'secondary' : 'default'}
+                className="gap-1"
+              >
+                {profile.account_type === 'student' ? (
+                  <>
+                    <GraduationCap className="h-3 w-3" />
+                    Student Account
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-3 w-3" />
+                    Parent Account
+                  </>
+                )}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -70,6 +89,11 @@ const Profile = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="font-medium">{user.email}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {profile.account_type === 'student' 
+                    ? '(@chadwickschool.org)' 
+                    : '(Verified email)'}
+                </p>
               </div>
             </div>
 
