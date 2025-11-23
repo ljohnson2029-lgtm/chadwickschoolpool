@@ -17,6 +17,7 @@ const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isParent, setIsParent] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +36,7 @@ const Navigation = () => {
       if (!user) {
         setIsParent(false);
         setUserRole(null);
+        setPendingRequestsCount(0);
         return;
       }
       
@@ -47,11 +49,52 @@ const Navigation = () => {
       if (data) {
         setUserRole(data.role);
         setIsParent(data.role === 'parent');
+        
+        if (data.role === 'parent') {
+          fetchPendingRequests();
+        }
       }
     };
     
     checkUserRole();
   }, [user]);
+
+  const fetchPendingRequests = async () => {
+    if (!user) return;
+    
+    const { count } = await supabase
+      .from('account_links')
+      .select('*', { count: 'exact', head: true })
+      .eq('parent_id', user.id)
+      .eq('status', 'pending');
+    
+    setPendingRequestsCount(count || 0);
+  };
+
+  // Real-time subscription for pending requests
+  useEffect(() => {
+    if (!user || !isParent) return;
+
+    const channel = supabase
+      .channel('parent-link-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'account_links',
+          filter: `parent_id=eq.${user.id}`,
+        },
+        () => {
+          fetchPendingRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isParent]);
 
   const scrollToSection = (id: string) => {
     if (location.pathname !== "/") {
@@ -209,7 +252,14 @@ const Navigation = () => {
                       onClick={() => navigate(item.path)}
                       className="cursor-pointer"
                     >
-                      {item.label}
+                      <div className="flex items-center justify-between w-full">
+                        <span>{item.label}</span>
+                        {item.path === '/parent-approvals' && pendingRequestsCount > 0 && (
+                          <Badge variant="destructive" className="ml-2">
+                            {pendingRequestsCount}
+                          </Badge>
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   );
                 })}
