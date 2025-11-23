@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserCheck, UserX, AlertTriangle, Users } from "lucide-react";
+import { NotificationMessages } from "@/lib/notifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,7 +149,7 @@ export default function ParentApprovals() {
         .insert({
           user_id: studentId,
           type: 'link_approved',
-          message: `${parentName} approved your link request! You can now view their carpools.`,
+          message: NotificationMessages.linkApproved(parentName),
           link_id: linkId,
         });
 
@@ -199,7 +200,7 @@ export default function ParentApprovals() {
         .insert({
           user_id: studentId,
           type: 'link_denied',
-          message: `${parentName} denied your link request`,
+          message: NotificationMessages.linkDenied(parentName),
         });
 
       if (notifError) console.error('Error creating notification:', notifError);
@@ -253,7 +254,7 @@ export default function ParentApprovals() {
         .insert({
           user_id: student.student_id,
           type: 'unlinked_by_parent',
-          message: `${parentName} has removed you from their account`,
+          message: NotificationMessages.unlinkedByParent(parentName),
         });
 
       if (notifError) console.error('Error creating notification:', notifError);
