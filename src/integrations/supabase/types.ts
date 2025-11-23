@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_links: {
+        Row: {
+          created_at: string
+          id: string
+          parent_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       approved_emails: {
         Row: {
           created_at: string
@@ -58,6 +100,51 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link_id: string | null
+          message: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_id?: string | null
+          message: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_id?: string | null
+          message?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_notification_link"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "account_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notification_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -368,6 +455,26 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_codes: { Args: never; Returns: undefined }
+      get_linked_parents: {
+        Args: { student_user_id: string }
+        Returns: {
+          linked_at: string
+          parent_email: string
+          parent_first_name: string
+          parent_id: string
+          parent_last_name: string
+        }[]
+      }
+      get_linked_students: {
+        Args: { parent_user_id: string }
+        Returns: {
+          linked_at: string
+          student_email: string
+          student_first_name: string
+          student_id: string
+          student_last_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -375,6 +482,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_link_approved: {
+        Args: { parent_user_id: string; student_user_id: string }
+        Returns: boolean
+      }
+      is_valid_parent_email: { Args: { email: string }; Returns: boolean }
+      is_valid_student_email: { Args: { email: string }; Returns: boolean }
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
