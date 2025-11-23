@@ -140,16 +140,16 @@ export default function StudentLinking() {
 
       if (lookupError) throw lookupError;
 
-      if (!parentData?.exists) {
+      if (!parentData?.found) {
         toast({
           title: "Parent Not Found",
-          description: "No account found with this email",
+          description: parentData?.message || "No account found with this email",
           variant: "destructive",
         });
         return;
       }
 
-      const parentId = parentData.userId;
+      const parentId = parentData.user_id;
 
       // Check for existing link
       const { data: existingLink, error: checkError } = await supabase
