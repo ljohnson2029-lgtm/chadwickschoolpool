@@ -1,268 +1,467 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, UserCheck, UserX, AlertTriangle, Users } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Navigation from '@/components/Navigation';
 
+interface LinkedStudent {
+  id: string;
+  student_id: string;
+  student_email: string;
+  student_first_name: string;
+  student_last_name: string;
+  status: string;
+  created_at: string;
+}
+
 export default function ParentApprovals() {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [linkRequests, setLinkRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const [pendingRequests, setPendingRequests] = useState<LinkedStudent[]>([]);
+  const [linkedStudents, setLinkedStudents] = useState<LinkedStudent[]>([]);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [verificationCodes, setVerificationCodes] = useState<{ [key: string]: string }>({});
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
+    if (!loading && (!user || profile?.account_type !== 'parent')) {
+      navigate('/');
     }
-    fetchLinkRequests();
-  }, [user, navigate]);
+  }, [user, profile, loading, navigate]);
 
-  const fetchLinkRequests = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    
-    // First get the link requests with student profile info
-    const { data: links, error: linksError } = await supabase
-      .from('student_parent_links')
-      .select(`
-        *,
-        student:profiles!student_parent_links_student_id_fkey(id, username, first_name, last_name)
-      `)
-      .eq('parent_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (linksError) {
-      console.error('Error fetching link requests:', linksError);
-      toast({
-        title: 'Error',
-        description: 'Failed to load student requests',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
+  useEffect(() => {
+    if (user && profile?.account_type === 'parent') {
+      fetchLinks();
     }
+  }, [user, profile]);
 
-    // Now fetch email addresses for each student from users table
-    if (links && links.length > 0) {
-      const studentIds = links.map(link => link.student?.id).filter(Boolean);
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('user_id, email')
-        .in('user_id', studentIds);
+  // Real-time subscription for link updates
+  useEffect(() => {
+    if (!user || profile?.account_type !== 'parent') return;
 
-      // Merge email data into link requests
-      const enrichedLinks = links.map(link => ({
-        ...link,
-        student: {
-          ...link.student,
-          email: usersData?.find(u => u.user_id === link.student?.id)?.email || 'N/A'
+    const channel = supabase
+      .channel('parent-link-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'account_links',
+          filter: `parent_id=eq.${user.id}`,
+        },
+        () => {
+          fetchLinks();
         }
-      }));
-      
-      setLinkRequests(enrichedLinks);
-    } else {
-      setLinkRequests(links || []);
-    }
-    
-    setLoading(false);
-  };
+      )
+      .subscribe();
 
-  const handleApproval = async (linkId: string, approve: boolean) => {
-    if (approve) {
-      // Check if code is provided for approval
-      const enteredCode = verificationCodes[linkId]?.trim();
-      const linkRequest = linkRequests.find(req => req.id === linkId);
-      
-      if (!enteredCode) {
-        toast({
-          title: 'Code Required',
-          description: 'Please enter the verification code from your email',
-          variant: 'destructive',
-        });
-        return;
-      }
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile]);
 
-      // Verify code matches
-      if (enteredCode !== linkRequest.verification_code) {
-        toast({
-          title: 'Invalid Code',
-          description: 'The verification code you entered is incorrect',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Check if code is expired
-      const expiresAt = new Date(linkRequest.code_expires_at);
-      if (expiresAt < new Date()) {
-        toast({
-          title: 'Code Expired',
-          description: 'This verification code has expired. Please ask the student to send a new request.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    setProcessingId(linkId);
+  const fetchLinks = async () => {
+    setIsLoadingLinks(true);
     try {
-      const { error } = await supabase
-        .from('student_parent_links')
-        .update({
-          status: approve ? 'approved' : 'rejected',
-          approved_at: approve ? new Date().toISOString() : null,
-        })
-        .eq('id', linkId);
+      const { data: links, error } = await supabase
+        .from('account_links')
+        .select(`
+          id,
+          student_id,
+          status,
+          created_at,
+          users!account_links_student_id_fkey (
+            email,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('parent_id', user?.id);
 
       if (error) throw error;
 
-      toast({
-        title: approve ? 'Student Approved' : 'Request Rejected',
-        description: approve 
-          ? 'The student can now access the platform and view rides you schedule for them' 
-          : 'The link request has been rejected',
-      });
+      const formattedLinks = links?.map((link: any) => ({
+        id: link.id,
+        student_id: link.student_id,
+        student_email: link.users.email,
+        student_first_name: link.users.first_name,
+        student_last_name: link.users.last_name,
+        status: link.status,
+        created_at: link.created_at,
+      })) || [];
 
-      // Clear the code input
-      if (approve) {
-        setVerificationCodes(prev => {
-          const newCodes = { ...prev };
-          delete newCodes[linkId];
-          return newCodes;
-        });
-      }
-
-      fetchLinkRequests();
-    } catch (error: any) {
-      console.error('Error updating link request:', error);
+      setPendingRequests(formattedLinks.filter((l: LinkedStudent) => l.status === 'pending'));
+      setLinkedStudents(formattedLinks.filter((l: LinkedStudent) => l.status === 'approved'));
+    } catch (error) {
+      console.error('Error fetching links:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to update link request',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load linked students",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoadingLinks(false);
     }
-    setProcessingId(null);
   };
+
+  const handleApprove = async (linkId: string, studentName: string, studentId: string) => {
+    setProcessingId(linkId);
+    try {
+      // Update link status to approved
+      const { error: updateError } = await supabase
+        .from('account_links')
+        .update({ status: 'approved' })
+        .eq('id', linkId);
+
+      if (updateError) throw updateError;
+
+      // Create notification for student
+      const { data: parentData } = await supabase
+        .from('users')
+        .select('first_name, last_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const parentName = parentData 
+        ? `${parentData.first_name} ${parentData.last_name}`
+        : 'Your parent';
+
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: studentId,
+          type: 'link_approved',
+          message: `${parentName} approved your link request! You can now view their carpools.`,
+          link_id: linkId,
+        });
+
+      if (notifError) console.error('Error creating notification:', notifError);
+
+      toast({
+        title: "Request Approved",
+        description: `${studentName} linked successfully`,
+      });
+
+      fetchLinks();
+    } catch (error) {
+      console.error('Error approving request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve request",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeny = async (linkId: string, studentName: string, studentId: string) => {
+    setProcessingId(linkId);
+    try {
+      // Delete the link request
+      const { error: deleteError } = await supabase
+        .from('account_links')
+        .delete()
+        .eq('id', linkId);
+
+      if (deleteError) throw deleteError;
+
+      // Create notification for student
+      const { data: parentData } = await supabase
+        .from('users')
+        .select('first_name, last_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const parentName = parentData 
+        ? `${parentData.first_name} ${parentData.last_name}`
+        : 'Your parent';
+
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: studentId,
+          type: 'link_denied',
+          message: `${parentName} denied your link request`,
+        });
+
+      if (notifError) console.error('Error creating notification:', notifError);
+
+      toast({
+        title: "Request Denied",
+        description: "Link request denied",
+      });
+
+      fetchLinks();
+    } catch (error) {
+      console.error('Error denying request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to deny request",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRemoveStudent = async () => {
+    if (!removingId) return;
+
+    const student = linkedStudents.find(s => s.id === removingId);
+    if (!student) return;
+
+    try {
+      // Delete the link
+      const { error: deleteError } = await supabase
+        .from('account_links')
+        .delete()
+        .eq('id', removingId);
+
+      if (deleteError) throw deleteError;
+
+      // Create notification for student
+      const { data: parentData } = await supabase
+        .from('users')
+        .select('first_name, last_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const parentName = parentData 
+        ? `${parentData.first_name} ${parentData.last_name}`
+        : 'Your parent';
+
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: student.student_id,
+          type: 'unlinked_by_parent',
+          message: `${parentName} has removed you from their account`,
+        });
+
+      if (notifError) console.error('Error creating notification:', notifError);
+
+      toast({
+        title: "Student Removed",
+        description: `${student.student_first_name} ${student.student_last_name} has been unlinked`,
+      });
+
+      fetchLinks();
+    } catch (error) {
+      console.error('Error removing student:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove student",
+        variant: "destructive",
+      });
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  if (loading || isLoadingLinks) {
+    return (
+      <>
+        <Navigation />
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </>
+    );
+  }
+
+  if (!user || profile?.account_type !== 'parent') {
+    return null;
+  }
 
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pt-20 px-4">
-        <div className="container max-w-4xl mx-auto py-12">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Student Link Requests</CardTitle>
-              <CardDescription>
-                Review and approve student accounts linked to you
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : linkRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">No student link requests yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {linkRequests.map((link) => (
-                    <div
-                      key={link.id}
-                      className="flex items-center justify-between p-6 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">
-                          {link.student?.first_name} {link.student?.last_name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          @{link.student?.username}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {link.student?.email}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Requested {new Date(link.created_at).toLocaleDateString()}
-                        </p>
-                        <div className="mt-2">
-                          <span className={`inline-flex items-center gap-1 text-sm px-2 py-1 rounded ${
-                            link.status === 'approved' ? 'bg-green-500/10 text-green-500' :
-                            link.status === 'rejected' ? 'bg-red-500/10 text-red-500' :
-                            'bg-yellow-500/10 text-yellow-500'
-                          }`}>
-                            {link.status === 'approved' && <CheckCircle2 className="h-4 w-4" />}
-                            {link.status === 'rejected' && <XCircle className="h-4 w-4" />}
-                            <span className="capitalize">{link.status}</span>
-                          </span>
+        <div className="container max-w-5xl mx-auto py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">Manage Linked Students</h1>
+            <p className="text-muted-foreground">
+              Review and manage students linked to your account
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {/* Pending Requests Section */}
+            {pendingRequests.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        Link Requests
+                        <Badge variant="destructive">{pendingRequests.length}</Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        Students waiting for your approval
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-4 border rounded-lg bg-card"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-semibold text-lg">
+                            {request.student_first_name} {request.student_last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {request.student_email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Requested {new Date(request.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeny(
+                              request.id,
+                              `${request.student_first_name} ${request.student_last_name}`,
+                              request.student_id
+                            )}
+                            disabled={processingId === request.id}
+                          >
+                            {processingId === request.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <UserX className="mr-2 h-4 w-4" />
+                                Deny
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(
+                              request.id,
+                              `${request.student_first_name} ${request.student_last_name}`,
+                              request.student_id
+                            )}
+                            disabled={processingId === request.id}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {processingId === request.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Approve
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
-                      
-                      {link.status === 'pending' && (
-                        <div className="ml-4 min-w-[300px]">
-                          <div className="space-y-3">
-                            <div>
-                              <Label htmlFor={`code-${link.id}`}>Verification Code</Label>
-                              <Input
-                                id={`code-${link.id}`}
-                                placeholder="Enter 6-digit code"
-                                maxLength={6}
-                                value={verificationCodes[link.id] || ''}
-                                onChange={(e) => setVerificationCodes(prev => ({
-                                  ...prev,
-                                  [link.id]: e.target.value.replace(/\D/g, '')
-                                }))}
-                                className="font-mono text-center text-lg tracking-widest"
-                              />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Enter the code from your email
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => handleApproval(link.id, false)}
-                                disabled={processingId === link.id}
-                                className="flex-1"
-                              >
-                                {processingId === link.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  'Reject'
-                                )}
-                              </Button>
-                              <Button
-                                onClick={() => handleApproval(link.id, true)}
-                                disabled={processingId === link.id}
-                                className="flex-1"
-                              >
-                                {processingId === link.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  'Approve'
-                                )}
-                              </Button>
-                            </div>
-                          </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Linked Students Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Linked Students
+                </CardTitle>
+                <CardDescription>
+                  Students currently linked to your account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {linkedStudents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">
+                      No students linked to your account yet. Students can send you link requests from their accounts.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {linkedStudents.map((student) => (
+                      <div
+                        key={student.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-semibold">
+                            {student.student_first_name} {student.student_last_name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {student.student_email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Linked {new Date(student.created_at).toLocaleDateString()}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setRemovingId(student.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <AlertDialog open={!!removingId} onOpenChange={() => setRemovingId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove Linked Student?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to remove{' '}
+                  {removingId && linkedStudents.find(s => s.id === removingId) && (
+                    <strong>
+                      {linkedStudents.find(s => s.id === removingId)?.student_first_name}{' '}
+                      {linkedStudents.find(s => s.id === removingId)?.student_last_name}
+                    </strong>
+                  )}
+                  ? They will no longer be able to see your carpools.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemoveStudent} className="bg-destructive hover:bg-destructive/90">
+                  Remove Student
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </>
