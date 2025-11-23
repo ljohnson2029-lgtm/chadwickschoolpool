@@ -137,7 +137,27 @@ serve(async (req) => {
       );
     }
 
-    // Create profile record
+    // Determine and assign user role and account type
+    const normalizedEmail = email.toLowerCase();
+    let role = 'parent'; // Default role
+    let accountType = 'parent'; // Default account type
+    
+    // Exempt parent accounts (staff/faculty with @chadwickschool.org emails)
+    const parentExemptions = ['ljohnson2029@chadwickschool.org'];
+    
+    if (parentExemptions.includes(normalizedEmail)) {
+      role = 'parent';
+      accountType = 'parent';
+    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
+      role = 'student';
+      accountType = 'student';
+    } else if (userType) {
+      // If userType is provided (parent/staff), use it
+      role = userType;
+      accountType = 'parent'; // Non-chadwick emails are always parents
+    }
+
+    // Create profile record with account_type
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -146,27 +166,12 @@ serve(async (req) => {
         first_name: firstName,
         last_name: lastName,
         phone_number: phoneNumber || null,
+        account_type: accountType,
       });
 
     if (profileError) {
       console.error('Profile creation error:', profileError);
       // Continue anyway - profile can be created later
-    }
-
-    // Determine and assign user role
-    const normalizedEmail = email.toLowerCase();
-    let role = 'parent'; // Default role
-    
-    // Exempt parent accounts (staff/faculty with @chadwickschool.org emails)
-    const parentExemptions = ['ljohnson2029@chadwickschool.org'];
-    
-    if (parentExemptions.includes(normalizedEmail)) {
-      role = 'parent';
-    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
-      role = 'student';
-    } else if (userType) {
-      // If userType is provided (parent/staff), use it
-      role = userType;
     }
 
     // Create user role
@@ -182,7 +187,7 @@ serve(async (req) => {
       // Continue anyway - role can be assigned later
     }
 
-    console.log(`Account created for ${email} with role: ${role}`);
+    console.log(`Account created for ${email} with role: ${role}, account_type: ${accountType}`);
 
     return new Response(
       JSON.stringify({ 
