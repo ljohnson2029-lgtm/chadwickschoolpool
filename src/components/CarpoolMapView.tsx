@@ -30,6 +30,8 @@ interface Ride {
 interface UserAddress {
   user_id: string;
   home_address: string;
+  home_latitude: number | null;
+  home_longitude: number | null;
   first_name: string | null;
   last_name: string | null;
   username: string;
@@ -81,16 +83,20 @@ const CarpoolMapView: React.FC<CarpoolMapViewProps> = ({ height = '500px' }) => 
         setRides(ridesData as any);
       }
 
-      // Fetch user addresses (profiles with home_address)
+      // Fetch user addresses (profiles with home_address and coordinates)
       const { data: addressData } = await supabase
         .from('profiles')
-        .select('id, home_address, first_name, last_name, username')
+        .select('id, home_address, home_latitude, home_longitude, first_name, last_name, username')
         .not('home_address', 'is', null);
+
+      console.log('Fetched user addresses:', addressData);
 
       if (addressData) {
         setUserAddresses(addressData.map(p => ({
           user_id: p.id,
           home_address: p.home_address!,
+          home_latitude: (p as any).home_latitude,
+          home_longitude: (p as any).home_longitude,
           first_name: p.first_name,
           last_name: p.last_name,
           username: p.username
@@ -170,36 +176,45 @@ const CarpoolMapView: React.FC<CarpoolMapViewProps> = ({ height = '500px' }) => 
     const addMarkers = async () => {
       let userHomeCoord: [number, number] | null = null;
 
-      // Add user's home marker (blue)
-      if (profile?.home_address) {
-        userHomeCoord = await geocodeAddress(profile.home_address);
-        if (userHomeCoord) {
-          const el = document.createElement('div');
-          el.className = 'custom-marker';
-          el.style.backgroundColor = '#3b82f6';
-          el.style.width = '20px';
-          el.style.height = '20px';
-          el.style.borderRadius = '50%';
-          el.style.border = '3px solid white';
-          el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      // Add user's home marker (blue) - use stored coordinates
+      const userLat = (profile as any)?.home_latitude;
+      const userLng = (profile as any)?.home_longitude;
+      
+      console.log('User home coords:', { 
+        address: profile?.home_address, 
+        lat: userLat, 
+        lng: userLng 
+      });
 
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat(userHomeCoord)
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(`
-                <div class="p-2">
-                  <p class="font-semibold text-blue-600">Your Home</p>
-                  <p class="text-sm text-muted-foreground">${profile.home_address}</p>
-                </div>
-              `)
-            )
-            .addTo(map.current!);
-          
-          markersRef.current.push(marker);
+      if (profile?.home_address && userLat && userLng) {
+        userHomeCoord = [userLng, userLat];
+        
+        const el = document.createElement('div');
+        el.className = 'custom-marker';
+        el.style.backgroundColor = '#3b82f6';
+        el.style.width = '20px';
+        el.style.height = '20px';
+        el.style.borderRadius = '50%';
+        el.style.border = '3px solid white';
+        el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
 
-          // Center map on user's home
-          map.current?.setCenter(userHomeCoord);
-        }
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat(userHomeCoord)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <p class="font-semibold text-blue-600">Your Home</p>
+                <p class="text-sm text-muted-foreground">${profile.home_address}</p>
+                <p class="text-xs text-muted-foreground mt-1">${userLat.toFixed(4)}, ${userLng.toFixed(4)}</p>
+              </div>
+            `)
+          )
+          .addTo(map.current!);
+        
+        markersRef.current.push(marker);
+
+        // Center map on user's home
+        map.current?.setCenter(userHomeCoord);
       }
 
       // Add ride request markers (red)
@@ -361,13 +376,18 @@ const CarpoolMapView: React.FC<CarpoolMapViewProps> = ({ height = '500px' }) => 
         }
       }
 
-      // Add other users' home addresses (gray)
+      // Add other users' home addresses (gray) - use stored coordinates
       if (showAddresses) {
         for (const userAddr of userAddresses) {
           if (userAddr.user_id === user?.id) continue; // Skip current user
 
-          const coord = await geocodeAddress(userAddr.home_address);
-          if (coord) {
+          const lat = userAddr.home_latitude;
+          const lng = userAddr.home_longitude;
+
+          // Only show pins for users who have geocoded addresses
+          if (lat && lng) {
+            const coord: [number, number] = [lng, lat];
+            
             const el = document.createElement('div');
             el.className = 'custom-marker';
             el.style.backgroundColor = '#6b7280';
@@ -459,6 +479,19 @@ const CarpoolMapView: React.FC<CarpoolMapViewProps> = ({ height = '500px' }) => 
             <span>Your Home</span>
           </div>
         </div>
+        
+        {/* Debug info */}
+        {profile && (
+          <div className="mt-3 p-2 bg-muted/50 rounded text-xs space-y-1">
+            <p className="font-semibold">Your Address Data:</p>
+            <p>Address: {profile.home_address || 'Not set'}</p>
+            <p>Latitude: {(profile as any).home_latitude?.toFixed(6) || 'Not set'}</p>
+            <p>Longitude: {(profile as any).home_longitude?.toFixed(6) || 'Not set'}</p>
+            {!(profile as any).home_latitude || !(profile as any).home_longitude ? (
+              <p className="text-orange-500 font-semibold mt-1">⚠️ Go to Profile Setup to select a valid address</p>
+            ) : null}
+          </div>
+        )}
       </Card>
 
       <div className="relative w-full" style={{ height }}>
