@@ -191,6 +191,7 @@ const Register = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting to create account...');
       const { data, error } = await supabase.functions.invoke("auth-create-account", {
         body: {
           email: email.toLowerCase().trim(),
@@ -204,14 +205,26 @@ const Register = () => {
       });
 
       if (error) {
+        console.error('Edge function error:', error);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+        
         // Extract error message from edge function response
-        // Edge functions return errors in the format: FunctionsHttpError with context.error
         let errorMessage = "An error occurred during registration";
         
         try {
-          // Try to parse the error context if available
-          if (error.context && typeof error.context === 'object' && error.context.error) {
-            errorMessage = error.context.error;
+          // Edge function errors come in the format: FunctionsHttpError
+          // The actual error message is in error.context.error
+          if (error.context && typeof error.context === 'object') {
+            if (error.context.error) {
+              errorMessage = error.context.error;
+            } else if (typeof error.context === 'string') {
+              try {
+                const parsed = JSON.parse(error.context);
+                errorMessage = parsed.error || errorMessage;
+              } catch {
+                errorMessage = error.context;
+              }
+            }
           } else if (error.message) {
             errorMessage = error.message;
           }
@@ -219,17 +232,25 @@ const Register = () => {
           console.error("Error parsing function error:", e);
         }
         
-        // Check for specific error types
+        console.error('Extracted error message:', errorMessage);
+        
+        // Check for specific error types and show user-friendly messages
         if (errorMessage.includes("Username already taken")) {
           toast({
             title: "Username unavailable",
             description: "This username is already in use. Please choose a different username.",
             variant: "destructive",
           });
-        } else if (errorMessage.includes("Email already registered")) {
+        } else if (errorMessage.includes("Email already registered") || errorMessage.includes("Email already in use")) {
           toast({
             title: "Email already registered",
             description: "An account with this email already exists. Try logging in instead.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes("Failed to create auth account")) {
+          toast({
+            title: "Authentication Error",
+            description: "Unable to create authentication account. Please try again or contact support.",
             variant: "destructive",
           });
         } else {
@@ -244,6 +265,7 @@ const Register = () => {
       }
 
       if (data && !data.success) {
+        console.error('Registration failed:', data);
         toast({
           title: "Registration failed",
           description: data.error || "Could not create account",
@@ -252,6 +274,8 @@ const Register = () => {
         setLoading(false);
         return;
       }
+      
+      console.log('Account created successfully');
 
       toast({
         title: "Account created!",
@@ -269,12 +293,24 @@ const Register = () => {
         navigate("/login");
       }
     } catch (error: any) {
-      // Handle unexpected errors
-      let errorMessage = "An unexpected error occurred";
+      // Handle unexpected errors (network issues, etc.)
+      console.error('Unexpected error during registration:', error);
+      console.error('Full exception:', JSON.stringify(error, null, 2));
+      
+      let errorMessage = "An unexpected error occurred. Please try again.";
       
       try {
-        if (error.context && typeof error.context === 'object' && error.context.error) {
-          errorMessage = error.context.error;
+        if (error.context && typeof error.context === 'object') {
+          if (error.context.error) {
+            errorMessage = error.context.error;
+          } else if (typeof error.context === 'string') {
+            try {
+              const parsed = JSON.parse(error.context);
+              errorMessage = parsed.error || errorMessage;
+            } catch {
+              errorMessage = error.context;
+            }
+          }
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -288,10 +324,16 @@ const Register = () => {
           description: "This username is already in use. Please choose a different username.",
           variant: "destructive",
         });
-      } else if (errorMessage.includes("Email already registered")) {
+      } else if (errorMessage.includes("Email already registered") || errorMessage.includes("Email already in use")) {
         toast({
           title: "Email already registered", 
           description: "An account with this email already exists. Try logging in instead.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes("Network") || errorMessage.includes("Failed to fetch")) {
+        toast({
+          title: "Connection Error",
+          description: "Unable to connect to the server. Please check your internet connection and try again.",
           variant: "destructive",
         });
       } else {
