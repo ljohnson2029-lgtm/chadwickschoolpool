@@ -5,12 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, AlertCircle } from "lucide-react";
+import { Users, AlertCircle, Map as MapIcon, List } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import TabNavigation from "@/components/TabNavigation";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import RidesList from "@/components/RidesList";
+import CarpoolMapView from "@/components/CarpoolMapView";
 
 const FamilyCarpools = () => {
   const { user, profile, loading } = useAuth();
@@ -18,6 +19,7 @@ const FamilyCarpools = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,13 +66,33 @@ const FamilyCarpools = () => {
       <TabNavigation />
       <div className="container mx-auto px-4 py-8 pt-24">
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Family Carpools</h1>
-            <p className="text-muted-foreground">
-              {isChild
-                ? "View carpools created by your linked parents"
-                : "Manage ride requests and offers for your family"}
-            </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Family Carpools</h1>
+              <p className="text-muted-foreground">
+                {isChild
+                  ? "View carpools created by your linked parents"
+                  : "Manage ride requests and offers for your family"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'map' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('map')}
+              >
+                <MapIcon className="h-4 w-4 mr-2" />
+                Map View
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4 mr-2" />
+                List View
+              </Button>
+            </div>
           </div>
 
           {isChild && (
@@ -86,7 +108,11 @@ const FamilyCarpools = () => {
             </Alert>
           )}
 
-          {!isChild ? (
+          {viewMode === 'map' && (
+            <CarpoolMapView height="500px" />
+          )}
+
+          {viewMode === 'list' && !isChild ? (
             <Tabs defaultValue="browse" className="space-y-6">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="browse">Browse Available Rides</TabsTrigger>
@@ -115,7 +141,7 @@ const FamilyCarpools = () => {
                 </Card>
               </TabsContent>
             </Tabs>
-          ) : (
+          ) : viewMode === 'list' && isChild ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">My Family's Rides</h2>
@@ -129,7 +155,7 @@ const FamilyCarpools = () => {
               </div>
               <RidesList key={refreshKey} />
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
