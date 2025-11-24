@@ -44,7 +44,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Checking username availability:', clean);
+    console.log('Checking username availability for:', clean);
 
     // Check case-insensitive to avoid duplicates like "John" and "john"
     const { data: existing, error: queryError } = await supabase
@@ -55,9 +55,14 @@ serve(async (req) => {
 
     if (queryError) {
       console.error('Database query error:', queryError);
+      return new Response(
+        JSON.stringify({ available: false, reason: 'Database error occurred' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Existing username found:', existing);
+    console.log('Query result - existing username:', existing);
+    console.log('Username available:', !existing);
 
     const available = !existing;
 
