@@ -74,7 +74,7 @@ serve(async (req) => {
     // Check if email already exists in custom users table
     const { data: existingEmail, error: emailCheckError } = await supabase
       .from('users')
-      .select('email')
+      .select('user_id, email')
       .eq('email', email.toLowerCase())
       .maybeSingle();
 
@@ -83,11 +83,62 @@ serve(async (req) => {
     }
 
     if (existingEmail) {
-      console.log(`Email already registered: ${email}`);
-      return new Response(
-        JSON.stringify({ error: 'Email already registered' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.log(`Found existing email in users table: ${email}, checking if orphaned...`);
+      
+      // Check if this user exists in Supabase Auth
+      const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('Error listing auth users:', listError);
+      } else {
+        const authUserExists = authUsers?.users?.some(u => u.id === existingEmail.user_id);
+        
+        if (!authUserExists) {
+          // This is an orphaned entry in users table (no corresponding auth user)
+          console.log(`Found orphaned users table entry for ${email}, cleaning up...`);
+          
+          // Clean up orphaned data
+          const { error: deleteUserError } = await supabase
+            .from('users')
+            .delete()
+            .eq('user_id', existingEmail.user_id);
+          
+          if (deleteUserError) {
+            console.error(`Failed to delete orphaned user: ${deleteUserError.message}`);
+          } else {
+            console.log(`Successfully cleaned up orphaned users table entry for ${email}`);
+          }
+          
+          // Also clean up profile if exists
+          const { error: deleteProfileError } = await supabase
+            .from('profiles')
+            .delete()
+            .eq('id', existingEmail.user_id);
+          
+          if (deleteProfileError) {
+            console.log(`Profile cleanup note: ${deleteProfileError.message}`);
+          }
+          
+          // Also clean up user_roles if exists
+          const { error: deleteRoleError } = await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', existingEmail.user_id);
+          
+          if (deleteRoleError) {
+            console.log(`Role cleanup note: ${deleteRoleError.message}`);
+          }
+          
+          console.log(`Orphaned data cleaned up for ${email}, proceeding with registration...`);
+        } else {
+          // Email is truly registered with a valid auth user
+          console.log(`Email already registered with valid auth user: ${email}`);
+          return new Response(
+            JSON.stringify({ error: 'Email already registered. Please try logging in instead.' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
     }
 
     // Check if user exists in Supabase Auth
