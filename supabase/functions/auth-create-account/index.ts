@@ -26,11 +26,19 @@ serve(async (req) => {
       );
     }
 
-    // Validate username
-    if (username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9]+$/.test(username)) {
-      console.error(`Invalid username format: ${username}`);
+    // Validate username - allow letters, numbers, spaces, hyphens, and underscores
+    if (username.length < 3 || username.length > 30) {
+      console.error(`Invalid username length: ${username}`);
       return new Response(
-        JSON.stringify({ error: 'Username must be 3-20 alphanumeric characters' }),
+        JSON.stringify({ error: 'Username must be 3-30 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!/^[a-zA-Z0-9\s_-]+$/.test(username)) {
+      console.error(`Invalid username characters: ${username}`);
+      return new Response(
+        JSON.stringify({ error: 'Username can only contain letters, numbers, spaces, hyphens, and underscores' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -52,11 +60,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if username already exists
+    // Check if username already exists (case-insensitive)
     const { data: existingUsername, error: usernameCheckError } = await supabase
       .from('users')
       .select('username')
-      .eq('username', username)
+      .ilike('username', username)
       .maybeSingle();
 
     if (usernameCheckError) {
