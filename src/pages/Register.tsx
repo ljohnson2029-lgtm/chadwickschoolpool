@@ -116,9 +116,11 @@ const Register = () => {
     }
     setUsernameStatus('checking');
     setUsernameHint('Checking username availability...');
+    console.log('Checking username:', clean);
     const { data, error } = await supabase.functions.invoke('auth-check-username', {
       body: { username: clean },
     });
+    console.log('Username check response:', data, error);
     if (error) {
       setUsernameStatus('idle');
       setUsernameHint('');
@@ -129,7 +131,8 @@ const Register = () => {
       setUsernameHint('Username is available');
     } else {
       setUsernameStatus('taken');
-      setUsernameHint('Username is already taken');
+      // Show the actual reason if provided, otherwise default message
+      setUsernameHint(data?.reason || 'Username is already taken');
     }
   };
 
