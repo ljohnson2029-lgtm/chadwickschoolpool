@@ -45,24 +45,6 @@ const Register = () => {
       const normalizedEmail = email.toLowerCase().trim();
       const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
       setIsStudentEmail(isChadwickEmail);
-      
-      if (!isChadwickEmail) {
-        const { data: check, error: checkError } = await supabase.functions.invoke("auth-check-email", {
-          body: { email: normalizedEmail },
-        });
-
-        if (checkError) throw checkError;
-
-        if (!check?.approved) {
-          toast({
-            title: "Email not approved",
-            description: check?.message ?? "This email is not approved for registration.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-      }
 
       const { error: sendError } = await supabase.functions.invoke("auth-send-2fa", {
         body: { email: normalizedEmail },
@@ -421,7 +403,7 @@ const Register = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Only approved school email domains can register
+                  Enter your email to create an account
                 </p>
               </div>
 
