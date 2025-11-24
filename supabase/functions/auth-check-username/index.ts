@@ -23,10 +23,18 @@ serve(async (req) => {
 
     const clean = username.trim();
 
-    // Basic validation must match server rules
-    if (clean.length < 3 || clean.length > 20 || !/^[a-zA-Z0-9]+$/.test(clean)) {
+    // Basic validation - allow alphanumeric, spaces, hyphens, and underscores
+    if (clean.length < 3 || clean.length > 30) {
       return new Response(
-        JSON.stringify({ available: false, reason: 'Username must be 3-20 alphanumeric characters' }),
+        JSON.stringify({ available: false, reason: 'Username must be 3-30 characters' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Allow alphanumeric, spaces, hyphens, and underscores
+    if (!/^[a-zA-Z0-9\s_-]+$/.test(clean)) {
+      return new Response(
+        JSON.stringify({ available: false, reason: 'Username can only contain letters, numbers, spaces, hyphens, and underscores' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -36,11 +44,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: existing } = await supabase
+    console.log('Checking username availability:', clean);
+
+    // Check case-insensitive to avoid duplicates like "John" and "john"
+    const { data: existing, error: queryError } = await supabase
       .from('users')
       .select('username')
-      .eq('username', clean)
+      .ilike('username', clean)
       .maybeSingle();
+
+    if (queryError) {
+      console.error('Database query error:', queryError);
+    }
+
+    console.log('Existing username found:', existing);
 
     const available = !existing;
 
