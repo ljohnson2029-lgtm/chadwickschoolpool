@@ -42,4 +42,14 @@ export const NotificationMessages = {
   
   studentUnlinked: (studentName: string) => 
     `ℹ️ ${studentName} has unlinked from your account`,
+
+  // Co-parent notifications
+  coParentRequest: (requesterName: string) => 
+    `👥 ${requesterName} wants to link as a co-parent`,
+  
+  coParentApproved: (approverName: string) => 
+    `✅ ${approverName} approved your co-parent request`,
+  
+  coParentDenied: (denier: string) => 
+    `❌ ${denier} denied your co-parent request`,
 };
