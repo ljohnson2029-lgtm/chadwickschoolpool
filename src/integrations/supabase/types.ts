@@ -197,6 +197,8 @@ export type Database = {
           created_at: string
           first_name: string | null
           home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
           id: string
           last_name: string | null
           phone_number: string | null
@@ -211,6 +213,8 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id: string
           last_name?: string | null
           phone_number?: string | null
@@ -225,6 +229,8 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id?: string
           last_name?: string | null
           phone_number?: string | null

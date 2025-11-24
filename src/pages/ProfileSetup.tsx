@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 
 interface Child {
   id?: string;
@@ -23,6 +24,8 @@ const ProfileSetup = () => {
   const { toast } = useToast();
 
   const [homeAddress, setHomeAddress] = useState("");
+  const [homeLatitude, setHomeLatitude] = useState<number | null>(null);
+  const [homeLongitude, setHomeLongitude] = useState<number | null>(null);
   const [carMake, setCarMake] = useState("");
   const [carModel, setCarModel] = useState("");
   const [carSeats, setCarSeats] = useState("");
@@ -38,6 +41,8 @@ const ProfileSetup = () => {
   useEffect(() => {
     if (profile) {
       setHomeAddress(profile.home_address || "");
+      setHomeLatitude((profile as any).home_latitude || null);
+      setHomeLongitude((profile as any).home_longitude || null);
       setCarMake(profile.car_make || "");
       setCarModel(profile.car_model || "");
       setCarSeats(profile.car_seats?.toString() || "");
@@ -82,9 +87,25 @@ const ProfileSetup = () => {
     setChildren(updated);
   };
 
+  const handleAddressSelect = (address: string, latitude: number, longitude: number) => {
+    setHomeAddress(address);
+    setHomeLatitude(latitude);
+    setHomeLongitude(longitude);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validate that address has been geocoded
+    if (homeAddress && !homeLatitude && !homeLongitude) {
+      toast({
+        title: "Invalid Address",
+        description: "Please select an address from the suggestions",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setSaving(true);
 
@@ -94,6 +115,8 @@ const ProfileSetup = () => {
         .from("profiles")
         .update({
           home_address: homeAddress,
+          home_latitude: homeLatitude,
+          home_longitude: homeLongitude,
           car_make: carMake,
           car_model: carModel,
           car_seats: carSeats ? parseInt(carSeats) : null,
@@ -167,13 +190,15 @@ const ProfileSetup = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="homeAddress">Home Address</Label>
-                <Input
-                  id="homeAddress"
+                <AddressAutocompleteInput
                   value={homeAddress}
-                  onChange={(e) => setHomeAddress(e.target.value)}
-                  placeholder="Enter your home address"
+                  onAddressSelect={handleAddressSelect}
+                  placeholder="Start typing your address..."
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select from suggestions to enable map features
+                </p>
               </div>
             </CardContent>
           </Card>
