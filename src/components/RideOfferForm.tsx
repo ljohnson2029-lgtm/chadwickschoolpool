@@ -14,11 +14,21 @@ import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 
 interface RideOfferFormProps {
   onSuccess: () => void;
+  recipientParentId?: string;
+  recipientParentName?: string;
+  prefillPickup?: string;
+  prefillDropoff?: string;
 }
 
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
-const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
+const RideOfferForm = ({ 
+  onSuccess, 
+  recipientParentId, 
+  recipientParentName,
+  prefillPickup,
+  prefillDropoff 
+}: RideOfferFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -51,6 +61,12 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
 
     fetchUserEmail();
   }, [user]);
+
+  // Pre-fill form when props are provided
+  useEffect(() => {
+    if (prefillPickup) setPickupLocation(prefillPickup);
+    if (prefillDropoff) setDropoffLocation(prefillDropoff);
+  }, [prefillPickup, prefillDropoff]);
 
   const toggleDay = (day: string) => {
     setRecurringDays(prev =>
@@ -90,9 +106,22 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
 
       if (error) throw error;
 
+      // Send notification to recipient parent if specified
+      if (recipientParentId) {
+        await supabase.from('notifications').insert({
+          user_id: recipientParentId,
+          type: 'ride_offer',
+          message: `You have a new ride offer from ${userEmail} for ${rideDate} at ${rideTime}`,
+        });
+      }
+
+      const successMessage = recipientParentName 
+        ? `Ride offer sent to ${recipientParentName}` 
+        : "Your ride offer has been posted successfully";
+
       toast({
         title: "Ride offer created",
-        description: "Your ride offer has been posted successfully.",
+        description: successMessage,
       });
 
       // Reset form
@@ -118,12 +147,14 @@ const RideOfferForm = ({ onSuccess }: RideOfferFormProps) => {
   };
 
   if (!canCreate) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Offer a Ride</CardTitle>
-        </CardHeader>
-        <CardContent>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          Offer a Ride{recipientParentName && ` to ${recipientParentName}`}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>

@@ -13,11 +13,21 @@ import { canRequestRide, getStudentPermissionError } from "@/lib/permissions";
 
 interface RideRequestFormProps {
   onSuccess: () => void;
+  recipientParentId?: string;
+  recipientParentName?: string;
+  prefillPickup?: string;
+  prefillDropoff?: string;
 }
 
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
-const RideRequestForm = ({ onSuccess }: RideRequestFormProps) => {
+const RideRequestForm = ({ 
+  onSuccess, 
+  recipientParentId, 
+  recipientParentName,
+  prefillPickup,
+  prefillDropoff 
+}: RideRequestFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +59,12 @@ const RideRequestForm = ({ onSuccess }: RideRequestFormProps) => {
 
     fetchUserEmail();
   }, [user]);
+
+  // Pre-fill form when props are provided
+  useEffect(() => {
+    if (prefillPickup) setPickupLocation(prefillPickup);
+    if (prefillDropoff) setDropoffLocation(prefillDropoff);
+  }, [prefillPickup, prefillDropoff]);
 
   const toggleDay = (day: string) => {
     setRecurringDays(prev =>
@@ -87,9 +103,22 @@ const RideRequestForm = ({ onSuccess }: RideRequestFormProps) => {
 
       if (error) throw error;
 
+      // Send notification to recipient parent if specified
+      if (recipientParentId) {
+        await supabase.from('notifications').insert({
+          user_id: recipientParentId,
+          type: 'ride_request',
+          message: `You have a new ride request from ${userEmail} for ${rideDate} at ${rideTime}`,
+        });
+      }
+
+      const successMessage = recipientParentName 
+        ? `Ride request sent to ${recipientParentName}` 
+        : "Your ride request has been posted successfully";
+
       toast({
         title: "Ride request created",
-        description: "Your ride request has been posted successfully.",
+        description: successMessage,
       });
 
       // Reset form
@@ -114,12 +143,14 @@ const RideRequestForm = ({ onSuccess }: RideRequestFormProps) => {
   };
 
   if (!canRequest) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Request a Ride</CardTitle>
-        </CardHeader>
-        <CardContent>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          Request a Ride{recipientParentName && ` from ${recipientParentName}`}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
