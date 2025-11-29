@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, Car } from "lucide-react";
+import { Menu, X, Car, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -131,7 +131,6 @@ const Navigation = () => {
 
   // Main navigation items (always visible)
   const mainNavItems: NavItem[] = [
-    { label: "Home", path: "/" },
     { label: "Features", path: "/features" },
     { label: userRole === 'student' ? "Family Carpools" : "Dashboard", path: "/dashboard", authRequired: true },
   ];
@@ -177,8 +176,19 @@ const Navigation = () => {
             <span className={textColorClass}>SchoolPool</span>
           </button>
 
-          {/* Desktop Navigation - 5 Main Items + More Menu */}
+          {/* Desktop Navigation - Home Icon + Main Items + More Menu */}
           <div className="hidden md:flex items-center space-x-6">
+            {/* Home Icon Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className={`transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-110`}
+              aria-label="Home"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+
             {/* Main Navigation Buttons */}
             {mainNavItems.map((item) => {
               if (item.authRequired && !user) return null;
@@ -297,6 +307,18 @@ const Navigation = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-foreground/95 backdrop-blur-xl border-t border-border animate-fade-in">
           <div className="px-4 py-6 space-y-1">
+            {/* Home button in mobile menu */}
+            <button
+              onClick={() => {
+                navigate("/");
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-3 w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
+            >
+              <Home className="h-5 w-5" />
+              Home
+            </button>
+            
             {[...mainNavItems, ...moreNavItems, ...(userRole === 'student' ? studentNavItems : [])].map((item, index) => {
               if (item.authRequired && !user) return null;
               if (item.parentOnly && !isParent) return null;
