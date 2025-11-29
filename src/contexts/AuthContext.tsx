@@ -9,6 +9,8 @@ interface Profile {
   last_name: string | null;
   phone_number: string | null;
   home_address: string | null;
+  home_latitude: number | null;
+  home_longitude: number | null;
   car_make: string | null;
   car_model: string | null;
   car_seats: number | null;

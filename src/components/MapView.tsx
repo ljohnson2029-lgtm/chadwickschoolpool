@@ -11,10 +11,20 @@ interface School {
   address: string;
 }
 
+interface ParentLocation {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address: string;
+  phone: string | null;
+}
+
 interface MapViewProps {
   userLocation?: { latitude: number; longitude: number };
   pickupLocation?: { latitude: number; longitude: number };
   dropoffLocation?: { latitude: number; longitude: number };
+  parentLocations?: ParentLocation[];
   routeGeometry?: any;
   height?: string;
   showStyleControls?: boolean;
@@ -25,6 +35,7 @@ const MapView: React.FC<MapViewProps> = ({
   userLocation, 
   pickupLocation, 
   dropoffLocation,
+  parentLocations = [],
   routeGeometry,
   height = '400px',
   showStyleControls = true,
@@ -233,16 +244,40 @@ const MapView: React.FC<MapViewProps> = ({
 
     fetchSchools();
 
-    // Add user location marker
+    // Add user location marker (Your Home)
     if (userLocation) {
       new mapboxgl.Marker({ color: '#3b82f6' })
         .setLngLat([userLocation.longitude, userLocation.latitude])
-        .setPopup(new mapboxgl.Popup().setHTML('<div>Your Location</div>'))
+        .setPopup(
+          new mapboxgl.Popup().setHTML(
+            `<div class="p-2">
+              <strong class="text-blue-600">Your Home</strong>
+            </div>`
+          )
+        )
         .addTo(map.current);
     }
 
-    // Add pickup location marker
-    if (pickupLocation) {
+    // Add parent location markers (green)
+    if (parentLocations.length > 0) {
+      parentLocations.forEach(parent => {
+        new mapboxgl.Marker({ color: '#22c55e' })
+          .setLngLat([parent.longitude, parent.latitude])
+          .setPopup(
+            new mapboxgl.Popup().setHTML(
+              `<div class="p-2 space-y-1">
+                <strong class="text-green-600">${parent.name}</strong>
+                ${parent.phone ? `<p class="text-xs">📞 ${parent.phone}</p>` : ''}
+                <p class="text-xs text-gray-600">${parent.address}</p>
+              </div>`
+            )
+          )
+          .addTo(map.current!);
+      });
+    }
+
+    // Add pickup location marker (legacy support or school marker)
+    if (pickupLocation && !parentLocations.length) {
       new mapboxgl.Marker({ color: '#22c55e' })
         .setLngLat([pickupLocation.longitude, pickupLocation.latitude])
         .setPopup(new mapboxgl.Popup().setHTML('<div>Pickup Location</div>'))
@@ -288,7 +323,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       map.current?.remove();
     };
-  }, [userLocation, pickupLocation, dropoffLocation, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
+  }, [userLocation, pickupLocation, dropoffLocation, parentLocations, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
 
   const changeMapStyle = (newStyle: 'streets' | 'satellite' | 'hybrid') => {
     setMapStyle(newStyle);
