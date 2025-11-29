@@ -174,10 +174,12 @@ const MapDemo: React.FC = () => {
   };
 
   const handleRequestRide = () => {
+    if (!selectedParent) return;
     setShowRideRequestForm(true);
   };
 
   const handleOfferRide = () => {
+    if (!selectedParent) return;
     setShowRideOfferForm(true);
   };
 
@@ -423,14 +425,26 @@ const MapDemo: React.FC = () => {
       {/* Ride Request Form Dialog */}
       <Dialog open={showRideRequestForm} onOpenChange={setShowRideRequestForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <RideRequestForm onSuccess={handleRideFormSuccess} />
+          <RideRequestForm 
+            onSuccess={handleRideFormSuccess}
+            recipientParentId={selectedParent?.id}
+            recipientParentName={selectedParent ? `${selectedParent.first_name} ${selectedParent.last_name}` : undefined}
+            prefillPickup={userHome?.address || profile?.home_address || ""}
+            prefillDropoff={schoolLocation?.address || "Chadwick School, 26800 Academy Drive, Palos Verdes Peninsula, CA"}
+          />
         </DialogContent>
       </Dialog>
 
       {/* Ride Offer Form Dialog */}
       <Dialog open={showRideOfferForm} onOpenChange={setShowRideOfferForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <RideOfferForm onSuccess={handleRideFormSuccess} />
+          <RideOfferForm 
+            onSuccess={handleRideFormSuccess}
+            recipientParentId={selectedParent?.id}
+            recipientParentName={selectedParent ? `${selectedParent.first_name} ${selectedParent.last_name}` : undefined}
+            prefillPickup={userHome?.address || profile?.home_address || ""}
+            prefillDropoff={selectedParent?.home_address || schoolLocation?.address || "Chadwick School"}
+          />
         </DialogContent>
       </Dialog>
     </div>
