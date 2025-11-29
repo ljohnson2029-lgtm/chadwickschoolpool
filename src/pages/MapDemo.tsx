@@ -130,24 +130,22 @@ const MapDemo: React.FC = () => {
     }
   }, [profile]);
 
-  // Fetch all parent profiles with addresses
+  // Fetch all parent profiles with addresses (via edge function to bypass RLS)
   useEffect(() => {
     const fetchParents = async () => {
       setIsLoadingParents(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('account_type', 'parent')
-        .not('home_latitude', 'is', null)
-        .not('home_longitude', 'is', null);
+
+      const { data, error } = await supabase.functions.invoke("get-parent-locations");
 
       if (error) {
-        console.error('Error fetching parents:', error);
+        console.error("Error fetching parents via function:", error);
+        setAllParents([]);
       } else {
-        // Filter out current user
-        const parents = (data || []).filter(p => p.id !== user?.id);
+        const parents = (data?.parents || []).filter((p: ParentProfile) => p.id !== user?.id);
+        console.log("Loaded parents for map:", parents.length);
         setAllParents(parents);
       }
+
       setIsLoadingParents(false);
     };
 
