@@ -70,8 +70,9 @@ serve(async (req) => {
     // Create username from email
     const username = email.split('@')[0];
 
-    // Hash password using bcrypt
-    const passwordHash = await bcrypt.hash(password);
+    // Hash password using bcrypt (synchronous to avoid Worker issues)
+    console.log('Hashing password...');
+    const passwordHash = bcrypt.hashSync(password);
 
     // Create user in custom users table
     const { data: newUser, error: userError } = await supabase
