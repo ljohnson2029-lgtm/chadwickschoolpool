@@ -9,10 +9,19 @@ import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
 import { CoParentLinking } from '@/components/CoParentLinking';
 
+interface LinkedStudent {
+  student_id: string;
+  student_email: string;
+  student_first_name: string;
+  student_last_name: string;
+  linked_at: string;
+}
+
 const Profile = () => {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [linkedChildren, setLinkedChildren] = useState<LinkedStudent[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,6 +44,27 @@ const Profile = () => {
 
     fetchUserRole();
   }, [user]);
+
+  useEffect(() => {
+    const fetchLinkedChildren = async () => {
+      if (!user || !profile) return;
+      
+      const { data, error } = await supabase.rpc('get_linked_students', {
+        parent_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error fetching linked children:', error);
+        return;
+      }
+
+      setLinkedChildren(data || []);
+    };
+
+    if (profile?.account_type === 'parent') {
+      fetchLinkedChildren();
+    }
+  }, [user, profile]);
 
   const handleLogout = async () => {
     await logout();
@@ -153,6 +183,29 @@ const Profile = () => {
                   </p>
                 </div>
               </div>
+
+              {isParent && linkedChildren.length > 0 && (
+                <>
+                  <div className="border-t pt-4 mt-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                      <p className="text-sm font-medium text-muted-foreground">Linked Children</p>
+                    </div>
+                    <div className="space-y-2 ml-8">
+                      {linkedChildren.map((child) => (
+                        <div key={child.student_id} className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600">
+                            {child.student_first_name} {child.student_last_name}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            ({child.student_email})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
