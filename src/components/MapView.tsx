@@ -20,11 +20,24 @@ interface ParentLocation {
   phone: string | null;
 }
 
+interface ParentProfile {
+  id: string;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  home_address: string | null;
+  home_latitude: number | null;
+  home_longitude: number | null;
+  account_type: string;
+}
+
 interface MapViewProps {
   userLocation?: { latitude: number; longitude: number };
   pickupLocation?: { latitude: number; longitude: number };
   dropoffLocation?: { latitude: number; longitude: number };
   parentLocations?: ParentLocation[];
+  onParentClick?: (parent: ParentProfile) => void;
   routeGeometry?: any;
   height?: string;
   showStyleControls?: boolean;
@@ -36,6 +49,7 @@ const MapView: React.FC<MapViewProps> = ({
   pickupLocation, 
   dropoffLocation,
   parentLocations = [],
+  onParentClick,
   routeGeometry,
   height = '400px',
   showStyleControls = true,
@@ -258,8 +272,43 @@ const MapView: React.FC<MapViewProps> = ({
         .addTo(map.current);
     }
 
-    // Add parent location markers (green)
-    if (parentLocations.length > 0) {
+    // Add parent location markers (green) with click handlers
+    if (parentLocations.length > 0 && onParentClick) {
+      parentLocations.forEach(parent => {
+        const markerEl = document.createElement('div');
+        markerEl.className = 'parent-marker cursor-pointer transition-transform hover:scale-110';
+        markerEl.style.width = '30px';
+        markerEl.style.height = '30px';
+        markerEl.style.borderRadius = '50%';
+        markerEl.style.backgroundColor = '#22c55e';
+        markerEl.style.border = '3px solid white';
+        markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        markerEl.style.cursor = 'pointer';
+
+        const marker = new mapboxgl.Marker({ element: markerEl })
+          .setLngLat([parent.longitude, parent.latitude])
+          .addTo(map.current!);
+
+        // Add click handler
+        markerEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Convert ParentLocation to ParentProfile format
+          const parentProfile: ParentProfile = {
+            id: parent.id,
+            username: '', // Will be fetched in profile card
+            first_name: parent.name.split(' ')[0] || null,
+            last_name: parent.name.split(' ').slice(1).join(' ') || null,
+            phone_number: parent.phone,
+            home_address: parent.address,
+            home_latitude: parent.latitude,
+            home_longitude: parent.longitude,
+            account_type: 'parent'
+          };
+          onParentClick(parentProfile);
+        });
+      });
+    } else if (parentLocations.length > 0) {
+      // Fallback to basic markers without click handlers
       parentLocations.forEach(parent => {
         new mapboxgl.Marker({ color: '#22c55e' })
           .setLngLat([parent.longitude, parent.latitude])
@@ -323,7 +372,7 @@ const MapView: React.FC<MapViewProps> = ({
     return () => {
       map.current?.remove();
     };
-  }, [userLocation, pickupLocation, dropoffLocation, parentLocations, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
+  }, [userLocation, pickupLocation, dropoffLocation, parentLocations, onParentClick, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
 
   const changeMapStyle = (newStyle: 'streets' | 'satellite' | 'hybrid') => {
     setMapStyle(newStyle);
