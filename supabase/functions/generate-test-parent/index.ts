@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,8 +70,7 @@ serve(async (req) => {
     // Create username from email
     const username = email.split('@')[0];
 
-    // Hash password using bcrypt (imported from Deno)
-    const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts');
+    // Hash password using bcrypt
     const passwordHash = await bcrypt.hash(password);
 
     // Create user in custom users table
