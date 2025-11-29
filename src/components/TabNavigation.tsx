@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon } from "lucide-react";
+import { Menu, Car, User, Users as UsersIcon, Home } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import {
@@ -49,6 +49,17 @@ const TabNavigation = () => {
 
           {/* Main Tabs - Desktop */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Home Icon Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="hover:bg-accent"
+              aria-label="Home"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
+
             {user && mainTabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -134,6 +145,16 @@ const TabNavigation = () => {
 
         {/* Mobile Menu */}
         <div id="mobile-menu" className="hidden md:hidden pb-4 space-y-2">
+          {/* Home button in mobile menu */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="w-full justify-start gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Button>
+
           {user &&
             mainTabs.map((tab) => {
               const Icon = tab.icon;

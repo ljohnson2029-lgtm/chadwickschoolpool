@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import Navigation from '@/components/Navigation';
 import MapView from '@/components/MapView';
 import MapControlPanel, { ParentFilter } from '@/components/MapControlPanel';
 import MapLegend from '@/components/MapLegend';
@@ -283,14 +284,16 @@ const MapDemo: React.FC = () => {
   const showNoParentsWarning = !showNoAddressWarning && !showNoRouteWarning && displayedParents.length === 0;
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-full mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold mb-2">Proximity Parent Finder</h1>
-          <p className="text-muted-foreground">
-            Find parents along your route to Chadwick School
-          </p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="container mx-auto py-8 px-4 pt-24">
+        <div className="max-w-full mx-auto space-y-6">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Proximity Parent Finder</h1>
+            <p className="text-muted-foreground">
+              Find parents along your route to Chadwick School
+            </p>
+          </div>
 
         {/* Warning alerts */}
         {showNoAddressWarning && (
@@ -414,6 +417,7 @@ const MapDemo: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 };
