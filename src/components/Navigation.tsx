@@ -144,6 +144,7 @@ const Navigation = () => {
     { label: "Map & Routes", path: "/map", authRequired: true },
     { label: "My Account Links", path: "/linked-accounts", authRequired: true },
     { label: "Manage Students", path: "/parent-approvals", parentOnly: true },
+    { label: "Settings", path: "/settings", authRequired: true },
   ];
 
   // Student-specific navigation items
