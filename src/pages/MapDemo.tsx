@@ -59,7 +59,7 @@ const MapDemo: React.FC = () => {
   const [radiusMiles, setRadiusMiles] = useState<number>(2);
   const debouncedRadius = useDebounce(radiusMiles, 300);
   const [showRoute, setShowRoute] = useState<boolean>(true);
-  const [filter, setFilter] = useState<ParentFilter>('within-radius');
+  const [filter, setFilter] = useState<ParentFilter>('all');
   const [controlsCollapsed, setControlsCollapsed] = useState<boolean>(false);
   
   const [allParents, setAllParents] = useState<ParentProfile[]>([]);
@@ -176,9 +176,23 @@ const MapDemo: React.FC = () => {
 
   // Filter parents based on distance from route (using debounced radius)
   useEffect(() => {
-    if (!routeToSchool?.geometry || !allParents.length) {
+    if (!allParents.length) {
       setFilteredParentsWithDistance([]);
       setDisplayedParents([]);
+      return;
+    }
+
+    // If route is not available (e.g. no home address), still show all parents
+    if (!routeToSchool?.geometry) {
+      const parentsWithDistance = allParents
+        .filter(parent => parent.home_latitude && parent.home_longitude)
+        .map(parent => ({
+          ...parent,
+          // Treat as on-route so they pass the radius filter
+          distanceFromRoute: 0,
+        }));
+
+      setFilteredParentsWithDistance(parentsWithDistance);
       return;
     }
 
@@ -197,9 +211,7 @@ const MapDemo: React.FC = () => {
           distanceFromRoute: distanceMiles
         };
       })
-      .filter((p): p is ParentProfile & { distanceFromRoute: number } => 
-        p !== null
-      );
+      .filter((p): p is ParentProfile & { distanceFromRoute: number } => p !== null);
 
     setFilteredParentsWithDistance(parentsWithDistance);
   }, [routeToSchool, allParents]);
