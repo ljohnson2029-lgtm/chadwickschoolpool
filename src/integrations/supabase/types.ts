@@ -239,6 +239,61 @@ export type Database = {
         }
         Relationships: []
       }
+      ride_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          recipient_id: string
+          ride_id: string
+          sender_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          recipient_id: string
+          ride_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          ride_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_conversations_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_conversations_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "rides"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_conversations_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rides: {
         Row: {
           created_at: string | null
@@ -246,6 +301,7 @@ export type Database = {
           id: string
           is_recurring: boolean | null
           pickup_location: string
+          recipient_id: string | null
           recurring_days: string[] | null
           ride_date: string
           ride_time: string
@@ -253,6 +309,9 @@ export type Database = {
           seats_available: number | null
           seats_needed: number | null
           status: string | null
+          transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
           type: string
           user_id: string
         }
@@ -262,6 +321,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           pickup_location: string
+          recipient_id?: string | null
           recurring_days?: string[] | null
           ride_date: string
           ride_time: string
@@ -269,6 +329,9 @@ export type Database = {
           seats_available?: number | null
           seats_needed?: number | null
           status?: string | null
+          transaction_type?:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
           type: string
           user_id: string
         }
@@ -278,6 +341,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           pickup_location?: string
+          recipient_id?: string | null
           recurring_days?: string[] | null
           ride_date?: string
           ride_time?: string
@@ -285,10 +349,21 @@ export type Database = {
           seats_available?: number | null
           seats_needed?: number | null
           status?: string | null
+          transaction_type?:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rides_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schools: {
         Row: {
@@ -541,6 +616,7 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
+      transaction_type: "broadcast" | "direct"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -669,6 +745,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "parent", "staff", "admin"],
+      transaction_type: ["broadcast", "direct"],
     },
   },
 } as const

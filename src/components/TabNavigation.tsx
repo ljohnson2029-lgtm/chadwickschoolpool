@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon, Home } from "lucide-react";
+import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import {
@@ -20,13 +20,15 @@ const TabNavigation = () => {
 
   const mainTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
-    { label: "Carpools", path: "/carpools", icon: Car },
+    { label: "Find Rides", path: "/find-rides", icon: Radio },
+    { label: "Post Ride", path: "/post-ride", icon: Plus },
+    { label: "Conversations", path: "/conversations", icon: MessageSquare },
     { label: "Family", path: "/family-links", icon: UsersIcon },
   ];
 
   const menuItems = [
     { label: "Profile", path: "/profile", icon: User },
-    { label: "Map View", path: "/map", icon: Car },
+    { label: "My Posted Rides", path: "/my-rides", icon: Radio },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },

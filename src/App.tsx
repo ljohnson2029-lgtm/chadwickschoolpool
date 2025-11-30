@@ -21,6 +21,10 @@ import NotFound from "./pages/NotFound";
 import FamilyLinks from "./pages/FamilyLinks";
 import MapDemo from "./pages/MapDemo";
 import Settings from "./pages/Settings";
+import FindRides from "./pages/FindRides";
+import PostRide from "./pages/PostRide";
+import Conversations from "./pages/Conversations";
+import MyRides from "./pages/MyRides";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ const App = () => (
             <Route path="/student-linking" element={<FamilyLinks />} />
             <Route path="/parent-approvals" element={<FamilyLinks />} />
             <Route path="/map" element={<MapDemo />} />
+            <Route path="/find-rides" element={<FindRides />} />
+            <Route path="/post-ride" element={<PostRide />} />
+            <Route path="/conversations" element={<Conversations />} />
+            <Route path="/my-rides" element={<MyRides />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
