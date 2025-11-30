@@ -106,7 +106,7 @@ const Login = () => {
 
           if (!linkData) {
             // Student without approved parent link
-            navigate('/student-linking');
+            navigate('/family-links');
             return;
           }
         }

@@ -45,6 +45,10 @@ const App = () => (
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
             <Route path="/family-links" element={<FamilyLinks />} />
+            {/* Redirects from old routes */}
+            <Route path="/linked-accounts" element={<FamilyLinks />} />
+            <Route path="/student-linking" element={<FamilyLinks />} />
+            <Route path="/parent-approvals" element={<FamilyLinks />} />
             <Route path="/map" element={<MapDemo />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

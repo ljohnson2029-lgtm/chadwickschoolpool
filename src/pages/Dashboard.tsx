@@ -85,7 +85,7 @@ const Dashboard = () => {
                     variant="outline"
                     size="sm"
                     className="mt-3"
-                    onClick={() => navigate('/student-linking')}
+                    onClick={() => navigate('/family-links')}
                   >
                     <LinkIcon className="mr-2 h-4 w-4" />
                     Link to Parent
