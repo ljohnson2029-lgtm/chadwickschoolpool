@@ -237,7 +237,11 @@ const FindRides = () => {
               <Radio className="h-4 w-4" />
               Available Rides
             </TabsTrigger>
-            <TabsTrigger value="map" className="gap-2">
+            <TabsTrigger 
+              value="map" 
+              className="gap-2"
+              onClick={() => navigate('/map/find-parents')}
+            >
               <MapIcon className="h-4 w-4" />
               Find on Map
             </TabsTrigger>
