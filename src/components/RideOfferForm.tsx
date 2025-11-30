@@ -18,6 +18,7 @@ interface RideOfferFormProps {
   recipientParentName?: string;
   prefillPickup?: string;
   prefillDropoff?: string;
+  isBroadcast?: boolean;
 }
 
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
@@ -27,7 +28,8 @@ const RideOfferForm = ({
   recipientParentId, 
   recipientParentName,
   prefillPickup,
-  prefillDropoff 
+  prefillDropoff,
+  isBroadcast = false
 }: RideOfferFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -102,6 +104,8 @@ const RideOfferForm = ({
         route_details: routeDetails,
         is_recurring: isRecurring,
         recurring_days: isRecurring ? recurringDays : null,
+        transaction_type: isBroadcast ? 'broadcast' : 'direct',
+        recipient_id: isBroadcast ? null : (recipientParentId || null),
       });
 
       if (error) throw error;

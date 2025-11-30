@@ -17,7 +17,8 @@ import {
   Clock,
   UserPlus,
   Hand,
-  Map as MapIcon
+  Map as MapIcon,
+  MessageSquare
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
@@ -148,64 +149,64 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Find Nearby Parents Card */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/map')}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/find-rides')}>
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
                       <MapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <CardTitle className="text-lg">Find Nearby Parents</CardTitle>
+                    <CardTitle className="text-lg">Find Rides</CardTitle>
                   </div>
                   <CardDescription>
-                    View parents near your route to Chadwick School and discover carpool opportunities
+                    Browse public ride posts and use the map to discover carpool opportunities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); navigate('/map'); }}>
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); navigate('/find-rides'); }}>
                     <MapIcon className="h-4 w-4" />
-                    Open Map
+                    Browse Rides
                   </Button>
                 </CardContent>
               </Card>
 
               {/* Request a Ride Card */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowRequestDialog(true)}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/post-ride')}>
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
                       <Hand className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <CardTitle className="text-lg">Request a Ride</CardTitle>
+                    <CardTitle className="text-lg">Post a Ride</CardTitle>
                   </div>
                   <CardDescription>
-                    Ask another parent for a ride to school or activities for your student
+                    Create a public ride request or offer that all parents can see and respond to
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); setShowRequestDialog(true); }}>
-                    <Hand className="h-4 w-4" />
-                    New Request
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); navigate('/post-ride'); }}>
+                    <Plus className="h-4 w-4" />
+                    Post Now
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Offer a Ride Card */}
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowOfferDialog(true)}>
+              {/* Conversations Card */}
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/conversations')}>
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
                       <Car className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
-                    <CardTitle className="text-lg">Offer a Ride</CardTitle>
+                    <CardTitle className="text-lg">My Conversations</CardTitle>
                   </div>
                   <CardDescription>
-                    Share your carpool availability and help other families get to school
+                    View and manage all your direct ride negotiations and responses
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); setShowOfferDialog(true); }}>
-                    <Car className="h-4 w-4" />
-                    New Offer
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); navigate('/conversations'); }}>
+                    <MessageSquare className="h-4 w-4" />
+                    View All
                   </Button>
                 </CardContent>
               </Card>

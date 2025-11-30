@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Calendar, Clock, Users, User, Map } from "lucide-react";
+import { MapPin, Calendar, Clock, Users, User, Map, Radio } from "lucide-react";
 
   interface Ride {
     id: string;
@@ -21,6 +21,7 @@ import { MapPin, Calendar, Clock, Users, User, Map } from "lucide-react";
     route_details: string | null;
     is_recurring: boolean;
     recurring_days: string[] | null;
+    transaction_type?: string;
     profiles: {
       first_name: string | null;
       last_name: string | null;
@@ -155,6 +156,18 @@ const RidesList = () => {
                 <Badge variant={ride.type === "offer" ? "default" : "secondary"}>
                   {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
                 </Badge>
+                {ride.transaction_type === 'broadcast' && (
+                  <Badge className="gap-1 bg-purple-600 dark:bg-purple-700">
+                    <Radio className="h-3 w-3" />
+                    Public Post
+                  </Badge>
+                )}
+                {ride.transaction_type === 'direct' && (
+                  <Badge variant="outline" className="gap-1">
+                    <User className="h-3 w-3" />
+                    Direct
+                  </Badge>
+                )}
                 {showParentBadge && (
                   <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
                     Created by {parentName}
