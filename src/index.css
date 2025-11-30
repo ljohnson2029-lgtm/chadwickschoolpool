@@ -206,4 +206,16 @@ All colors MUST be HSL.
       opacity: 1;
     }
   }
+
+  /* Custom styles for Mapbox parent profile popups */
+  .parent-profile-popup .mapboxgl-popup-content {
+    padding: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+    overflow: visible !important;
+  }
+
+  .parent-profile-popup .mapboxgl-popup-tip {
+    border-top-color: white !important;
+  }
 }

@@ -5,12 +5,15 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import ParentProfileSheet from "@/components/ParentProfileSheet";
+import ParentProfilePopup from "@/components/ParentProfilePopup";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Home, School, Navigation as NavigationIcon, Maximize2 } from "lucide-react";
+import { Home, School, Navigation as NavigationIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import * as turf from "@turf/turf";
 
 interface ParentLocation {
@@ -47,8 +50,66 @@ const MapFindParents = () => {
   const [clusterMarkers, setClusterMarkers] = useState(true);
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [selectedParentDistance, setSelectedParentDistance] = useState(0);
+  const [profilePopupOpen, setProfilePopupOpen] = useState(false);
   
+  const isMobile = useIsMobile();
   const markers = useRef<mapboxgl.Marker[]>([]);
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
+
+  // Handle profile popup close
+  const handleCloseProfile = useCallback(() => {
+    setProfilePopupOpen(false);
+    setSelectedParentId(null);
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+    }
+  }, []);
+
+  // Handle parent marker click
+  const handleParentClick = useCallback((parent: ParentLocation) => {
+    setSelectedParentId(parent.id);
+    setSelectedParentDistance(parent.distance_from_route || 0);
+    
+    if (isMobile) {
+      // Mobile: Use bottom sheet
+      setProfilePopupOpen(true);
+    } else {
+      // Desktop: Use Mapbox popup
+      handleCloseProfile(); // Close any existing popup
+      
+      const popupContainer = document.createElement('div');
+      popupContainer.id = `popup-${parent.id}`;
+      
+      const popup = new mapboxgl.Popup({
+        offset: 25,
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: '380px',
+        className: 'parent-profile-popup'
+      })
+        .setLngLat([parent.home_longitude, parent.home_latitude])
+        .setDOMContent(popupContainer)
+        .addTo(map.current!);
+
+      popupRef.current = popup;
+      setProfilePopupOpen(true);
+
+      // Cleanup when popup is closed
+      popup.on('close', handleCloseProfile);
+    }
+  }, [isMobile, handleCloseProfile]);
+
+  // Handle action buttons
+  const handleRequestRide = useCallback((parentId: string, parentName: string) => {
+    navigate(`/map/find-parents/request/${parentId}`);
+  }, [navigate]);
+
+  const handleOfferRide = useCallback((parentId: string, parentName: string) => {
+    navigate(`/map/find-parents/offer/${parentId}`);
+  }, [navigate]);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -370,20 +431,29 @@ const MapFindParents = () => {
     });
   }, [map.current, userProfile, filteredParents, parents, radiusMiles, showSchool]);
 
-  // Handle marker popup actions
+  // Render desktop popup content
   useEffect(() => {
-    (window as any).sendRequest = (parentId: string) => {
-      navigate(`/map/find-parents/request/${parentId}`);
-    };
-    (window as any).sendOffer = (parentId: string) => {
-      navigate(`/map/find-parents/offer/${parentId}`);
-    };
+    if (!profilePopupOpen || isMobile || !selectedParentId) return;
 
-    return () => {
-      delete (window as any).sendRequest;
-      delete (window as any).sendOffer;
-    };
-  }, [navigate]);
+    const popupContainer = document.getElementById(`popup-${selectedParentId}`);
+    if (popupContainer && !popupContainer.hasChildNodes()) {
+      const root = document.createElement('div');
+      popupContainer.appendChild(root);
+      
+      import('react-dom/client').then(({ createRoot }) => {
+        const reactRoot = createRoot(root);
+        reactRoot.render(
+          <ParentProfilePopup
+            parentId={selectedParentId}
+            distance={selectedParentDistance}
+            onClose={handleCloseProfile}
+            onRequestRide={handleRequestRide}
+            onOfferRide={handleOfferRide}
+          />
+        );
+      });
+    }
+  }, [profilePopupOpen, isMobile, selectedParentId, selectedParentDistance, handleCloseProfile, handleRequestRide, handleOfferRide]);
 
   const handleResetView = useCallback(() => {
     if (!map.current || !userProfile) return;
@@ -554,6 +624,18 @@ const MapFindParents = () => {
             </Card>
           </div>
         </div>
+
+        {/* Mobile Profile Sheet */}
+        {isMobile && selectedParentId && (
+          <ParentProfileSheet
+            open={profilePopupOpen}
+            parentId={selectedParentId}
+            distance={selectedParentDistance}
+            onClose={handleCloseProfile}
+            onRequestRide={handleRequestRide}
+            onOfferRide={handleOfferRide}
+          />
+        )}
       </div>
     </>
   );
