@@ -17,9 +17,7 @@ import FamilyCarpools from "./pages/FamilyCarpools";
 import EmailVerification from "./pages/EmailVerification";
 import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
 import NotFound from "./pages/NotFound";
-import StudentLinking from "./pages/StudentLinking";
-import ParentApprovals from "./pages/ParentApprovals";
-import LinkedAccounts from "./pages/LinkedAccounts";
+import FamilyLinks from "./pages/FamilyLinks";
 import MapDemo from "./pages/MapDemo";
 import Settings from "./pages/Settings";
 
@@ -46,9 +44,7 @@ const App = () => (
             <Route path="/dashboard" element={<FamilyCarpools />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
-            <Route path="/student-linking" element={<StudentLinking />} />
-            <Route path="/parent-approvals" element={<ParentApprovals />} />
-            <Route path="/linked-accounts" element={<LinkedAccounts />} />
+            <Route path="/family-links" element={<FamilyLinks />} />
             <Route path="/map" element={<MapDemo />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

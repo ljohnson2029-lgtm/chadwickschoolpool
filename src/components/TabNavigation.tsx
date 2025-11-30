@@ -20,7 +20,8 @@ const TabNavigation = () => {
 
   const mainTabs = [
     { label: "Profile", path: "/profile", icon: User },
-    { label: "Family Carpools", path: "/family-carpools", icon: UsersIcon },
+    { label: "Carpools", path: "/family-carpools", icon: Car },
+    { label: "Family", path: "/family-links", icon: UsersIcon },
   ];
 
   const menuItems = [

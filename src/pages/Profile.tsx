@@ -7,7 +7,6 @@ import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
-import { CoParentLinking } from '@/components/CoParentLinking';
 
 interface LinkedStudent {
   student_id: string;
@@ -237,22 +236,20 @@ const Profile = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Link className="h-5 w-5" />
-                  Link to Parent Account
+                  Family Links
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
                   Connect with your parent's account to view their carpool schedules
                 </p>
-                <Button onClick={() => navigate('/student-linking')}>
+                <Button onClick={() => navigate('/family-links')}>
                   <Link className="mr-2 h-4 w-4" />
-                  Manage Parent Links
+                  Manage Family Links
                 </Button>
               </CardContent>
             </Card>
           )}
-
-          {isParent && <CoParentLinking />}
 
           {!profile.home_address && (
             <Card className="border-dashed">
