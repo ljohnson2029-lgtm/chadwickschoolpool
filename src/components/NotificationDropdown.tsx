@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, X, MapPin } from 'lucide-react';
+import { Bell, Check, X, MapPin, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -177,6 +177,12 @@ export const NotificationDropdown = () => {
     return type === 'ride_request' || type === 'ride_offer' || type.includes('ride');
   };
 
+  // Check if notification is private request related
+  const isPrivateRequestNotification = (type: string) => {
+    return type === 'private_request_accepted' || type === 'private_request_declined' || 
+           type === 'private_ride_request_received' || type === 'private_ride_offer_received';
+  };
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -242,6 +248,23 @@ export const NotificationDropdown = () => {
                         >
                           <MapPin className="h-3 w-3" />
                           View on Map
+                        </Button>
+                      )}
+
+                      {/* View Requests button for private request notifications */}
+                      {isPrivateRequestNotification(notification.type) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(false);
+                            navigate('/requests/private');
+                          }}
+                          className="h-8 mt-2 gap-1"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          View Requests
                         </Button>
                       )}
                       
