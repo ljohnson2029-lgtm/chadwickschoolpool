@@ -211,7 +211,7 @@ const Dashboard = () => {
             </Card>
 
             {/* Find on Map (Direct) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/map')}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/map/find-parents')}>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-full bg-blue-500/10">
