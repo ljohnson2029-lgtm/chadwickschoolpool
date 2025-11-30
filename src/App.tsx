@@ -13,6 +13,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import ProfileSetup from "./pages/ProfileSetup";
+import Dashboard from "./pages/Dashboard";
 import FamilyCarpools from "./pages/FamilyCarpools";
 import EmailVerification from "./pages/EmailVerification";
 import AdminVerifiedEmails from "./pages/AdminVerifiedEmails";
@@ -38,10 +39,13 @@ const App = () => (
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/carpools" element={<FamilyCarpools />} />
+            <Route path="/carpools/create" element={<FamilyCarpools />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/setup" element={<ProfileSetup />} />
+            {/* Redirect old route */}
             <Route path="/family-carpools" element={<FamilyCarpools />} />
-            <Route path="/dashboard" element={<FamilyCarpools />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
             <Route path="/family-links" element={<FamilyLinks />} />

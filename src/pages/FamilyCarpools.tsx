@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Users, AlertCircle, Map as MapIcon, List } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import TabNavigation from "@/components/TabNavigation";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import RidesList from "@/components/RidesList";
@@ -50,29 +52,31 @@ const FamilyCarpools = () => {
 
   if (loading || roleLoading || !user || !profile) {
     return (
-      <div className="min-h-screen bg-background">
-        <TabNavigation />
-        <div className="flex items-center justify-center min-h-[60vh] pt-20">
-          <div className="text-muted-foreground">Loading...</div>
+      <DashboardLayout>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-muted-foreground">Loading...</div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   const isChild = userRole === "student";
 
   return (
-    <div className="min-h-screen bg-background">
-      <TabNavigation />
-      <div className="container mx-auto px-4 py-8 pt-24">
+    <DashboardLayout>
+      <div className="container mx-auto px-4 max-w-7xl">
+        <Breadcrumbs items={[{ label: "Browse Carpools" }]} />
+        
         <div className="space-y-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Family Carpools</h1>
+              <h1 className="text-3xl font-bold mb-2">Browse Carpools</h1>
               <p className="text-muted-foreground">
                 {isChild
-                  ? "View carpools created by your linked parents"
-                  : "Manage ride requests and offers for your family"}
+                  ? "View all available carpools from your linked parents"
+                  : "Browse, request, and offer rides to families"}
               </p>
             </div>
             <div className="flex gap-2">
@@ -158,7 +162,7 @@ const FamilyCarpools = () => {
           ) : null}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

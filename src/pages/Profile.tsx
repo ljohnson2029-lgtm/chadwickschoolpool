@@ -7,6 +7,8 @@ import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface LinkedStudent {
   student_id: string;
@@ -85,9 +87,10 @@ const Profile = () => {
   const isParent = userRole === 'parent';
 
   return (
-    <div className="min-h-screen bg-background">
-      <TabNavigation />
-      <div className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+    <DashboardLayout>
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Breadcrumbs items={[{ label: "My Profile" }]} />
+        
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">My Profile</h1>
@@ -265,7 +268,7 @@ const Profile = () => {
           )}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

@@ -19,15 +19,18 @@ const TabNavigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const mainTabs = [
-    { label: "Profile", path: "/profile", icon: User },
-    { label: "Carpools", path: "/family-carpools", icon: Car },
+    { label: "Dashboard", path: "/dashboard", icon: Home },
+    { label: "Carpools", path: "/carpools", icon: Car },
     { label: "Family", path: "/family-links", icon: UsersIcon },
   ];
 
   const menuItems = [
+    { label: "Profile", path: "/profile", icon: User },
+    { label: "Map View", path: "/map", icon: Car },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "Settings", path: "/settings" },
   ];
 
   const accountType = profile?.account_type;
@@ -50,17 +53,6 @@ const TabNavigation = () => {
 
           {/* Main Tabs - Desktop */}
           <div className="hidden md:flex items-center gap-2">
-            {/* Home Icon Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              className="hover:bg-accent"
-              aria-label="Home"
-            >
-              <Home className="h-5 w-5" />
-            </Button>
-
             {user && mainTabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -88,15 +80,19 @@ const TabNavigation = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {menuItems.map((item) => (
-                  <DropdownMenuItem
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className="cursor-pointer"
-                  >
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className="cursor-pointer flex items-center gap-2"
+                    >
+                      {Icon && <Icon className="h-4 w-4" />}
+                      {item.label}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -146,16 +142,6 @@ const TabNavigation = () => {
 
         {/* Mobile Menu */}
         <div id="mobile-menu" className="hidden md:hidden pb-4 space-y-2">
-          {/* Home button in mobile menu */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="w-full justify-start gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Home
-          </Button>
-
           {user &&
             mainTabs.map((tab) => {
               const Icon = tab.icon;
@@ -171,16 +157,20 @@ const TabNavigation = () => {
                 </Button>
               );
             })}
-          {menuItems.map((item) => (
-            <Button
-              key={item.path}
-              variant="ghost"
-              onClick={() => navigate(item.path)}
-              className="w-full justify-start"
-            >
-              {item.label}
-            </Button>
-          ))}
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.path}
+                variant="ghost"
+                onClick={() => navigate(item.path)}
+                className="w-full justify-start gap-2"
+              >
+                {Icon && <Icon className="h-4 w-4" />}
+                {item.label}
+              </Button>
+            );
+          })}
         </div>
       </div>
     </nav>
