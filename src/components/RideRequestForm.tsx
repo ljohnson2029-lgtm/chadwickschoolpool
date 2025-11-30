@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,6 +34,7 @@ const RideRequestForm = ({
 }: RideRequestFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [canRequest, setCanRequest] = useState(true);
@@ -41,6 +44,7 @@ const RideRequestForm = ({
   const [rideDate, setRideDate] = useState("");
   const [rideTime, setRideTime] = useState("");
   const [seatsNeeded, setSeatsNeeded] = useState("");
+  const [personalMessage, setPersonalMessage] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
 
@@ -91,7 +95,7 @@ const RideRequestForm = ({
     setSubmitting(true);
 
     try {
-      const { error } = await (supabase as any).from("rides").insert({
+      const { data: rideData, error: rideError } = await supabase.from("rides").insert({
         user_id: user.id,
         type: "request",
         pickup_location: pickupLocation,
@@ -103,12 +107,24 @@ const RideRequestForm = ({
         recurring_days: isRecurring ? recurringDays : null,
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
-      });
+      }).select();
 
-      if (error) throw error;
+      if (rideError) throw rideError;
 
-      // Send notification to recipient parent if specified
-      if (recipientParentId) {
+      // For direct requests, create conversation entry
+      if (!isBroadcast && recipientParentId && rideData?.[0]) {
+        const conversationMessage = personalMessage || 
+          `I'd like to request a ride for ${new Date(rideDate).toLocaleDateString()} at ${rideTime}. ${seatsNeeded} seat${parseInt(seatsNeeded) > 1 ? 's' : ''} needed.`;
+        
+        await supabase.from('ride_conversations').insert({
+          ride_id: rideData[0].id,
+          sender_id: user.id,
+          recipient_id: recipientParentId,
+          status: 'pending',
+          message: conversationMessage,
+        });
+
+        // Send notification
         await supabase.from('notifications').insert({
           user_id: recipientParentId,
           type: 'ride_request',
@@ -117,11 +133,11 @@ const RideRequestForm = ({
       }
 
       const successMessage = recipientParentName 
-        ? `Ride request sent to ${recipientParentName}` 
+        ? `Request sent to ${recipientParentName}!` 
         : "Your ride request has been posted successfully";
 
       toast({
-        title: "Ride request created",
+        title: "Success",
         description: successMessage,
       });
 
@@ -131,10 +147,16 @@ const RideRequestForm = ({
       setRideDate("");
       setRideTime("");
       setSeatsNeeded("");
+      setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
 
       onSuccess();
+      
+      // Navigate to conversations for direct requests
+      if (!isBroadcast && recipientParentId) {
+        navigate('/conversations');
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -169,7 +191,14 @@ const RideRequestForm = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Request a Ride</CardTitle>
+        <CardTitle>
+          {recipientParentName ? `Request Ride from ${recipientParentName}` : 'Request a Ride'}
+        </CardTitle>
+        {recipientParentName && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Send a private ride request directly to this parent
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -232,6 +261,19 @@ const RideRequestForm = ({
             />
           </div>
 
+          {!isBroadcast && recipientParentName && (
+            <div>
+              <Label htmlFor="message">Personal Message (Optional)</Label>
+              <Textarea
+                id="message"
+                value={personalMessage}
+                onChange={(e) => setPersonalMessage(e.target.value)}
+                placeholder="Add any additional details or notes..."
+                rows={3}
+              />
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -266,7 +308,7 @@ const RideRequestForm = ({
           </div>
 
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? "Posting..." : "Post Ride Request"}
+            {submitting ? "Sending..." : recipientParentName ? `Send Request to ${recipientParentName.split(' ')[0]}` : "Post Ride Request"}
           </Button>
         </form>
       </CardContent>
