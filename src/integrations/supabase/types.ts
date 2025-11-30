@@ -188,6 +188,96 @@ export type Database = {
           },
         ]
       }
+      private_ride_requests: {
+        Row: {
+          created_at: string
+          distance_from_route: number | null
+          dropoff_address: string
+          dropoff_latitude: number
+          dropoff_longitude: number
+          id: string
+          is_round_trip: boolean
+          message: string | null
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          pickup_time: string
+          recipient_id: string
+          request_type: Database["public"]["Enums"]["private_request_type"]
+          responded_at: string | null
+          return_time: string | null
+          ride_date: string
+          seats_needed: number | null
+          seats_offered: number | null
+          sender_id: string
+          status: Database["public"]["Enums"]["private_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          distance_from_route?: number | null
+          dropoff_address: string
+          dropoff_latitude: number
+          dropoff_longitude: number
+          id?: string
+          is_round_trip?: boolean
+          message?: string | null
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          pickup_time: string
+          recipient_id: string
+          request_type: Database["public"]["Enums"]["private_request_type"]
+          responded_at?: string | null
+          return_time?: string | null
+          ride_date: string
+          seats_needed?: number | null
+          seats_offered?: number | null
+          sender_id: string
+          status?: Database["public"]["Enums"]["private_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          distance_from_route?: number | null
+          dropoff_address?: string
+          dropoff_latitude?: number
+          dropoff_longitude?: number
+          id?: string
+          is_round_trip?: boolean
+          message?: string | null
+          pickup_address?: string
+          pickup_latitude?: number
+          pickup_longitude?: number
+          pickup_time?: string
+          recipient_id?: string
+          request_type?: Database["public"]["Enums"]["private_request_type"]
+          responded_at?: string | null
+          return_time?: string | null
+          ride_date?: string
+          seats_needed?: number | null
+          seats_offered?: number | null
+          sender_id?: string
+          status?: Database["public"]["Enums"]["private_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_ride_requests_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "private_ride_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string
@@ -577,6 +667,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_duplicate_private_request: {
+        Args: {
+          p_pickup_time: string
+          p_recipient_id: string
+          p_ride_date: string
+          p_sender_id: string
+        }
+        Returns: boolean
+      }
       cleanup_expired_codes: { Args: never; Returns: undefined }
       get_linked_parents: {
         Args: { student_user_id: string }
@@ -598,6 +697,10 @@ export type Database = {
           student_last_name: string
         }[]
       }
+      get_pending_requests_count: {
+        Args: { user_user_id: string }
+        Returns: number
+      }
       get_user_email: { Args: { user_user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -616,6 +719,13 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
+      private_request_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "cancelled"
+        | "completed"
+      private_request_type: "request" | "offer"
       transaction_type: "broadcast" | "direct"
     }
     CompositeTypes: {
@@ -745,6 +855,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "parent", "staff", "admin"],
+      private_request_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "cancelled",
+        "completed",
+      ],
+      private_request_type: ["request", "offer"],
       transaction_type: ["broadcast", "direct"],
     },
   },
