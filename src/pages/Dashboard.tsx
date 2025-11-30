@@ -65,6 +65,28 @@ interface Conversation {
   } | null;
 }
 
+interface PrivateRequest {
+  id: string;
+  request_type: 'request' | 'offer';
+  sender_id: string;
+  recipient_id: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  ride_date: string;
+  pickup_time: string;
+  message: string | null;
+  created_at: string;
+  sender?: {
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+  };
+  recipient?: {
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+  };
+}
+
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -73,6 +95,9 @@ const Dashboard = () => {
   const [activeConversations, setActiveConversations] = useState<Conversation[]>([]);
   const [upcomingRides, setUpcomingRides] = useState<any[]>([]);
   const [pendingConversationsCount, setPendingConversationsCount] = useState(0);
+  const [privateRequestsSent, setPrivateRequestsSent] = useState<PrivateRequest[]>([]);
+  const [privateRequestsReceived, setPrivateRequestsReceived] = useState<PrivateRequest[]>([]);
+  const [pendingPrivateRequestsCount, setPendingPrivateRequestsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -148,6 +173,30 @@ const Dashboard = () => {
           return new Date(ride.rides.ride_date) >= new Date(new Date().toISOString().split('T')[0]);
         });
         setUpcomingRides(futureRides);
+      }
+
+      // Fetch private requests sent
+      const { data: sentPrivate } = await supabase
+        .from('private_ride_requests')
+        .select('*, recipient:profiles!private_ride_requests_recipient_id_fkey(first_name, last_name, username)')
+        .eq('sender_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (sentPrivate) setPrivateRequestsSent(sentPrivate as any);
+
+      // Fetch private requests received
+      const { data: receivedPrivate } = await supabase
+        .from('private_ride_requests')
+        .select('*, sender:profiles!private_ride_requests_sender_id_fkey(first_name, last_name, username)')
+        .eq('recipient_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (receivedPrivate) {
+        setPrivateRequestsReceived(receivedPrivate as any);
+        const pendingPrivateCount = receivedPrivate.filter(r => r.status === 'pending').length;
+        setPendingPrivateRequestsCount(pendingPrivateCount);
       }
 
       setLoading(false);
@@ -419,7 +468,156 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* SECTION 4: Active Conversations */}
+        {/* SECTION 4: Private Ride Requests */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Private Ride Requests</h2>
+            <Button variant="ghost" onClick={() => navigate('/requests/private')} className="gap-2">
+              View All
+              {pendingPrivateRequestsCount > 0 && (
+                <Badge variant="default" className="ml-2">
+                  {pendingPrivateRequestsCount}
+                </Badge>
+              )}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Pending Requests for You */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Pending for You</CardTitle>
+                <CardDescription>Requests awaiting your response</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                ) : privateRequestsReceived.filter(r => r.status === 'pending').length === 0 ? (
+                  <div className="text-center py-6">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">No pending requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {privateRequestsReceived
+                      .filter(r => r.status === 'pending')
+                      .slice(0, 3)
+                      .map((request) => (
+                        <div key={request.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {getInitials(
+                                  request.sender?.first_name || null,
+                                  request.sender?.last_name || null,
+                                  request.sender?.username || ''
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">
+                                {request.sender?.first_name} {request.sender?.last_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {request.request_type === 'request' ? '🙏 Ride Request' : '🚗 Ride Offer'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(request.ride_date), 'MMM d')} at {request.pickup_time}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => navigate('/requests/private')}
+                    >
+                      View All Pending
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Your Sent Requests */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Your Sent Requests</CardTitle>
+                <CardDescription>Requests you've sent to other parents</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
+                ) : privateRequestsSent.length === 0 ? (
+                  <div className="text-center py-6">
+                    <Send className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground mb-3">No requests sent yet</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/map/find-parents')}
+                      className="gap-2"
+                    >
+                      <MapIcon className="h-4 w-4" />
+                      Find Parents on Map
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {privateRequestsSent.slice(0, 3).map((request) => {
+                      const statusColor = 
+                        request.status === 'accepted' ? 'text-green-600' :
+                        request.status === 'declined' ? 'text-red-600' :
+                        'text-yellow-600';
+                      
+                      return (
+                        <div key={request.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {getInitials(
+                                  request.recipient?.first_name || null,
+                                  request.recipient?.last_name || null,
+                                  request.recipient?.username || ''
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">
+                                {request.recipient?.first_name} {request.recipient?.last_name}
+                              </p>
+                              <p className={`text-xs ${statusColor} font-medium capitalize`}>
+                                {request.status === 'accepted' && '✓ '}
+                                {request.status === 'declined' && '✗ '}
+                                {request.status}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(request.ride_date), 'MMM d')} at {request.pickup_time}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      size="sm"
+                      onClick={() => navigate('/requests/private')}
+                    >
+                      View All Requests
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* SECTION 5: Active Conversations */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Active Conversations</h2>
@@ -513,7 +711,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* SECTION 5: Upcoming Rides */}
+        {/* SECTION 6: Upcoming Rides */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Upcoming Rides</h2>

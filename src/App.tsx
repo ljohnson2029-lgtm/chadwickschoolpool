@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import FamilyLinks from "./pages/FamilyLinks";
 import MapDemo from "./pages/MapDemo";
 import MapFindParents from "./pages/MapFindParents";
+import MyPrivateRequests from "./pages/MyPrivateRequests";
 import Settings from "./pages/Settings";
 import FindRides from "./pages/FindRides";
 import PostRide from "./pages/PostRide";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/parent-approvals" element={<FamilyLinks />} />
             <Route path="/map" element={<MapDemo />} />
             <Route path="/map/find-parents" element={<MapFindParents />} />
+            <Route path="/requests/private" element={<MyPrivateRequests />} />
             <Route path="/find-rides" element={<FindRides />} />
             <Route path="/post-ride" element={<PostRide />} />
             <Route path="/conversations" element={<Conversations />} />

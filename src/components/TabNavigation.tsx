@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare } from "lucide-react";
+import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import {
@@ -20,6 +20,7 @@ const TabNavigation = () => {
 
   const mainTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
+    { label: "Find on Map", path: "/map/find-parents", icon: MapPin, badge: "New" },
     { label: "Find Rides", path: "/find-rides", icon: Radio },
     { label: "Post Ride", path: "/post-ride", icon: Plus },
     { label: "Conversations", path: "/conversations", icon: MessageSquare },
@@ -28,6 +29,7 @@ const TabNavigation = () => {
 
   const menuItems = [
     { label: "Profile", path: "/profile", icon: User },
+    { label: "My Private Requests", path: "/requests/private", icon: Send },
     { label: "My Posted Rides", path: "/my-rides", icon: Radio },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
@@ -62,7 +64,7 @@ const TabNavigation = () => {
                   key={tab.path}
                   variant={isActive(tab.path) ? "default" : "ghost"}
                   onClick={() => navigate(tab.path)}
-                  className={`gap-2 ${
+                  className={`gap-2 relative ${
                     isActive(tab.path)
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-accent"
@@ -70,6 +72,11 @@ const TabNavigation = () => {
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
+                  {'badge' in tab && tab.badge && (
+                    <Badge className="ml-1 h-5 px-1.5 text-[10px]">
+                      {tab.badge}
+                    </Badge>
+                  )}
                 </Button>
               );
             })}
