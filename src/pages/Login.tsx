@@ -85,34 +85,22 @@ const Login = () => {
 
       if (signInError) throw signInError;
       
-      // Check if user is a student
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'student')
+      // Check profile setup
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('home_address')
+          .eq('id', authUser.id)
           .maybeSingle();
 
-        if (roleData) {
-          // Check if student has approved parent link
-          const { data: linkData } = await supabase
-            .from('student_parent_links')
-            .select('status')
-            .eq('student_id', user.id)
-            .eq('status', 'approved')
-            .maybeSingle();
-
-          if (!linkData) {
-            // Student without approved parent link
-            navigate('/family-links');
-            return;
-          }
+        if (!profileData?.home_address) {
+          navigate('/profile/setup');
+          return;
         }
       }
       
-      navigate('/profile');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
     } finally {

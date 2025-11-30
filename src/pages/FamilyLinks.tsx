@@ -21,6 +21,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import Navigation from '@/components/Navigation';
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface LinkedAccount {
   id: string;
@@ -412,12 +414,13 @@ export default function FamilyLinks() {
 
   if (loading || isLoadingLinks) {
     return (
-      <>
-        <Navigation />
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <DashboardLayout>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
-      </>
+      </DashboardLayout>
     );
   }
 
@@ -426,12 +429,12 @@ export default function FamilyLinks() {
   }
 
   return (
-    <>
-      <Navigation />
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pt-20 px-4">
-        <div className="container max-w-5xl mx-auto py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Family Links</h1>
+    <DashboardLayout>
+      <div className="container max-w-5xl mx-auto px-4">
+        <Breadcrumbs items={[{ label: "Family Links" }]} />
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Family Links</h1>
             <p className="text-muted-foreground">
               {isStudent 
                 ? "Connect with your parent's account to let them schedule rides for you"
@@ -676,7 +679,6 @@ export default function FamilyLinks() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-      </div>
-    </>
-  );
-}
+      </DashboardLayout>
+    );
+  }

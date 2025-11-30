@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import TestDataGenerator from "@/components/TestDataGenerator";
 
@@ -18,9 +20,9 @@ const Settings = () => {
   const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <DashboardLayout>
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Breadcrumbs items={[{ label: "Settings" }]} />
         <h1 className="text-4xl font-bold mb-8">Settings</h1>
 
         {isDevelopment && (
@@ -51,7 +53,7 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
