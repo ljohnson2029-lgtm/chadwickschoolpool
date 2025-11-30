@@ -147,7 +147,7 @@ const FamilyCarpools = () => {
                 <h2 className="text-xl font-semibold">My Family's Rides</h2>
                 <Button
                   variant="outline"
-                  onClick={() => navigate("/student-linking")}
+                  onClick={() => navigate("/family-links")}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Link to Parent

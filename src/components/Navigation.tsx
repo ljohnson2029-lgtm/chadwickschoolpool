@@ -141,14 +141,12 @@ const Navigation = () => {
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
     { label: "Map & Routes", path: "/map", authRequired: true },
-    { label: "My Account Links", path: "/linked-accounts", authRequired: true },
-    { label: "Manage Students", path: "/parent-approvals", parentOnly: true },
     { label: "Settings", path: "/settings", authRequired: true },
   ];
 
   // Student-specific navigation items
   const studentNavItems: NavItem[] = [
-    { label: "Link to Parent", path: "/student-linking", authRequired: true },
+    { label: "Family Links", path: "/family-links", authRequired: true },
   ];
 
   const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -267,7 +265,7 @@ const Navigation = () => {
                     >
                       <div className="flex items-center justify-between w-full">
                         <span>{item.label}</span>
-                        {item.path === '/parent-approvals' && pendingRequestsCount > 0 && (
+                        {item.path === '/family-links' && pendingRequestsCount > 0 && (
                           <Badge variant="destructive" className="ml-2">
                             {pendingRequestsCount}
                           </Badge>
