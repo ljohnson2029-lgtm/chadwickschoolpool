@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Calendar, Clock, Users, User } from "lucide-react";
+import { MapPin, Calendar, Clock, Users, User, Map } from "lucide-react";
 
   interface Ride {
     id: string;
@@ -28,6 +30,7 @@ import { MapPin, Calendar, Clock, Users, User } from "lucide-react";
 
 const RidesList = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -203,6 +206,18 @@ const RidesList = () => {
               {ride.recurring_days.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(", ")}
             </div>
           )}
+
+          <div className="pt-3 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => navigate('/map')}
+            >
+              <Map className="h-4 w-4" />
+              View on Map
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

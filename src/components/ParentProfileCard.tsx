@@ -38,6 +38,7 @@ const ParentProfileCard: React.FC<ParentProfileCardProps> = ({
   const [linkedStudentsCount, setLinkedStudentsCount] = useState<number>(0);
   const [carInfo, setCarInfo] = useState<{ make: string; model: string; seats: number } | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [activeRidesCount, setActiveRidesCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,6 +77,15 @@ const ParentProfileCard: React.FC<ParentProfileCardProps> = ({
         });
       }
 
+      // Fetch active rides count
+      const { data: ridesData } = await supabase
+        .from('rides')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', parentId)
+        .eq('status', 'active');
+
+      setActiveRidesCount(ridesData?.length || 0);
+
       setLoading(false);
     };
 
@@ -113,12 +123,20 @@ const ParentProfileCard: React.FC<ParentProfileCardProps> = ({
           
           <div className="flex-1">
             <CardTitle className="text-lg">{parentName}</CardTitle>
-            {distanceFromRoute !== undefined && (
-              <Badge variant="secondary" className="mt-1 gap-1 text-xs">
-                <Navigation className="h-3 w-3" />
-                {distanceFromRoute.toFixed(1)} mi from route
-              </Badge>
-            )}
+            <div className="flex gap-2 mt-1">
+              {distanceFromRoute !== undefined && (
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  <Navigation className="h-3 w-3" />
+                  {distanceFromRoute.toFixed(1)} mi from route
+                </Badge>
+              )}
+              {!loading && activeRidesCount > 0 && (
+                <Badge className="gap-1 text-xs bg-green-600 hover:bg-green-700">
+                  <CarFront className="h-3 w-3" />
+                  {activeRidesCount} active ride{activeRidesCount !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>

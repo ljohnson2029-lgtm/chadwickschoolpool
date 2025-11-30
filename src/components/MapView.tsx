@@ -18,6 +18,7 @@ interface ParentLocation {
   longitude: number;
   address: string;
   phone: string | null;
+  hasActiveRides?: boolean;
 }
 
 interface ParentProfile {
@@ -276,14 +277,35 @@ const MapView: React.FC<MapViewProps> = ({
     if (parentLocations.length > 0 && onParentClick) {
       parentLocations.forEach(parent => {
         const markerEl = document.createElement('div');
-        markerEl.className = 'parent-marker cursor-pointer transition-transform hover:scale-110';
-        markerEl.style.width = '30px';
-        markerEl.style.height = '30px';
-        markerEl.style.borderRadius = '50%';
-        markerEl.style.backgroundColor = '#22c55e';
-        markerEl.style.border = '3px solid white';
-        markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        markerEl.style.cursor = 'pointer';
+        markerEl.className = 'parent-marker-container relative cursor-pointer transition-transform hover:scale-110';
+        markerEl.style.position = 'relative';
+        
+        // Main marker circle
+        const circle = document.createElement('div');
+        circle.style.width = '30px';
+        circle.style.height = '30px';
+        circle.style.borderRadius = '50%';
+        circle.style.backgroundColor = '#22c55e';
+        circle.style.border = '3px solid white';
+        circle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        circle.style.cursor = 'pointer';
+        markerEl.appendChild(circle);
+
+        // Badge indicator if parent has active rides
+        if (parent.hasActiveRides) {
+          const badge = document.createElement('div');
+          badge.style.position = 'absolute';
+          badge.style.top = '-4px';
+          badge.style.right = '-4px';
+          badge.style.width = '12px';
+          badge.style.height = '12px';
+          badge.style.borderRadius = '50%';
+          badge.style.backgroundColor = '#ef4444';
+          badge.style.border = '2px solid white';
+          badge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+          badge.title = 'Has active rides';
+          markerEl.appendChild(badge);
+        }
 
         const marker = new mapboxgl.Marker({ element: markerEl })
           .setLngLat([parent.longitude, parent.latitude])

@@ -66,6 +66,7 @@ const MapDemo: React.FC = () => {
   const [filteredParentsWithDistance, setFilteredParentsWithDistance] = useState<Array<ParentProfile & { distanceFromRoute: number }>>([]);
   const [displayedParents, setDisplayedParents] = useState<ParentProfile[]>([]);
   const [linkedParentIds, setLinkedParentIds] = useState<string[]>([]);
+  const [parentsWithRides, setParentsWithRides] = useState<Set<string>>(new Set());
   
   const [userHome, setUserHome] = useState<Location | null>(null);
   const [schoolLocation, setSchoolLocation] = useState<Location | null>(null);
@@ -151,6 +152,23 @@ const MapDemo: React.FC = () => {
 
     fetchParents();
   }, [user]);
+
+  // Fetch active rides to show which parents have rides available
+  useEffect(() => {
+    const fetchRidesData = async () => {
+      const { data: ridesData } = await supabase
+        .from('rides')
+        .select('user_id, type')
+        .eq('status', 'active');
+
+      if (ridesData) {
+        const parentIdsWithRides = new Set(ridesData.map(ride => ride.user_id));
+        setParentsWithRides(parentIdsWithRides);
+      }
+    };
+
+    fetchRidesData();
+  }, []);
 
   // Calculate route from user home to school when both are available
   useEffect(() => {
@@ -365,7 +383,8 @@ const MapDemo: React.FC = () => {
                 latitude: p.home_latitude!,
                 longitude: p.home_longitude!,
                 address: p.home_address!,
-                phone: p.phone_number
+                phone: p.phone_number,
+                hasActiveRides: parentsWithRides.has(p.id)
               }))}
               onParentClick={handleParentClick}
               height="700px"
