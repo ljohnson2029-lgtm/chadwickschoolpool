@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { 
   Calendar, 
   Car, 
@@ -14,10 +15,14 @@ import {
   Users, 
   TrendingUp,
   Clock,
-  UserPlus
+  UserPlus,
+  Hand,
+  Map as MapIcon
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
+import RideRequestForm from "@/components/RideRequestForm";
+import RideOfferForm from "@/components/RideOfferForm";
 
 const Dashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -31,6 +36,8 @@ const Dashboard = () => {
   });
   const [upcomingRides, setUpcomingRides] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -137,42 +144,72 @@ const Dashboard = () => {
 
         {/* Quick Actions - Parent Only */}
         {!isStudent && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Button 
-              size="lg" 
-              className="h-auto py-6 justify-start gap-4"
-              onClick={() => navigate('/carpools/create')}
-            >
-              <Plus className="h-6 w-6" />
-              <div className="text-left">
-                <div className="font-semibold">Create Carpool</div>
-                <div className="text-xs opacity-80">Start a new carpool</div>
-              </div>
-            </Button>
-            <Button 
-              variant="outline"
-              size="lg" 
-              className="h-auto py-6 justify-start gap-4"
-              onClick={() => navigate('/map')}
-            >
-              <MapPin className="h-6 w-6" />
-              <div className="text-left">
-                <div className="font-semibold">Find on Map</div>
-                <div className="text-xs opacity-80">Browse nearby families</div>
-              </div>
-            </Button>
-            <Button 
-              variant="outline"
-              size="lg" 
-              className="h-auto py-6 justify-start gap-4"
-              onClick={() => navigate('/carpools')}
-            >
-              <Car className="h-6 w-6" />
-              <div className="text-left">
-                <div className="font-semibold">Browse Rides</div>
-                <div className="text-xs opacity-80">View all available</div>
-              </div>
-            </Button>
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Find Nearby Parents Card */}
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/map')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <MapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <CardTitle className="text-lg">Find Nearby Parents</CardTitle>
+                  </div>
+                  <CardDescription>
+                    View parents near your route to Chadwick School and discover carpool opportunities
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); navigate('/map'); }}>
+                    <MapIcon className="h-4 w-4" />
+                    Open Map
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Request a Ride Card */}
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowRequestDialog(true)}>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                      <Hand className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <CardTitle className="text-lg">Request a Ride</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Ask another parent for a ride to school or activities for your student
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); setShowRequestDialog(true); }}>
+                    <Hand className="h-4 w-4" />
+                    New Request
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Offer a Ride Card */}
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setShowOfferDialog(true)}>
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <Car className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <CardTitle className="text-lg">Offer a Ride</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Share your carpool availability and help other families get to school
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full gap-2" onClick={(e) => { e.stopPropagation(); setShowOfferDialog(true); }}>
+                    <Car className="h-4 w-4" />
+                    New Offer
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
@@ -358,6 +395,32 @@ const Dashboard = () => {
             />
           </CardContent>
         </Card>
+
+        {/* Request Ride Dialog */}
+        <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <RideRequestForm 
+              onSuccess={() => {
+                setShowRequestDialog(false);
+                // Refresh dashboard data
+                window.location.reload();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Offer Ride Dialog */}
+        <Dialog open={showOfferDialog} onOpenChange={setShowOfferDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <RideOfferForm 
+              onSuccess={() => {
+                setShowOfferDialog(false);
+                // Refresh dashboard data
+                window.location.reload();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

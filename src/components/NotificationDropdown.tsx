@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, X, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ interface Notification {
 
 export const NotificationDropdown = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -170,6 +172,11 @@ export const NotificationDropdown = () => {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   };
 
+  // Check if notification is ride-related
+  const isRideNotification = (type: string) => {
+    return type === 'ride_request' || type === 'ride_offer' || type.includes('ride');
+  };
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -220,6 +227,23 @@ export const NotificationDropdown = () => {
                       <p className="text-xs text-muted-foreground mt-1">
                         {getTimeAgo(notification.created_at)}
                       </p>
+                      
+                      {/* View on Map button for ride notifications */}
+                      {isRideNotification(notification.type) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(false);
+                            navigate('/map');
+                          }}
+                          className="h-8 mt-2 gap-1"
+                        >
+                          <MapPin className="h-3 w-3" />
+                          View on Map
+                        </Button>
+                      )}
                       
                       {/* Inline actions for link requests */}
                       {notification.type === 'link_request' && notification.link_id && (
