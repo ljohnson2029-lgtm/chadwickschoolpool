@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import ParentProfileSheet from "@/components/ParentProfileSheet";
 import ParentProfilePopup from "@/components/ParentProfilePopup";
+import PrivateRideRequestModal from "@/components/PrivateRideRequestModal";
+import PrivateRideOfferModal from "@/components/PrivateRideOfferModal";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,8 +53,12 @@ const MapFindParents = () => {
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][] | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [selectedParentName, setSelectedParentName] = useState("");
   const [selectedParentDistance, setSelectedParentDistance] = useState(0);
   const [profilePopupOpen, setProfilePopupOpen] = useState(false);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [contactedParents, setContactedParents] = useState<Set<string>>(new Set());
   
   const isMobile = useIsMobile();
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -70,7 +76,12 @@ const MapFindParents = () => {
 
   // Handle parent marker click
   const handleParentClick = useCallback((parent: ParentLocation) => {
+    const fullName = parent.first_name && parent.last_name
+      ? `${parent.first_name} ${parent.last_name}`
+      : parent.username;
+    
     setSelectedParentId(parent.id);
+    setSelectedParentName(fullName);
     setSelectedParentDistance(parent.distance_from_route || 0);
     
     if (isMobile) {
@@ -104,12 +115,30 @@ const MapFindParents = () => {
 
   // Handle action buttons
   const handleRequestRide = useCallback((parentId: string, parentName: string) => {
-    navigate(`/map/find-parents/request/${parentId}`);
-  }, [navigate]);
+    setSelectedParentId(parentId);
+    setSelectedParentName(parentName);
+    handleCloseProfile(); // Close profile popup
+    setRequestModalOpen(true);
+  }, [handleCloseProfile]);
 
   const handleOfferRide = useCallback((parentId: string, parentName: string) => {
-    navigate(`/map/find-parents/offer/${parentId}`);
-  }, [navigate]);
+    setSelectedParentId(parentId);
+    setSelectedParentName(parentName);
+    handleCloseProfile(); // Close profile popup
+    setOfferModalOpen(true);
+  }, [handleCloseProfile]);
+
+  const handleRequestSuccess = useCallback(() => {
+    if (selectedParentId) {
+      setContactedParents(prev => new Set(prev).add(selectedParentId));
+    }
+  }, [selectedParentId]);
+
+  const handleOfferSuccess = useCallback(() => {
+    if (selectedParentId) {
+      setContactedParents(prev => new Set(prev).add(selectedParentId));
+    }
+  }, [selectedParentId]);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -379,43 +408,33 @@ const MapFindParents = () => {
       markers.current.push(schoolMarker);
     }
 
-    // Add parent markers
+    // Add parent markers (within radius - clickable)
     filteredParents.forEach(parent => {
       const isWithinRadius = parent.distance_from_route! <= radiusMiles[0];
       
-      const parentEl = document.createElement('div');
-      parentEl.className = `flex items-center justify-center w-8 h-8 rounded-full shadow-lg border-2 border-white transition-all ${
-        isWithinRadius ? 'bg-green-500 cursor-pointer hover:scale-110' : 'bg-gray-400 opacity-50'
-      }`;
-      parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
-      
-      const parentMarker = new mapboxgl.Marker(parentEl)
-        .setLngLat([parent.home_longitude, parent.home_latitude]);
-
       if (isWithinRadius) {
-        const displayName = parent.first_name && parent.last_name 
-          ? `${parent.first_name} ${parent.last_name}`
-          : parent.username;
+        const isContacted = contactedParents.has(parent.id);
+        const parentEl = document.createElement('div');
+        parentEl.className = `relative flex items-center justify-center w-8 h-8 bg-green-500 rounded-full shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform ${isContacted ? 'opacity-60' : ''}`;
+        parentEl.innerHTML = `
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+          </svg>
+          ${isContacted ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>' : ''}
+        `;
         
-        parentMarker.setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div class="p-3">
-            <div class="font-semibold text-lg mb-2">${displayName}</div>
-            <div class="text-sm text-gray-600 mb-2">${parent.distance_from_route?.toFixed(1)} miles from your route</div>
-            <div class="text-xs text-gray-500 mb-3">${parent.home_address || 'Address not available'}</div>
-            <div class="flex gap-2">
-              <button onclick="window.sendRequest('${parent.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600">
-                💬 Send Request
-              </button>
-              <button onclick="window.sendOffer('${parent.id}')" class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600">
-                🚗 Send Offer
-              </button>
-            </div>
-          </div>`
-        ));
-      }
+        const parentMarker = new mapboxgl.Marker(parentEl)
+          .setLngLat([parent.home_longitude, parent.home_latitude])
+          .addTo(map.current!);
 
-      parentMarker.addTo(map.current!);
-      markers.current.push(parentMarker);
+        // Add click handler
+        parentEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleParentClick(parent);
+        });
+
+        markers.current.push(parentMarker);
+      }
     });
 
     // Add parent markers that are outside radius (dimmed)
@@ -429,7 +448,7 @@ const MapFindParents = () => {
         .addTo(map.current!);
       markers.current.push(parentMarker);
     });
-  }, [map.current, userProfile, filteredParents, parents, radiusMiles, showSchool]);
+  }, [map.current, userProfile, filteredParents, parents, radiusMiles, showSchool, handleParentClick, contactedParents]);
 
   // Render desktop popup content
   useEffect(() => {
@@ -634,6 +653,32 @@ const MapFindParents = () => {
             onClose={handleCloseProfile}
             onRequestRide={handleRequestRide}
             onOfferRide={handleOfferRide}
+          />
+        )}
+
+        {/* Request Ride Modal */}
+        {selectedParentId && userProfile && (
+          <PrivateRideRequestModal
+            open={requestModalOpen}
+            onClose={() => setRequestModalOpen(false)}
+            recipientId={selectedParentId}
+            recipientName={selectedParentName}
+            distance={selectedParentDistance}
+            userProfile={userProfile}
+            onSuccess={handleRequestSuccess}
+          />
+        )}
+
+        {/* Offer Ride Modal */}
+        {selectedParentId && userProfile && (
+          <PrivateRideOfferModal
+            open={offerModalOpen}
+            onClose={() => setOfferModalOpen(false)}
+            recipientId={selectedParentId}
+            recipientName={selectedParentName}
+            distance={selectedParentDistance}
+            userProfile={userProfile}
+            onSuccess={handleOfferSuccess}
           />
         )}
       </div>
