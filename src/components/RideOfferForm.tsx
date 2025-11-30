@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ const RideOfferForm = ({
 }: RideOfferFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [canCreate, setCanCreate] = useState(true);
@@ -43,6 +45,7 @@ const RideOfferForm = ({
   const [rideTime, setRideTime] = useState("");
   const [seatsAvailable, setSeatsAvailable] = useState("");
   const [routeDetails, setRouteDetails] = useState("");
+  const [personalMessage, setPersonalMessage] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
 
@@ -93,7 +96,7 @@ const RideOfferForm = ({
     setSubmitting(true);
 
     try {
-      const { error } = await (supabase as any).from("rides").insert({
+      const { data: rideData, error: rideError } = await supabase.from("rides").insert({
         user_id: user.id,
         type: "offer",
         pickup_location: pickupLocation,
@@ -106,12 +109,24 @@ const RideOfferForm = ({
         recurring_days: isRecurring ? recurringDays : null,
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
-      });
+      }).select();
 
-      if (error) throw error;
+      if (rideError) throw rideError;
 
-      // Send notification to recipient parent if specified
-      if (recipientParentId) {
+      // For direct offers, create conversation entry
+      if (!isBroadcast && recipientParentId && rideData?.[0]) {
+        const conversationMessage = personalMessage || 
+          `I can offer you a ride for ${new Date(rideDate).toLocaleDateString()} at ${rideTime}. ${seatsAvailable} seat${parseInt(seatsAvailable) > 1 ? 's' : ''} available.${routeDetails ? ` ${routeDetails}` : ''}`;
+        
+        await supabase.from('ride_conversations').insert({
+          ride_id: rideData[0].id,
+          sender_id: user.id,
+          recipient_id: recipientParentId,
+          status: 'pending',
+          message: conversationMessage,
+        });
+
+        // Send notification
         await supabase.from('notifications').insert({
           user_id: recipientParentId,
           type: 'ride_offer',
@@ -120,11 +135,11 @@ const RideOfferForm = ({
       }
 
       const successMessage = recipientParentName 
-        ? `Ride offer sent to ${recipientParentName}` 
+        ? `Offer sent to ${recipientParentName}!` 
         : "Your ride offer has been posted successfully";
 
       toast({
-        title: "Ride offer created",
+        title: "Success",
         description: successMessage,
       });
 
@@ -135,10 +150,16 @@ const RideOfferForm = ({
       setRideTime("");
       setSeatsAvailable("");
       setRouteDetails("");
+      setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
 
       onSuccess();
+      
+      // Navigate to conversations for direct offers
+      if (!isBroadcast && recipientParentId) {
+        navigate('/conversations');
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -173,7 +194,14 @@ const RideOfferForm = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Offer a Ride</CardTitle>
+        <CardTitle>
+          {recipientParentName ? `Offer Ride to ${recipientParentName}` : 'Offer a Ride'}
+        </CardTitle>
+        {recipientParentName && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Send a private ride offer directly to this parent
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -237,7 +265,7 @@ const RideOfferForm = ({
           </div>
 
           <div>
-            <Label htmlFor="route">Route Details</Label>
+            <Label htmlFor="route">Route Details (Optional)</Label>
             <Textarea
               id="route"
               value={routeDetails}
@@ -246,6 +274,19 @@ const RideOfferForm = ({
               rows={3}
             />
           </div>
+
+          {!isBroadcast && recipientParentName && (
+            <div>
+              <Label htmlFor="message">Personal Message (Optional)</Label>
+              <Textarea
+                id="message"
+                value={personalMessage}
+                onChange={(e) => setPersonalMessage(e.target.value)}
+                placeholder="Add any additional details or notes..."
+                rows={3}
+              />
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center space-x-2">
@@ -281,7 +322,7 @@ const RideOfferForm = ({
           </div>
 
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? "Posting..." : "Post Ride Offer"}
+            {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
           </Button>
         </form>
       </CardContent>

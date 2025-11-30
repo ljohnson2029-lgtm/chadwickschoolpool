@@ -79,6 +79,7 @@ const MapDemo: React.FC = () => {
   const [selectedParentDistance, setSelectedParentDistance] = useState<number | undefined>(undefined);
   const [showRideRequestForm, setShowRideRequestForm] = useState(false);
   const [showRideOfferForm, setShowRideOfferForm] = useState(false);
+  const [contactedParents, setContactedParents] = useState<Set<string>>(new Set());
   
   const { calculateRoute, isCalculating, formatDistance, formatDuration } = useRouteCalculation();
 
@@ -298,6 +299,11 @@ const MapDemo: React.FC = () => {
   };
 
   const handleRideFormSuccess = () => {
+    // Mark parent as contacted
+    if (selectedParent) {
+      setContactedParents(prev => new Set(prev).add(selectedParent.id));
+    }
+    
     setShowRideRequestForm(false);
     setShowRideOfferForm(false);
     setSelectedParent(null);
@@ -384,7 +390,8 @@ const MapDemo: React.FC = () => {
                 longitude: p.home_longitude!,
                 address: p.home_address!,
                 phone: p.phone_number,
-                hasActiveRides: parentsWithRides.has(p.id)
+                hasActiveRides: parentsWithRides.has(p.id),
+                isContacted: contactedParents.has(p.id)
               }))}
               onParentClick={handleParentClick}
               height="700px"
@@ -430,6 +437,7 @@ const MapDemo: React.FC = () => {
             recipientParentName={selectedParent ? `${selectedParent.first_name} ${selectedParent.last_name}` : undefined}
             prefillPickup={userHome?.address || profile?.home_address || ""}
             prefillDropoff={schoolLocation?.address || "Chadwick School, 26800 Academy Drive, Palos Verdes Peninsula, CA"}
+            isBroadcast={false}
           />
         </DialogContent>
       </Dialog>
@@ -443,6 +451,7 @@ const MapDemo: React.FC = () => {
             recipientParentName={selectedParent ? `${selectedParent.first_name} ${selectedParent.last_name}` : undefined}
             prefillPickup={userHome?.address || profile?.home_address || ""}
             prefillDropoff={selectedParent?.home_address || schoolLocation?.address || "Chadwick School"}
+            isBroadcast={false}
           />
         </DialogContent>
       </Dialog>

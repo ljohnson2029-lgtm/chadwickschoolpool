@@ -19,6 +19,7 @@ interface ParentLocation {
   address: string;
   phone: string | null;
   hasActiveRides?: boolean;
+  isContacted?: boolean;
 }
 
 interface ParentProfile {
@@ -280,19 +281,45 @@ const MapView: React.FC<MapViewProps> = ({
         markerEl.className = 'parent-marker-container relative cursor-pointer transition-transform hover:scale-110';
         markerEl.style.position = 'relative';
         
+        // Apply opacity if contacted
+        if (parent.isContacted) {
+          markerEl.style.opacity = '0.5';
+        }
+        
         // Main marker circle
         const circle = document.createElement('div');
         circle.style.width = '30px';
         circle.style.height = '30px';
         circle.style.borderRadius = '50%';
-        circle.style.backgroundColor = '#22c55e';
+        circle.style.backgroundColor = parent.isContacted ? '#94a3b8' : '#22c55e';
         circle.style.border = '3px solid white';
         circle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
         circle.style.cursor = 'pointer';
         markerEl.appendChild(circle);
 
-        // Badge indicator if parent has active rides
-        if (parent.hasActiveRides) {
+        // Checkmark badge if contacted
+        if (parent.isContacted) {
+          const checkmark = document.createElement('div');
+          checkmark.style.position = 'absolute';
+          checkmark.style.top = '-4px';
+          checkmark.style.right = '-4px';
+          checkmark.style.width = '16px';
+          checkmark.style.height = '16px';
+          checkmark.style.borderRadius = '50%';
+          checkmark.style.backgroundColor = '#22c55e';
+          checkmark.style.border = '2px solid white';
+          checkmark.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+          checkmark.style.display = 'flex';
+          checkmark.style.alignItems = 'center';
+          checkmark.style.justifyContent = 'center';
+          checkmark.style.fontSize = '10px';
+          checkmark.style.color = 'white';
+          checkmark.innerHTML = '✓';
+          checkmark.title = 'Request Sent';
+          markerEl.appendChild(checkmark);
+        } 
+        // Badge indicator if parent has active rides (and not contacted)
+        else if (parent.hasActiveRides) {
           const badge = document.createElement('div');
           badge.style.position = 'absolute';
           badge.style.top = '-4px';
