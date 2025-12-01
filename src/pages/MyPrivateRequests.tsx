@@ -93,7 +93,7 @@ const MyPrivateRequests = () => {
     // Fetch sent requests
     const { data: sent } = await supabase
       .from('private_ride_requests')
-      .select('*, recipient:profiles!private_ride_requests_recipient_id_fkey(first_name, last_name, username, phone_number)')
+      .select('*, recipient:users!private_ride_requests_recipient_id_fkey(first_name, last_name, username, phone_number)')
       .eq('sender_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -102,7 +102,7 @@ const MyPrivateRequests = () => {
     // Fetch received requests
     const { data: received } = await supabase
       .from('private_ride_requests')
-      .select('*, sender:profiles!private_ride_requests_sender_id_fkey(first_name, last_name, username, phone_number)')
+      .select('*, sender:users!private_ride_requests_sender_id_fkey(first_name, last_name, username, phone_number)')
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false });
 
