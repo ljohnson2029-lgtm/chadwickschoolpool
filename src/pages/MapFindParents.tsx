@@ -372,106 +372,162 @@ const MapFindParents = () => {
     });
   }, [routeCoordinates, showRoute]);
 
-  // Add markers
+  // Add home and school markers
   useEffect(() => {
     if (!map.current || !userProfile) return;
 
-    // Helper to add all markers once the style is ready
-    const addMarkers = () => {
-      if (!map.current) return;
+    // Clear existing markers
+    markers.current.forEach(marker => marker.remove());
+    markers.current = [];
 
-      // Clear existing markers
-      markers.current.forEach(marker => marker.remove());
-      markers.current = [];
+    // Add user's home marker (blue)
+    const userHomeEl = document.createElement('div');
+    userHomeEl.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg border-2 border-white';
+    userHomeEl.innerHTML = '<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+    
+    const userMarker = new mapboxgl.Marker(userHomeEl)
+      .setLngLat([userProfile.home_longitude, userProfile.home_latitude])
+      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
+        `<div class="p-2"><strong>Your Home</strong><br/>${userProfile.home_address || 'Your location'}</div>`
+      ))
+      .addTo(map.current);
+    markers.current.push(userMarker);
 
-      // Add user's home marker (blue)
-      const userHomeEl = document.createElement('div');
-      userHomeEl.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg border-2 border-white';
-      userHomeEl.innerHTML = '<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+    // Add school marker (orange)
+    if (showSchool) {
+      const schoolEl = document.createElement('div');
+      schoolEl.className = 'flex items-center justify-center w-10 h-10 bg-orange-500 rounded-full shadow-lg border-2 border-white';
+      schoolEl.innerHTML = '<span class="text-2xl">🏫</span>';
       
-      const userMarker = new mapboxgl.Marker(userHomeEl)
-        .setLngLat([userProfile.home_longitude, userProfile.home_latitude])
+      const schoolMarker = new mapboxgl.Marker(schoolEl)
+        .setLngLat([CHADWICK_SCHOOL.longitude, CHADWICK_SCHOOL.latitude])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div class="p-2"><strong>Your Home</strong><br/>${userProfile.home_address || 'Your location'}</div>`
+          `<div class="p-2"><strong>${CHADWICK_SCHOOL.name}</strong><br/>${CHADWICK_SCHOOL.address}</div>`
         ))
         .addTo(map.current);
-      markers.current.push(userMarker);
+      markers.current.push(schoolMarker);
+    }
+  }, [userProfile, showSchool]);
 
-      // Add school marker (orange)
-      if (showSchool) {
-        const schoolEl = document.createElement('div');
-        schoolEl.className = 'flex items-center justify-center w-10 h-10 bg-orange-500 rounded-full shadow-lg border-2 border-white';
-        schoolEl.innerHTML = '<span class="text-2xl">🏫</span>';
-        
-        const schoolMarker = new mapboxgl.Marker(schoolEl)
-          .setLngLat([CHADWICK_SCHOOL.longitude, CHADWICK_SCHOOL.latitude])
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<div class="p-2"><strong>${CHADWICK_SCHOOL.name}</strong><br/>${CHADWICK_SCHOOL.address}</div>`
-          ))
-          .addTo(map.current);
-        markers.current.push(schoolMarker);
+  // Parent markers via Mapbox layers (no drifting when zoom/radius changes)
+  useEffect(() => {
+    if (!map.current || !routeCoordinates || parents.length === 0) return;
+
+    const mapInstance = map.current;
+    const routeLine = turf.lineString(routeCoordinates);
+    const radiusInMiles = radiusMiles[0];
+
+    const parentDistanceMap = new Map<string, number>();
+
+    const features = parents.map((parent) => {
+      const parentPoint = turf.point([parent.home_longitude, parent.home_latitude]);
+      const nearestPoint = turf.nearestPointOnLine(routeLine, parentPoint);
+      const distanceInKm = turf.distance(parentPoint, nearestPoint, { units: 'kilometers' });
+      const distanceInMiles = distanceInKm * 0.621371;
+      parentDistanceMap.set(parent.id, distanceInMiles);
+
+      return {
+        type: 'Feature',
+        properties: {
+          id: parent.id,
+          username: parent.username,
+          distance_from_route: distanceInMiles,
+          isWithin: distanceInMiles <= radiusInMiles,
+          isContacted: contactedParents.has(parent.id),
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [parent.home_longitude, parent.home_latitude],
+        },
+      };
+    });
+
+    const geojson = {
+      type: 'FeatureCollection',
+      features,
+    } as any;
+
+    const updateSource = () => {
+      if (!mapInstance.getSource('parents')) {
+        mapInstance.addSource('parents', {
+          type: 'geojson',
+          data: geojson,
+        });
+
+        // Parents within radius (green circles)
+        mapInstance.addLayer({
+          id: 'parents-within',
+          type: 'circle',
+          source: 'parents',
+          filter: ['==', ['get', 'isWithin'], true],
+          paint: {
+            'circle-radius': [
+              'case',
+              ['boolean', ['get', 'isContacted'], false],
+              10,
+              8,
+            ],
+            'circle-color': '#22c55e',
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 2,
+            'circle-opacity': 1,
+          },
+        });
+
+        // Parents outside radius (gray circles)
+        mapInstance.addLayer({
+          id: 'parents-outside',
+          type: 'circle',
+          source: 'parents',
+          filter: ['==', ['get', 'isWithin'], false],
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#9ca3af',
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 2,
+            'circle-opacity': 0.5,
+          },
+        });
+
+        const handleClick = (
+          e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
+        ) => {
+          const feature = e.features?.[0];
+          const id = feature?.properties?.id as string | undefined;
+          if (!id) return;
+
+          const parent = parents.find((p) => p.id === id);
+          if (!parent) return;
+
+          const distance = parentDistanceMap.get(id) ?? 0;
+          handleParentClick({ ...parent, distance_from_route: distance });
+        };
+
+        mapInstance.on('click', 'parents-within', handleClick);
+        mapInstance.on('mouseenter', 'parents-within', () => {
+          mapInstance.getCanvas().style.cursor = 'pointer';
+        });
+        mapInstance.on('mouseleave', 'parents-within', () => {
+          mapInstance.getCanvas().style.cursor = '';
+        });
       }
 
-      // Add parent markers (within radius - clickable)
-      filteredParents.forEach(parent => {
-        const isWithinRadius = parent.distance_from_route! <= radiusMiles[0];
-        
-        console.log(`Parent ${parent.username}: lat=${parent.home_latitude}, lng=${parent.home_longitude}, distance=${parent.distance_from_route?.toFixed(2)}mi, isWithin=${isWithinRadius}`);
-        
-        if (isWithinRadius) {
-          const isContacted = contactedParents.has(parent.id);
-          const parentEl = document.createElement('div');
-          parentEl.className = `relative flex items-center justify-center w-8 h-8 bg-green-500 rounded-full shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform ${isContacted ? 'opacity-60' : ''}`;
-          parentEl.innerHTML = `
-            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-            </svg>
-            ${isContacted ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>' : ''}
-          `;
-          
-          console.log(`Adding marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username}`);
-          const parentMarker = new mapboxgl.Marker(parentEl)
-            .setLngLat([parent.home_longitude, parent.home_latitude])
-            .addTo(map.current!);
-  
-          // Add click handler
-          parentEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleParentClick(parent);
-          });
-  
-          markers.current.push(parentMarker);
-        }
-      });
-  
-      // Add parent markers that are outside radius (dimmed)
-      parents
-        .filter(parent => !filteredParents.some(fp => fp.id === parent.id))
-        .forEach(parent => {
-          const parentEl = document.createElement('div');
-          parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
-          parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
-          
-          console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
-          const parentMarker = new mapboxgl.Marker(parentEl)
-            .setLngLat([parent.home_longitude, parent.home_latitude])
-            .addTo(map.current!);
-          markers.current.push(parentMarker);
-        });
+      const source = mapInstance.getSource('parents') as mapboxgl.GeoJSONSource | undefined;
+      if (source) {
+        source.setData(geojson);
+      }
     };
 
-    // If the style isn't loaded yet, wait for it once
-    if (!map.current.isStyleLoaded()) {
-      map.current.once('load', addMarkers);
+    if (mapInstance.isStyleLoaded()) {
+      updateSource();
     } else {
-      addMarkers();
+      const onLoad = () => updateSource();
+      mapInstance.once('load', onLoad);
+      return () => {
+        mapInstance.off('load', onLoad);
+      };
     }
-
-    return () => {
-      markers.current.forEach(marker => marker.remove());
-      markers.current = [];
-    };
-  }, [userProfile, filteredParents, parents, radiusMiles, showSchool, handleParentClick, contactedParents]);
+  }, [parents, routeCoordinates, radiusMiles, contactedParents, handleParentClick]);
 
   // Render desktop popup content
   useEffect(() => {
