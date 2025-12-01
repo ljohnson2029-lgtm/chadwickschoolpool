@@ -17,6 +17,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
+  const [actualEmail, setActualEmail] = useState(''); // Store the real email from login response
   
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -52,6 +53,8 @@ const Login = () => {
         throw new Error('Failed to send verification code');
       }
 
+      // Store the actual email from login response for 2FA verification
+      setActualEmail(loginData.user.email);
       setShowCodeInput(true);
       setError('');
     } catch (err: any) {
@@ -67,10 +70,9 @@ const Login = () => {
     setError('');
 
     try {
-      const normalizedEmail = email.toLowerCase().trim();
-
+      // Use the actual email from login response, not the username input
       const { data: verifyData, error: verifyError } = await supabase.functions.invoke('auth-verify-2fa', {
-        body: { email: normalizedEmail, code: code.trim() }
+        body: { email: actualEmail, code: code.trim() }
       });
 
       if (verifyError || !verifyData?.success) {
@@ -79,7 +81,7 @@ const Login = () => {
       }
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
+        email: actualEmail,
         password,
       });
 
