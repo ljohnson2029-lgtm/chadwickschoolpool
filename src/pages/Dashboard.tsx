@@ -235,31 +235,31 @@ const Dashboard = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Post a Ride (Broadcast) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/post-ride')}>
+            {/* Find Rides (Browse + Post) */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/find-rides')}>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-full bg-primary/10">
                     <Radio className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Post a Ride</CardTitle>
-                    <CardDescription>Post to everyone</CardDescription>
+                    <CardTitle className="text-lg">Find Rides</CardTitle>
+                    <CardDescription>Browse & post public</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Share your ride request or offer publicly for all parents to see
+                  Browse available rides or post your own for all parents to see
                 </p>
                 <Button className="w-full gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Post
+                  <Radio className="h-4 w-4" />
+                  View Rides
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Find on Map (Direct) */}
+            {/* Find on Map (Private Requests) */}
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/map/find-parents')}>
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -267,14 +267,14 @@ const Dashboard = () => {
                     <MapIcon className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Find on Map</CardTitle>
-                    <CardDescription>Individual requests</CardDescription>
+                    <CardTitle className="text-lg">Find Parents</CardTitle>
+                    <CardDescription>Map-based discovery</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Send private ride requests to specific parents near your route
+                  Discover parents near your route and send private ride requests
                 </p>
                 <Button variant="outline" className="w-full gap-2">
                   <MapIcon className="h-4 w-4" />
@@ -283,31 +283,26 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* My Conversations (Direct Negotiations) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 relative" onClick={() => navigate('/conversations')}>
-              {pendingConversationsCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full">
-                  {pendingConversationsCount}
-                </Badge>
-              )}
+            {/* My Rides (All Management) */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/my-rides')}>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-full bg-green-500/10">
-                    <MessageSquare className="h-6 w-6 text-green-600" />
+                    <Car className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">My Conversations</CardTitle>
-                    <CardDescription>Direct negotiations</CardDescription>
+                    <CardTitle className="text-lg">My Rides</CardTitle>
+                    <CardDescription>All your rides</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  View and manage your private ride conversations
+                  Manage your posted rides and private requests
                 </p>
                 <Button variant="outline" className="w-full gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  View Conversations
+                  <Car className="h-4 w-4" />
+                  View All
                 </Button>
               </CardContent>
             </Card>

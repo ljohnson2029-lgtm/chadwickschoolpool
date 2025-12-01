@@ -19,13 +19,13 @@ import {
   Radio,
   Hand,
   Car,
-  Map as MapIcon,
   Search,
   Filter
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
-import CarpoolMapView from "@/components/CarpoolMapView";
+import RideRequestForm from "@/components/RideRequestForm";
+import RideOfferForm from "@/components/RideOfferForm";
 
 interface BroadcastRide {
   id: string;
@@ -161,7 +161,7 @@ const FindRides = () => {
           </div>
           <Badge className="gap-1">
             <Radio className="h-3 w-3" />
-            Public Post
+            Public
           </Badge>
         </div>
       </CardHeader>
@@ -227,27 +227,23 @@ const FindRides = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Find Rides</h1>
           <p className="text-muted-foreground">
-            Browse public ride posts or use the map to send direct requests
+            Browse and post public rides visible to all parents
           </p>
         </div>
 
-        <Tabs defaultValue="available" className="space-y-6">
+        <Tabs defaultValue="browse" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="available" className="gap-2">
+            <TabsTrigger value="browse" className="gap-2">
               <Radio className="h-4 w-4" />
-              Available Rides
+              Browse Rides
             </TabsTrigger>
-            <TabsTrigger 
-              value="map" 
-              className="gap-2"
-              onClick={() => navigate('/map/find-parents')}
-            >
-              <MapIcon className="h-4 w-4" />
-              Find on Map
+            <TabsTrigger value="post" className="gap-2">
+              <Hand className="h-4 w-4" />
+              Post a Ride
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="available" className="space-y-6">
+          <TabsContent value="browse" className="space-y-6">
             {/* Search and Filter Bar */}
             <Card>
               <CardContent className="p-4">
@@ -295,10 +291,6 @@ const FindRides = () => {
                     icon={Hand}
                     title="No Ride Requests"
                     description="No parents have posted ride requests yet. Be the first!"
-                    action={{
-                      label: "Post a Request",
-                      onClick: () => navigate('/post-ride')
-                    }}
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -317,10 +309,6 @@ const FindRides = () => {
                     icon={Car}
                     title="No Ride Offers"
                     description="No parents have offered rides yet. Post one to help!"
-                    action={{
-                      label: "Offer a Ride",
-                      onClick: () => navigate('/post-ride')
-                    }}
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -333,25 +321,53 @@ const FindRides = () => {
             </Tabs>
           </TabsContent>
 
-          <TabsContent value="map" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapIcon className="h-5 w-5" />
-                  Direct Requests via Map
-                </CardTitle>
-                <CardDescription>
-                  Click on parent markers to send private ride requests or offers
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CarpoolMapView height="600px" />
-              </CardContent>
-            </Card>
+          <TabsContent value="post" className="space-y-6">
+            <Tabs defaultValue="request" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="request" className="gap-2">
+                  <Hand className="h-4 w-4" />
+                  Request a Ride
+                </TabsTrigger>
+                <TabsTrigger value="offer" className="gap-2">
+                  <Car className="h-4 w-4" />
+                  Offer a Ride
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
-              <strong>Tip:</strong> Map interactions create private, 1-on-1 ride conversations that appear in "My Conversations"
-            </div>
+              <TabsContent value="request">
+                <Card className="p-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-semibold mb-2">I need a ride</h2>
+                    <p className="text-muted-foreground">
+                      Post a ride request that all parents can see. They can respond with "I Can Help!"
+                    </p>
+                  </div>
+                  <RideRequestForm 
+                    onSuccess={() => {
+                      fetchBroadcastRides();
+                    }}
+                    isBroadcast={true}
+                  />
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="offer">
+                <Card className="p-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-semibold mb-2">I can offer a ride</h2>
+                    <p className="text-muted-foreground">
+                      Post a ride offer that all parents can see. They can respond with "I Need This!"
+                    </p>
+                  </div>
+                  <RideOfferForm 
+                    onSuccess={() => {
+                      fetchBroadcastRides();
+                    }}
+                    isBroadcast={true}
+                  />
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>

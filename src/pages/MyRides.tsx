@@ -4,9 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Calendar, 
   Clock, 
@@ -14,7 +16,11 @@ import {
   Users, 
   Radio,
   Trash2,
-  Edit
+  Send,
+  Inbox,
+  MessageSquare,
+  Check,
+  X
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
@@ -30,7 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface MyRide {
+interface BroadcastRide {
   id: string;
   type: string;
   pickup_location: string;
@@ -46,13 +52,50 @@ interface MyRide {
   status: string;
 }
 
+interface PrivateRequest {
+  id: string;
+  request_type: 'request' | 'offer';
+  sender_id: string;
+  recipient_id: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';
+  ride_date: string;
+  pickup_time: string;
+  is_round_trip: boolean;
+  return_time: string | null;
+  pickup_address: string;
+  dropoff_address: string;
+  seats_needed: number | null;
+  seats_offered: number | null;
+  message: string | null;
+  distance_from_route: number | null;
+  created_at: string;
+  responded_at: string | null;
+  sender_profile?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+  };
+  recipient_profile?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+  };
+}
+
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [myRides, setMyRides] = useState<MyRide[]>([]);
-  const [loadingRides, setLoadingRides] = useState(true);
+  const [broadcastRides, setBroadcastRides] = useState<BroadcastRide[]>([]);
+  const [sentRequests, setSentRequests] = useState<PrivateRequest[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<PrivateRequest[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<string | null>(null);
+  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<PrivateRequest | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -62,14 +105,23 @@ const MyRides = () => {
 
   useEffect(() => {
     if (user) {
-      fetchMyRides();
+      fetchAllData();
     }
   }, [user]);
 
-  const fetchMyRides = async () => {
+  const fetchAllData = async () => {
+    if (!user) return;
+    setLoadingData(true);
+    await Promise.all([
+      fetchBroadcastRides(),
+      fetchPrivateRequests()
+    ]);
+    setLoadingData(false);
+  };
+
+  const fetchBroadcastRides = async () => {
     if (!user) return;
 
-    setLoadingRides(true);
     const { data, error } = await supabase
       .from('rides')
       .select('*')
@@ -79,11 +131,46 @@ const MyRides = () => {
       .order('ride_time', { ascending: true });
 
     if (error) {
-      console.error('Error fetching my rides:', error);
+      console.error('Error fetching broadcast rides:', error);
     } else {
-      setMyRides(data || []);
+      setBroadcastRides(data || []);
     }
-    setLoadingRides(false);
+  };
+
+  const fetchPrivateRequests = async () => {
+    if (!user) return;
+
+    // Fetch sent requests
+    const { data: sent, error: sentError } = await supabase
+      .from('private_ride_requests')
+      .select(`
+        *,
+        recipient_profile:profiles!recipient_id(id, first_name, last_name, username)
+      `)
+      .eq('sender_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (sentError) {
+      console.error('Error fetching sent requests:', sentError);
+    } else {
+      setSentRequests(sent as any || []);
+    }
+
+    // Fetch received requests
+    const { data: received, error: receivedError } = await supabase
+      .from('private_ride_requests')
+      .select(`
+        *,
+        sender_profile:profiles!sender_id(id, first_name, last_name, username)
+      `)
+      .eq('recipient_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (receivedError) {
+      console.error('Error fetching received requests:', receivedError);
+    } else {
+      setReceivedRequests(received as any || []);
+    }
   };
 
   const handleDeleteRide = async () => {
@@ -98,10 +185,87 @@ const MyRides = () => {
       toast.error('Failed to delete ride');
     } else {
       toast.success('Ride deleted successfully');
-      fetchMyRides();
+      fetchBroadcastRides();
     }
     setDeleteDialogOpen(false);
     setRideToDelete(null);
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!selectedRequest) return;
+
+    const { error } = await supabase
+      .from('private_ride_requests')
+      .update({
+        status: 'accepted',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', selectedRequest.id);
+
+    if (error) {
+      toast.error('Failed to accept request');
+      return;
+    }
+
+    // Create notification
+    await supabase.from('notifications').insert({
+      user_id: selectedRequest.sender_id,
+      type: 'private_request_accepted',
+      message: `${profile?.first_name} ${profile?.last_name} accepted your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}!`,
+      is_read: false
+    });
+
+    toast.success('Request accepted!');
+    fetchPrivateRequests();
+    setAcceptDialogOpen(false);
+    setSelectedRequest(null);
+  };
+
+  const handleDeclineRequest = async () => {
+    if (!selectedRequest) return;
+
+    const { error } = await supabase
+      .from('private_ride_requests')
+      .update({
+        status: 'declined',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', selectedRequest.id);
+
+    if (error) {
+      toast.error('Failed to decline request');
+      return;
+    }
+
+    // Create notification
+    await supabase.from('notifications').insert({
+      user_id: selectedRequest.sender_id,
+      type: 'private_request_declined',
+      message: `${profile?.first_name} ${profile?.last_name} declined your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
+      is_read: false
+    });
+
+    toast.success('Request declined');
+    fetchPrivateRequests();
+    setDeclineDialogOpen(false);
+    setSelectedRequest(null);
+  };
+
+  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    return username.substring(0, 2).toUpperCase();
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-500/10 text-yellow-600';
+      case 'accepted': return 'bg-green-500/10 text-green-600';
+      case 'declined': return 'bg-red-500/10 text-red-600';
+      case 'cancelled': return 'bg-gray-500/10 text-gray-600';
+      default: return 'bg-gray-500/10 text-gray-600';
+    }
   };
 
   if (loading || !user || !profile) {
@@ -116,29 +280,17 @@ const MyRides = () => {
     );
   }
 
-  const RideCard = ({ ride }: { ride: MyRide }) => (
-    <Card>
+  const BroadcastRideCard = ({ ride }: { ride: BroadcastRide }) => (
+    <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">
-              {ride.type === 'offer' ? 'Ride Offer' : 'Ride Request'}
-            </CardTitle>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant={ride.type === "offer" ? "default" : "secondary"}>
-                {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
-              </Badge>
-              {ride.transaction_type === 'broadcast' && (
-                <Badge className="gap-1 bg-purple-600 dark:bg-purple-700">
-                  <Radio className="h-3 w-3" />
-                  Public Post
-                </Badge>
-              )}
-            </div>
-          </div>
-          {ride.is_recurring && (
-            <Badge variant="outline">Recurring</Badge>
-          )}
+          <CardTitle className="text-lg flex items-center gap-2">
+            {ride.type === 'request' ? '🙏 Ride Request' : '🚗 Ride Offer'}
+          </CardTitle>
+          <Badge className="gap-1">
+            <Radio className="h-3 w-3" />
+            Public
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -163,94 +315,258 @@ const MyRides = () => {
 
         <div className="flex items-center gap-2 text-sm">
           <Users className="h-4 w-4 text-muted-foreground" />
-          {ride.type === "offer"
+          {ride.type === 'offer'
             ? `${ride.seats_available} seats available`
             : `${ride.seats_needed} seats needed`}
         </div>
 
-        {ride.route_details && (
-          <div className="text-sm text-muted-foreground pt-2 border-t">
-            {ride.route_details}
-          </div>
-        )}
-
-        {ride.is_recurring && ride.recurring_days && (
-          <div className="text-sm pt-2 border-t">
-            <span className="text-muted-foreground">Repeats: </span>
-            {ride.recurring_days.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(", ")}
-          </div>
-        )}
-
-        <div className="flex gap-2 pt-3 border-t">
-          <Button
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={() => {
-              setRideToDelete(ride.id);
-              setDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
-        </div>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          className="w-full gap-2"
+          onClick={() => {
+            setRideToDelete(ride.id);
+            setDeleteDialogOpen(true);
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </Button>
       </CardContent>
     </Card>
   );
 
+  const PrivateRequestCard = ({ request, isSent }: { request: PrivateRequest; isSent: boolean }) => {
+    const otherProfile = isSent ? request.recipient_profile : request.sender_profile;
+    
+    return (
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                  {getInitials(otherProfile?.first_name || null, otherProfile?.last_name || null, otherProfile?.username || 'U')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-base">
+                  {otherProfile?.first_name} {otherProfile?.last_name}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">@{otherProfile?.username}</p>
+              </div>
+            </div>
+            <Badge className={getStatusColor(request.status)}>
+              {request.status}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Badge variant="outline" className="gap-1">
+            {request.request_type === 'request' ? '🙏 Request' : '🚗 Offer'}
+          </Badge>
+
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+            <div className="text-sm">
+              <div className="font-medium">{request.pickup_address}</div>
+              <div className="text-muted-foreground">to {request.dropoff_address}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              {format(new Date(request.ride_date), 'MMM d, yyyy')}
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {request.pickup_time}
+            </div>
+          </div>
+
+          {request.message && (
+            <p className="text-sm text-muted-foreground pt-2 border-t italic">
+              "{request.message}"
+            </p>
+          )}
+
+          {!isSent && request.status === 'pending' && (
+            <div className="flex gap-2 pt-2">
+              <Button 
+                size="sm" 
+                className="flex-1 gap-2"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setAcceptDialogOpen(true);
+                }}
+              >
+                <Check className="h-4 w-4" />
+                Accept
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex-1 gap-2"
+                onClick={() => {
+                  setSelectedRequest(request);
+                  setDeclineDialogOpen(true);
+                }}
+              >
+                <X className="h-4 w-4" />
+                Decline
+              </Button>
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            {isSent ? 'Sent' : 'Received'} {format(new Date(request.created_at), 'MMM d, h:mm a')}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 max-w-7xl">
-        <Breadcrumbs items={[{ label: "My Posted Rides" }]} />
+        <Breadcrumbs items={[{ label: "My Rides" }]} />
 
         <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">My Posted Rides</h1>
-              <p className="text-muted-foreground">
-                Manage all your ride requests and offers
-              </p>
-            </div>
-            <Button onClick={() => navigate('/post-ride')} className="gap-2">
-              <Radio className="h-4 w-4" />
-              Post New Ride
-            </Button>
-          </div>
+          <h1 className="text-3xl font-bold mb-2">My Rides</h1>
+          <p className="text-muted-foreground">
+            Manage your posted rides and private requests
+          </p>
         </div>
 
-        {loadingRides ? (
-          <div className="text-center py-12">Loading your rides...</div>
-        ) : myRides.length === 0 ? (
-          <EmptyState
-            icon={Radio}
-            title="No Posted Rides"
-            description="You haven't posted any rides yet. Create one to get started!"
-            action={{
-              label: "Post a Ride",
-              onClick: () => navigate('/post-ride')
-            }}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {myRides.map((ride) => (
-              <RideCard key={ride.id} ride={ride} />
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="posted" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="posted" className="gap-2">
+              <Radio className="h-4 w-4" />
+              Posted Rides ({broadcastRides.length})
+            </TabsTrigger>
+            <TabsTrigger value="sent" className="gap-2">
+              <Send className="h-4 w-4" />
+              Sent ({sentRequests.length})
+            </TabsTrigger>
+            <TabsTrigger value="received" className="gap-2">
+              <Inbox className="h-4 w-4" />
+              Received ({receivedRequests.length})
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="posted">
+            {loadingData ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : broadcastRides.length === 0 ? (
+              <EmptyState
+                icon={Radio}
+                title="No Posted Rides"
+                description="You haven't posted any public rides yet"
+                action={{
+                  label: "Post a Ride",
+                  onClick: () => navigate('/find-rides?tab=post')
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {broadcastRides.map((ride) => (
+                  <BroadcastRideCard key={ride.id} ride={ride} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="sent">
+            {loadingData ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : sentRequests.length === 0 ? (
+              <EmptyState
+                icon={Send}
+                title="No Sent Requests"
+                description="You haven't sent any private ride requests yet"
+                action={{
+                  label: "Find Parents on Map",
+                  onClick: () => navigate('/map/find-parents')
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {sentRequests.map((request) => (
+                  <PrivateRequestCard key={request.id} request={request} isSent={true} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="received">
+            {loadingData ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : receivedRequests.length === 0 ? (
+              <EmptyState
+                icon={Inbox}
+                title="No Received Requests"
+                description="No one has sent you private ride requests yet"
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {receivedRequests.map((request) => (
+                  <PrivateRequestCard key={request.id} request={request} isSent={false} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Delete Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Ride?</AlertDialogTitle>
+              <AlertDialogTitle>Delete this ride?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete this ride post. This action cannot be undone.
+                This will remove your ride post. Other parents will no longer be able to see or respond to it.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteRide} className="bg-destructive text-destructive-foreground">
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Accept Dialog */}
+        <AlertDialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Accept this request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                By accepting, {selectedRequest?.sender_profile?.first_name} will be notified and receive your contact information.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAcceptRequest}>
+                Accept Request
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Decline Dialog */}
+        <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Decline this request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {selectedRequest?.sender_profile?.first_name} will be notified that you declined their request.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeclineRequest} className="bg-destructive text-destructive-foreground">
+                Decline
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
