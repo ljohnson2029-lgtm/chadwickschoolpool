@@ -408,9 +408,11 @@ const MapFindParents = () => {
       markers.current.push(schoolMarker);
     }
 
-    // Add parent markers (within radius - clickable)
+  // Add parent markers (within radius - clickable)
     filteredParents.forEach(parent => {
       const isWithinRadius = parent.distance_from_route! <= radiusMiles[0];
+      
+      console.log(`Parent ${parent.username}: lat=${parent.home_latitude}, lng=${parent.home_longitude}, distance=${parent.distance_from_route?.toFixed(2)}mi, isWithin=${isWithinRadius}`);
       
       if (isWithinRadius) {
         const isContacted = contactedParents.has(parent.id);
@@ -423,6 +425,7 @@ const MapFindParents = () => {
           ${isContacted ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>' : ''}
         `;
         
+        console.log(`Adding marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username}`);
         const parentMarker = new mapboxgl.Marker(parentEl)
           .setLngLat([parent.home_longitude, parent.home_latitude])
           .addTo(map.current!);
@@ -443,6 +446,7 @@ const MapFindParents = () => {
       parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
       parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
       
+      console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
       const parentMarker = new mapboxgl.Marker(parentEl)
         .setLngLat([parent.home_longitude, parent.home_latitude])
         .addTo(map.current!);
