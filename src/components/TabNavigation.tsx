@@ -20,17 +20,15 @@ const TabNavigation = () => {
 
   const mainTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
-    { label: "Find on Map", path: "/map/find-parents", icon: MapPin, badge: "New" },
     { label: "Find Rides", path: "/find-rides", icon: Radio },
-    { label: "Post Ride", path: "/post-ride", icon: Plus },
-    { label: "Conversations", path: "/conversations", icon: MessageSquare },
-    { label: "Family", path: "/family-links", icon: UsersIcon },
+    { label: "Find Parents", path: "/map/find-parents", icon: MapPin },
+    { label: "My Rides", path: "/my-rides", icon: Car },
   ];
 
   const menuItems = [
     { label: "Profile", path: "/profile", icon: User },
-    { label: "My Private Requests", path: "/requests/private", icon: Send },
-    { label: "My Posted Rides", path: "/my-rides", icon: Radio },
+    { label: "Conversations", path: "/conversations", icon: MessageSquare },
+    { label: "Family Links", path: "/family-links", icon: UsersIcon },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
@@ -72,11 +70,6 @@ const TabNavigation = () => {
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
-                  {'badge' in tab && tab.badge && (
-                    <Badge className="ml-1 h-5 px-1.5 text-[10px]">
-                      {tab.badge}
-                    </Badge>
-                  )}
                 </Button>
               );
             })}
