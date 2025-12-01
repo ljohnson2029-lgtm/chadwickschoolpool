@@ -441,17 +441,19 @@ const MapFindParents = () => {
     });
 
     // Add parent markers that are outside radius (dimmed)
-    parents.filter(p => !filteredParents.includes(p)).forEach(parent => {
-      const parentEl = document.createElement('div');
-      parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
-      parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
-      
-      console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
-      const parentMarker = new mapboxgl.Marker(parentEl)
-        .setLngLat([parent.home_longitude, parent.home_latitude])
-        .addTo(map.current!);
-      markers.current.push(parentMarker);
-    });
+    parents
+      .filter(parent => !filteredParents.some(fp => fp.id === parent.id))
+      .forEach(parent => {
+        const parentEl = document.createElement('div');
+        parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
+        parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+        
+        console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
+        const parentMarker = new mapboxgl.Marker(parentEl)
+          .setLngLat([parent.home_longitude, parent.home_latitude])
+          .addTo(map.current!);
+        markers.current.push(parentMarker);
+      });
   }, [map.current, userProfile, filteredParents, parents, radiusMiles, showSchool, handleParentClick, contactedParents]);
 
   // Render desktop popup content

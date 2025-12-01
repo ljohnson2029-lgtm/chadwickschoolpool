@@ -145,7 +145,7 @@ const MyRides = () => {
       .from('private_ride_requests')
       .select(`
         *,
-        recipient_profile:profiles!recipient_id(id, first_name, last_name, username)
+        recipient_profile:users!private_ride_requests_recipient_id_fkey(id, first_name, last_name, username)
       `)
       .eq('sender_id', user.id)
       .order('created_at', { ascending: false });
@@ -161,7 +161,7 @@ const MyRides = () => {
       .from('private_ride_requests')
       .select(`
         *,
-        sender_profile:profiles!sender_id(id, first_name, last_name, username)
+        sender_profile:users!private_ride_requests_sender_id_fkey(id, first_name, last_name, username)
       `)
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false });
