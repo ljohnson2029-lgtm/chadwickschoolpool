@@ -376,85 +376,102 @@ const MapFindParents = () => {
   useEffect(() => {
     if (!map.current || !userProfile) return;
 
-    // Clear existing markers
-    markers.current.forEach(marker => marker.remove());
-    markers.current = [];
+    // Helper to add all markers once the style is ready
+    const addMarkers = () => {
+      if (!map.current) return;
 
-    // Add user's home marker (blue)
-    const userHomeEl = document.createElement('div');
-    userHomeEl.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg border-2 border-white';
-    userHomeEl.innerHTML = '<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
-    
-    const userMarker = new mapboxgl.Marker(userHomeEl)
-      .setLngLat([userProfile.home_longitude, userProfile.home_latitude])
-      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-        `<div class="p-2"><strong>Your Home</strong><br/>${userProfile.home_address || 'Your location'}</div>`
-      ))
-      .addTo(map.current);
-    markers.current.push(userMarker);
+      // Clear existing markers
+      markers.current.forEach(marker => marker.remove());
+      markers.current = [];
 
-    // Add school marker (orange)
-    if (showSchool) {
-      const schoolEl = document.createElement('div');
-      schoolEl.className = 'flex items-center justify-center w-10 h-10 bg-orange-500 rounded-full shadow-lg border-2 border-white';
-      schoolEl.innerHTML = '<span class="text-2xl">🏫</span>';
+      // Add user's home marker (blue)
+      const userHomeEl = document.createElement('div');
+      userHomeEl.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 rounded-full shadow-lg border-2 border-white';
+      userHomeEl.innerHTML = '<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
       
-      const schoolMarker = new mapboxgl.Marker(schoolEl)
-        .setLngLat([CHADWICK_SCHOOL.longitude, CHADWICK_SCHOOL.latitude])
+      const userMarker = new mapboxgl.Marker(userHomeEl)
+        .setLngLat([userProfile.home_longitude, userProfile.home_latitude])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div class="p-2"><strong>${CHADWICK_SCHOOL.name}</strong><br/>${CHADWICK_SCHOOL.address}</div>`
+          `<div class="p-2"><strong>Your Home</strong><br/>${userProfile.home_address || 'Your location'}</div>`
         ))
         .addTo(map.current);
-      markers.current.push(schoolMarker);
+      markers.current.push(userMarker);
+
+      // Add school marker (orange)
+      if (showSchool) {
+        const schoolEl = document.createElement('div');
+        schoolEl.className = 'flex items-center justify-center w-10 h-10 bg-orange-500 rounded-full shadow-lg border-2 border-white';
+        schoolEl.innerHTML = '<span class="text-2xl">🏫</span>';
+        
+        const schoolMarker = new mapboxgl.Marker(schoolEl)
+          .setLngLat([CHADWICK_SCHOOL.longitude, CHADWICK_SCHOOL.latitude])
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<div class="p-2"><strong>${CHADWICK_SCHOOL.name}</strong><br/>${CHADWICK_SCHOOL.address}</div>`
+          ))
+          .addTo(map.current);
+        markers.current.push(schoolMarker);
+      }
+
+      // Add parent markers (within radius - clickable)
+      filteredParents.forEach(parent => {
+        const isWithinRadius = parent.distance_from_route! <= radiusMiles[0];
+        
+        console.log(`Parent ${parent.username}: lat=${parent.home_latitude}, lng=${parent.home_longitude}, distance=${parent.distance_from_route?.toFixed(2)}mi, isWithin=${isWithinRadius}`);
+        
+        if (isWithinRadius) {
+          const isContacted = contactedParents.has(parent.id);
+          const parentEl = document.createElement('div');
+          parentEl.className = `relative flex items-center justify-center w-8 h-8 bg-green-500 rounded-full shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform ${isContacted ? 'opacity-60' : ''}`;
+          parentEl.innerHTML = `
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+            </svg>
+            ${isContacted ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>' : ''}
+          `;
+          
+          console.log(`Adding marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username}`);
+          const parentMarker = new mapboxgl.Marker(parentEl)
+            .setLngLat([parent.home_longitude, parent.home_latitude])
+            .addTo(map.current!);
+  
+          // Add click handler
+          parentEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleParentClick(parent);
+          });
+  
+          markers.current.push(parentMarker);
+        }
+      });
+  
+      // Add parent markers that are outside radius (dimmed)
+      parents
+        .filter(parent => !filteredParents.some(fp => fp.id === parent.id))
+        .forEach(parent => {
+          const parentEl = document.createElement('div');
+          parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
+          parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+          
+          console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
+          const parentMarker = new mapboxgl.Marker(parentEl)
+            .setLngLat([parent.home_longitude, parent.home_latitude])
+            .addTo(map.current!);
+          markers.current.push(parentMarker);
+        });
+    };
+
+    // If the style isn't loaded yet, wait for it once
+    if (!map.current.isStyleLoaded()) {
+      map.current.once('load', addMarkers);
+    } else {
+      addMarkers();
     }
 
-  // Add parent markers (within radius - clickable)
-    filteredParents.forEach(parent => {
-      const isWithinRadius = parent.distance_from_route! <= radiusMiles[0];
-      
-      console.log(`Parent ${parent.username}: lat=${parent.home_latitude}, lng=${parent.home_longitude}, distance=${parent.distance_from_route?.toFixed(2)}mi, isWithin=${isWithinRadius}`);
-      
-      if (isWithinRadius) {
-        const isContacted = contactedParents.has(parent.id);
-        const parentEl = document.createElement('div');
-        parentEl.className = `relative flex items-center justify-center w-8 h-8 bg-green-500 rounded-full shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform ${isContacted ? 'opacity-60' : ''}`;
-        parentEl.innerHTML = `
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-          </svg>
-          ${isContacted ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><svg class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg></div>' : ''}
-        `;
-        
-        console.log(`Adding marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username}`);
-        const parentMarker = new mapboxgl.Marker(parentEl)
-          .setLngLat([parent.home_longitude, parent.home_latitude])
-          .addTo(map.current!);
-
-        // Add click handler
-        parentEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          handleParentClick(parent);
-        });
-
-        markers.current.push(parentMarker);
-      }
-    });
-
-    // Add parent markers that are outside radius (dimmed)
-    parents
-      .filter(parent => !filteredParents.some(fp => fp.id === parent.id))
-      .forEach(parent => {
-        const parentEl = document.createElement('div');
-        parentEl.className = 'flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full shadow-lg border-2 border-white opacity-40';
-        parentEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
-        
-        console.log(`Adding gray marker at [${parent.home_longitude}, ${parent.home_latitude}] for ${parent.username} (outside radius)`);
-        const parentMarker = new mapboxgl.Marker(parentEl)
-          .setLngLat([parent.home_longitude, parent.home_latitude])
-          .addTo(map.current!);
-        markers.current.push(parentMarker);
-      });
-  }, [map.current, userProfile, filteredParents, parents, radiusMiles, showSchool, handleParentClick, contactedParents]);
+    return () => {
+      markers.current.forEach(marker => marker.remove());
+      markers.current = [];
+    };
+  }, [userProfile, filteredParents, parents, radiusMiles, showSchool, handleParentClick, contactedParents]);
 
   // Render desktop popup content
   useEffect(() => {
