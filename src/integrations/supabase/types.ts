@@ -188,6 +188,24 @@ export type Database = {
           },
         ]
       }
+      parent_email_whitelist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       private_ride_requests: {
         Row: {
           created_at: string
@@ -716,6 +734,7 @@ export type Database = {
       is_student_email: { Args: { user_email: string }; Returns: boolean }
       is_valid_parent_email: { Args: { email: string }; Returns: boolean }
       is_valid_student_email: { Args: { email: string }; Returns: boolean }
+      is_whitelisted_parent: { Args: { check_email: string }; Returns: boolean }
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
