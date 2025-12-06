@@ -90,23 +90,51 @@ const MyPrivateRequests = () => {
 
     setLoading(true);
 
-    // Fetch sent requests
+    // Fetch sent requests - get basic request data first
     const { data: sent } = await supabase
       .from('private_ride_requests')
-      .select('*, recipient:users!private_ride_requests_recipient_id_fkey(first_name, last_name, username, phone_number)')
+      .select('*')
       .eq('sender_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (sent) setSentRequests(sent as any);
+    if (sent) {
+      // Fetch recipient profiles for sent requests
+      const recipientIds = [...new Set(sent.map(r => r.recipient_id))];
+      const { data: recipientProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username, phone_number')
+        .in('id', recipientIds);
+      
+      const profileMap = new Map(recipientProfiles?.map(p => [p.id, p]) || []);
+      const sentWithProfiles = sent.map(r => ({
+        ...r,
+        recipient: profileMap.get(r.recipient_id) || null
+      }));
+      setSentRequests(sentWithProfiles as any);
+    }
 
     // Fetch received requests
     const { data: received } = await supabase
       .from('private_ride_requests')
-      .select('*, sender:users!private_ride_requests_sender_id_fkey(first_name, last_name, username, phone_number)')
+      .select('*')
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (received) setReceivedRequests(received as any);
+    if (received) {
+      // Fetch sender profiles for received requests
+      const senderIds = [...new Set(received.map(r => r.sender_id))];
+      const { data: senderProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username, phone_number')
+        .in('id', senderIds);
+      
+      const profileMap = new Map(senderProfiles?.map(p => [p.id, p]) || []);
+      const receivedWithProfiles = received.map(r => ({
+        ...r,
+        sender: profileMap.get(r.sender_id) || null
+      }));
+      setReceivedRequests(receivedWithProfiles as any);
+    }
 
     setLoading(false);
   };

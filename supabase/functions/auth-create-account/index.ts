@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, username, password, firstName, lastName, phoneNumber, userType } = await req.json();
+    const { email, username, password, firstName, lastName, phoneNumber } = await req.json();
     
     console.log(`Registration attempt for email: ${email}`);
 
@@ -60,6 +60,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const normalizedEmail = email.toLowerCase();
+
     // Check if username already exists (case-insensitive)
     const { data: existingUsername, error: usernameCheckError } = await supabase
       .from('users')
@@ -83,7 +85,7 @@ serve(async (req) => {
     const { data: existingEmail, error: emailCheckError } = await supabase
       .from('users')
       .select('user_id, email')
-      .eq('email', email.toLowerCase())
+      .eq('email', normalizedEmail)
       .maybeSingle();
 
     if (emailCheckError) {
@@ -160,11 +162,11 @@ serve(async (req) => {
       );
     }
     
-    const authUserExists = existingAuthUser?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
+    const authUserExists = existingAuthUser?.users?.some(u => u.email?.toLowerCase() === normalizedEmail);
 
     if (authUserExists) {
       // Clean up orphaned auth user (exists in auth but not in users table)
-      const orphanedUser = existingAuthUser.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      const orphanedUser = existingAuthUser.users.find(u => u.email?.toLowerCase() === normalizedEmail);
       if (orphanedUser) {
         console.log(`Found orphaned auth user for ${email}, cleaning up`);
         const { error: deleteError } = await supabase.auth.admin.deleteUser(orphanedUser.id);
@@ -176,6 +178,40 @@ serve(async (req) => {
       }
     }
 
+    // Determine account type using whitelist priority logic
+    // Priority: whitelist → parent, @chadwickschool.org → student, else → parent
+    console.log(`Checking whitelist for email: ${normalizedEmail}`);
+    
+    const { data: whitelistEntry, error: whitelistError } = await supabase
+      .from('parent_email_whitelist')
+      .select('email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (whitelistError) {
+      console.error('Error checking whitelist:', whitelistError);
+    }
+
+    let role = 'parent';
+    let accountType = 'parent';
+
+    if (whitelistEntry) {
+      // Email is in whitelist - ALWAYS parent (highest priority)
+      console.log(`Email ${normalizedEmail} found in parent whitelist - assigning parent role`);
+      role = 'parent';
+      accountType = 'parent';
+    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
+      // Email ends with @chadwickschool.org and NOT in whitelist - student
+      console.log(`Email ${normalizedEmail} is @chadwickschool.org and not in whitelist - assigning student role`);
+      role = 'student';
+      accountType = 'student';
+    } else {
+      // All other emails - parent (default)
+      console.log(`Email ${normalizedEmail} is not in whitelist and not @chadwickschool.org - assigning parent role (default)`);
+      role = 'parent';
+      accountType = 'parent';
+    }
+
     // Hash password (using hashSync to avoid Worker issues in Edge Functions)
     console.log('Hashing password...');
     const passwordHash = bcrypt.hashSync(password);
@@ -183,7 +219,7 @@ serve(async (req) => {
     // Create Supabase Auth user
     console.log('Creating Supabase auth user...');
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: password,
       email_confirm: true, // Auto-confirm since we already did 2FA verification
       user_metadata: {
@@ -210,7 +246,7 @@ serve(async (req) => {
       .from('users')
       .insert({
         user_id: authData.user.id, // Use the same ID as Supabase Auth
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         username,
         password_hash: passwordHash,
         first_name: firstName,
@@ -234,26 +270,6 @@ serve(async (req) => {
     }
     
     console.log('User record created successfully');
-
-    // Determine and assign user role and account type
-    const normalizedEmail = email.toLowerCase();
-    let role = 'parent'; // Default role
-    let accountType = 'parent'; // Default account type
-    
-    // Exempt parent accounts (staff/faculty with @chadwickschool.org emails)
-    const parentExemptions = ['ljohnson2029@chadwickschool.org'];
-    
-    if (parentExemptions.includes(normalizedEmail)) {
-      role = 'parent';
-      accountType = 'parent';
-    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
-      role = 'student';
-      accountType = 'student';
-    } else if (userType) {
-      // If userType is provided (parent/staff), use it
-      role = userType;
-      accountType = 'parent'; // Non-chadwick emails are always parents
-    }
 
     // Create profile record with account_type
     console.log('Creating profile record...');
@@ -301,6 +317,7 @@ serve(async (req) => {
         message: 'Account created successfully',
         userId: newUser.user_id,
         role: role,
+        accountType: accountType,
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
