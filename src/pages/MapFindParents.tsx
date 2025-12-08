@@ -69,6 +69,8 @@ const MapFindParents = () => {
     setProfilePopupOpen(false);
     setSelectedParentId(null);
     if (popupRef.current) {
+      // Remove event listener first to prevent infinite loop
+      popupRef.current.off('close', handleCloseProfile);
       popupRef.current.remove();
       popupRef.current = null;
     }
