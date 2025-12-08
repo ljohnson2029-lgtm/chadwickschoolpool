@@ -22,6 +22,17 @@ serve(async (req) => {
       );
     }
 
+    // Validate input to prevent filter injection attacks
+    // Allow: letters, numbers, @, ., _, -, spaces (for usernames/emails only)
+    const sanitizedInput = String(usernameOrEmail).trim();
+    const validInputPattern = /^[a-zA-Z0-9@._\-\s]+$/;
+    if (!validInputPattern.test(sanitizedInput) || sanitizedInput.length > 255) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid username/email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
