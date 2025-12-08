@@ -47,36 +47,26 @@ const ParentProfilePopup = ({
     setError(false);
 
     try {
-      // Fetch profile data
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, username, first_name, last_name, home_address, phone_number, created_at')
-        .eq('id', parentId)
-        .single();
+      // Use edge function to fetch profile (bypasses RLS)
+      const { data, error: fetchError } = await supabase.functions.invoke('get-parent-profile', {
+        body: { parentId },
+      });
 
-      if (profileError) throw profileError;
+      if (fetchError) throw fetchError;
+      if (!data?.profile) throw new Error('Profile not found');
 
-      // Fetch user email
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('user_id', parentId)
-        .single();
+      setProfile({
+        id: data.profile.id,
+        username: data.profile.username,
+        first_name: data.profile.first_name,
+        last_name: data.profile.last_name,
+        home_address: data.profile.home_address,
+        phone_number: data.profile.phone_number,
+        created_at: data.profile.created_at,
+        email: data.profile.email,
+      } as any);
 
-      if (userError) throw userError;
-
-      setProfile({ ...profileData, email: userData.email } as any);
-
-      // Fetch linked students count
-      const { data: linksData, error: linksError } = await supabase
-        .from('student_parent_links')
-        .select('id')
-        .eq('parent_id', parentId)
-        .eq('status', 'approved');
-
-      if (!linksError && linksData) {
-        setLinkedStudentsCount(linksData.length);
-      }
+      setLinkedStudentsCount(data.profile.linked_students_count || 0);
     } catch (err) {
       console.error('Error fetching parent profile:', err);
       setError(true);
