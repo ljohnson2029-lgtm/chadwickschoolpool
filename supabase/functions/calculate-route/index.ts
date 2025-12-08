@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,13 +24,51 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { origin, destination }: RouteRequest = await req.json();
-    console.log('Calculating route from', origin, 'to', destination);
+    console.log('Calculating route for user:', user.id, 'from', origin, 'to', destination);
 
     if (!origin || !destination || !origin.latitude || !origin.longitude || 
         !destination.latitude || !destination.longitude) {
       return new Response(
         JSON.stringify({ error: 'Origin and destination coordinates are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate coordinate ranges
+    if (Math.abs(origin.latitude) > 90 || Math.abs(destination.latitude) > 90 ||
+        Math.abs(origin.longitude) > 180 || Math.abs(destination.longitude) > 180) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid coordinates' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
