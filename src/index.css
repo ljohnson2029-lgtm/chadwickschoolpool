@@ -208,14 +208,26 @@ All colors MUST be HSL.
   }
 
   /* Custom styles for Mapbox parent profile popups */
+  .parent-profile-popup {
+    z-index: 100 !important;
+  }
+
   .parent-profile-popup .mapboxgl-popup-content {
     padding: 0 !important;
     border-radius: 12px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
     overflow: visible !important;
+    width: 360px !important;
+    max-width: 360px !important;
+    min-width: 360px !important;
+    background: hsl(var(--card)) !important;
   }
 
   .parent-profile-popup .mapboxgl-popup-tip {
-    border-top-color: white !important;
+    border-top-color: hsl(var(--card)) !important;
+  }
+
+  .parent-profile-popup .mapboxgl-popup-close-button {
+    display: none;
   }
 }
