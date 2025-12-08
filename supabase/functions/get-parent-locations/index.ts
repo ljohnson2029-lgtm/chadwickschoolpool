@@ -21,10 +21,24 @@ serve(async (req) => {
       );
     }
 
+    // Extract the JWT token and verify with service role
+    const token = authHeader.replace("Bearer ", "");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    // Verify the JWT by getting the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data, error } = await supabase
       .from("profiles")

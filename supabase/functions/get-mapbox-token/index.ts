@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
+    // Verify authentication using the Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -22,17 +22,17 @@ serve(async (req) => {
       );
     }
 
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Use service role to verify the token
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Verify the JWT by getting the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       console.error('Auth error:', authError);
