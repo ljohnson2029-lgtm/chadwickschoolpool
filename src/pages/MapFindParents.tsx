@@ -87,43 +87,13 @@ const MapFindParents = () => {
       ? `${parent.first_name} ${parent.last_name}`
       : parent.username;
     
-    // Close any existing popup first (without resetting state)
     closeExistingPopup();
     
     setSelectedParentId(parent.id);
     setSelectedParentName(fullName);
     setSelectedParentDistance(parent.distance_from_route || 0);
-    
-    if (isMobile) {
-      // Mobile: Use bottom sheet
-      setProfilePopupOpen(true);
-    } else {
-      // Desktop: Use Mapbox popup
-      const popupContainer = document.createElement('div');
-      popupContainer.id = `popup-${parent.id}`;
-      
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: true,
-        closeOnClick: false,
-        maxWidth: '380px',
-        className: 'parent-profile-popup'
-      })
-        .setLngLat([parent.home_longitude, parent.home_latitude])
-        .setDOMContent(popupContainer)
-        .addTo(map.current!);
-
-      popupRef.current = popup;
-      setProfilePopupOpen(true);
-
-      // Cleanup when popup is closed by user
-      popup.on('close', () => {
-        setProfilePopupOpen(false);
-        setSelectedParentId(null);
-        popupRef.current = null;
-      });
-    }
-  }, [isMobile, closeExistingPopup]);
+    setProfilePopupOpen(true);
+  }, [closeExistingPopup]);
 
   // Handle action buttons
   const handleRequestRide = useCallback((parentId: string, parentName: string) => {
@@ -557,29 +527,7 @@ const MapFindParents = () => {
     };
   }, [parents, routeCoordinates, radiusMiles, contactedParents, handleParentClick]);
 
-  // Render desktop popup content
-  useEffect(() => {
-    if (!profilePopupOpen || isMobile || !selectedParentId) return;
-
-    const popupContainer = document.getElementById(`popup-${selectedParentId}`);
-    if (popupContainer && !popupContainer.hasChildNodes()) {
-      const root = document.createElement('div');
-      popupContainer.appendChild(root);
-      
-      import('react-dom/client').then(({ createRoot }) => {
-        const reactRoot = createRoot(root);
-        reactRoot.render(
-          <ParentProfilePopup
-            parentId={selectedParentId}
-            distance={selectedParentDistance}
-            onClose={handleCloseProfile}
-            onRequestRide={handleRequestRide}
-            onOfferRide={handleOfferRide}
-          />
-        );
-      });
-    }
-  }, [profilePopupOpen, isMobile, selectedParentId, selectedParentDistance, handleCloseProfile, handleRequestRide, handleOfferRide]);
+  // No longer need to render popup via DOM - using fixed panel instead
 
   const handleResetView = useCallback(() => {
     if (!map.current || !userProfile) return;
@@ -748,6 +696,19 @@ const MapFindParents = () => {
                 </div>
               </div>
             </Card>
+
+            {/* Parent Profile Panel - Fixed position on map */}
+            {profilePopupOpen && selectedParentId && !isMobile && (
+              <div className="absolute top-4 left-4 z-10 w-80">
+                <ParentProfilePopup
+                  parentId={selectedParentId}
+                  distance={selectedParentDistance}
+                  onClose={handleCloseProfile}
+                  onRequestRide={handleRequestRide}
+                  onOfferRide={handleOfferRide}
+                />
+              </div>
+            )}
           </div>
         </div>
 
