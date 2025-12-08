@@ -234,7 +234,7 @@ const PrivateRideOfferModal = ({
       form.reset();
       onClose();
       onSuccess?.();
-      navigate('/conversations');
+      navigate('/my-rides');
     } catch (err: any) {
       console.error('Error sending offer:', err);
       toast({

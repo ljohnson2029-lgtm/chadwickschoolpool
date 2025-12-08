@@ -143,33 +143,63 @@ const MyRides = () => {
     // Fetch sent requests
     const { data: sent, error: sentError } = await supabase
       .from('private_ride_requests')
-      .select(`
-        *,
-        recipient_profile:users!private_ride_requests_recipient_id_fkey(id, first_name, last_name, username)
-      `)
+      .select('*')
       .eq('sender_id', user.id)
       .order('created_at', { ascending: false });
 
     if (sentError) {
       console.error('Error fetching sent requests:', sentError);
     } else {
-      setSentRequests(sent as any || []);
+      // Get recipient profiles separately
+      const recipientIds = [...new Set(sent?.map(r => r.recipient_id) || [])];
+      let recipientProfiles: Record<string, any> = {};
+      if (recipientIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, username')
+          .in('id', recipientIds);
+        if (profiles) {
+          recipientProfiles = profiles.reduce((acc, p) => {
+            acc[p.id] = p;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      }
+      setSentRequests((sent || []).map(r => ({
+        ...r,
+        recipient_profile: recipientProfiles[r.recipient_id] || null
+      })) as any);
     }
 
     // Fetch received requests
     const { data: received, error: receivedError } = await supabase
       .from('private_ride_requests')
-      .select(`
-        *,
-        sender_profile:users!private_ride_requests_sender_id_fkey(id, first_name, last_name, username)
-      `)
+      .select('*')
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false });
 
     if (receivedError) {
       console.error('Error fetching received requests:', receivedError);
     } else {
-      setReceivedRequests(received as any || []);
+      // Get sender profiles separately
+      const senderIds = [...new Set(received?.map(r => r.sender_id) || [])];
+      let senderProfiles: Record<string, any> = {};
+      if (senderIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, username')
+          .in('id', senderIds);
+        if (profiles) {
+          senderProfiles = profiles.reduce((acc, p) => {
+            acc[p.id] = p;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      }
+      setReceivedRequests((received || []).map(r => ({
+        ...r,
+        sender_profile: senderProfiles[r.sender_id] || null
+      })) as any);
     }
   };
 

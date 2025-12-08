@@ -68,23 +68,49 @@ const FindRides = () => {
     if (!user) return;
 
     setLoadingRides(true);
-    const { data, error } = await supabase
+    
+    // First get rides
+    const { data: ridesData, error: ridesError } = await supabase
       .from('rides')
-      .select(`
-        *,
-        profiles!rides_user_id_fkey(id, first_name, last_name, username)
-      `)
+      .select('*')
       .eq('transaction_type', 'broadcast')
       .eq('status', 'active')
       .gte('ride_date', new Date().toISOString().split('T')[0])
       .order('ride_date', { ascending: true })
       .order('ride_time', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching broadcast rides:', error);
-    } else {
-      setBroadcasts(data as any || []);
+    if (ridesError) {
+      console.error('Error fetching broadcast rides:', ridesError);
+      setLoadingRides(false);
+      return;
     }
+
+    // Get unique user IDs
+    const userIds = [...new Set(ridesData?.map(r => r.user_id) || [])];
+    
+    // Fetch profiles for these users
+    let profilesMap: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username')
+        .in('id', userIds);
+      
+      if (profilesData) {
+        profilesMap = profilesData.reduce((acc, p) => {
+          acc[p.id] = p;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // Combine rides with profiles
+    const combinedData = (ridesData || []).map(ride => ({
+      ...ride,
+      profiles: profilesMap[ride.user_id] || null
+    }));
+
+    setBroadcasts(combinedData as any);
     setLoadingRides(false);
   };
 
