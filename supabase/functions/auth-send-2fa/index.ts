@@ -6,6 +6,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting - 5 requests per hour per email
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 3600000; // 1 hour in milliseconds
+const RATE_LIMIT_MAX = 5; // 5 requests per hour per email
+
+function isRateLimited(email: string): boolean {
+  const now = Date.now();
+  const key = email.toLowerCase();
+  const record = rateLimitMap.get(key);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+
+  if (record.count >= RATE_LIMIT_MAX) {
+    return true;
+  }
+
+  record.count++;
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -18,6 +41,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check rate limit
+    if (isRateLimited(email)) {
+      console.log(`Rate limit exceeded for email: ${email}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Too many verification requests. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -79,7 +111,7 @@ serve(async (req) => {
       const emailErrorText = await emailResponse.text();
       console.error('Email error:', emailErrorText);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to send verification email', provider_error: emailErrorText }),
+        JSON.stringify({ success: false, error: 'Failed to send verification email' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
