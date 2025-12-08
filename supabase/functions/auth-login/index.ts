@@ -40,10 +40,11 @@ serve(async (req) => {
 
     // Find user by username or email
     // Query for username match OR email match (email comparison is case-insensitive)
+    // Use sanitizedInput to prevent filter injection attacks
     const { data: users, error: queryError } = await supabase
       .from('users')
       .select('*')
-      .or(`username.eq.${usernameOrEmail},email.eq.${usernameOrEmail.toLowerCase()}`);
+      .or(`username.eq.${sanitizedInput},email.eq.${sanitizedInput.toLowerCase()}`);
 
     if (queryError) {
       console.error('Database query error:', queryError);
