@@ -449,6 +449,28 @@ const MapFindParents = () => {
       features,
     } as any;
 
+    const handleClick = (
+      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
+    ) => {
+      const feature = e.features?.[0];
+      const id = feature?.properties?.id as string | undefined;
+      if (!id) return;
+
+      const parent = parents.find((p) => p.id === id);
+      if (!parent) return;
+
+      const distance = parentDistanceMap.get(id) ?? 0;
+      handleParentClick({ ...parent, distance_from_route: distance });
+    };
+
+    const handleMouseEnter = () => {
+      mapInstance.getCanvas().style.cursor = 'pointer';
+    };
+
+    const handleMouseLeave = () => {
+      mapInstance.getCanvas().style.cursor = '';
+    };
+
     const updateSource = () => {
       if (!mapInstance.getSource('parents')) {
         mapInstance.addSource('parents', {
@@ -490,34 +512,20 @@ const MapFindParents = () => {
             'circle-opacity': 0.5,
           },
         });
-
-        const handleClick = (
-          e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
-        ) => {
-          const feature = e.features?.[0];
-          const id = feature?.properties?.id as string | undefined;
-          if (!id) return;
-
-          const parent = parents.find((p) => p.id === id);
-          if (!parent) return;
-
-          const distance = parentDistanceMap.get(id) ?? 0;
-          handleParentClick({ ...parent, distance_from_route: distance });
-        };
-
-        mapInstance.on('click', 'parents-within', handleClick);
-        mapInstance.on('mouseenter', 'parents-within', () => {
-          mapInstance.getCanvas().style.cursor = 'pointer';
-        });
-        mapInstance.on('mouseleave', 'parents-within', () => {
-          mapInstance.getCanvas().style.cursor = '';
-        });
       }
 
       const source = mapInstance.getSource('parents') as mapboxgl.GeoJSONSource | undefined;
       if (source) {
         source.setData(geojson);
       }
+
+      // Register click handlers (always use fresh references)
+      mapInstance.off('click', 'parents-within', handleClick);
+      mapInstance.on('click', 'parents-within', handleClick);
+      mapInstance.off('mouseenter', 'parents-within', handleMouseEnter);
+      mapInstance.on('mouseenter', 'parents-within', handleMouseEnter);
+      mapInstance.off('mouseleave', 'parents-within', handleMouseLeave);
+      mapInstance.on('mouseleave', 'parents-within', handleMouseLeave);
     };
 
     if (mapInstance.isStyleLoaded()) {
@@ -529,6 +537,12 @@ const MapFindParents = () => {
         mapInstance.off('load', onLoad);
       };
     }
+
+    return () => {
+      mapInstance.off('click', 'parents-within', handleClick);
+      mapInstance.off('mouseenter', 'parents-within', handleMouseEnter);
+      mapInstance.off('mouseleave', 'parents-within', handleMouseLeave);
+    };
   }, [parents, routeCoordinates, radiusMiles, contactedParents, handleParentClick]);
 
   // Render desktop popup content
