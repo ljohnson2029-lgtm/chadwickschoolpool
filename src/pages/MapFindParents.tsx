@@ -64,23 +64,31 @@ const MapFindParents = () => {
   const markers = useRef<mapboxgl.Marker[]>([]);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
 
-  // Handle profile popup close
-  const handleCloseProfile = useCallback(() => {
-    setProfilePopupOpen(false);
-    setSelectedParentId(null);
+  // Close existing popup without resetting state
+  const closeExistingPopup = useCallback(() => {
     if (popupRef.current) {
-      // Remove event listener first to prevent infinite loop
-      popupRef.current.off('close', handleCloseProfile);
       popupRef.current.remove();
       popupRef.current = null;
     }
   }, []);
 
+  // Handle profile popup close (user initiated)
+  const handleCloseProfile = useCallback(() => {
+    setProfilePopupOpen(false);
+    setSelectedParentId(null);
+    closeExistingPopup();
+  }, [closeExistingPopup]);
+
   // Handle parent marker click
   const handleParentClick = useCallback((parent: ParentLocation) => {
+    console.log('Parent clicked:', parent.id, parent.first_name, parent.last_name);
+    
     const fullName = parent.first_name && parent.last_name
       ? `${parent.first_name} ${parent.last_name}`
       : parent.username;
+    
+    // Close any existing popup first (without resetting state)
+    closeExistingPopup();
     
     setSelectedParentId(parent.id);
     setSelectedParentName(fullName);
@@ -91,14 +99,12 @@ const MapFindParents = () => {
       setProfilePopupOpen(true);
     } else {
       // Desktop: Use Mapbox popup
-      handleCloseProfile(); // Close any existing popup
-      
       const popupContainer = document.createElement('div');
       popupContainer.id = `popup-${parent.id}`;
       
       const popup = new mapboxgl.Popup({
         offset: 25,
-        closeButton: false,
+        closeButton: true,
         closeOnClick: false,
         maxWidth: '380px',
         className: 'parent-profile-popup'
@@ -110,25 +116,31 @@ const MapFindParents = () => {
       popupRef.current = popup;
       setProfilePopupOpen(true);
 
-      // Cleanup when popup is closed
-      popup.on('close', handleCloseProfile);
+      // Cleanup when popup is closed by user
+      popup.on('close', () => {
+        setProfilePopupOpen(false);
+        setSelectedParentId(null);
+        popupRef.current = null;
+      });
     }
-  }, [isMobile, handleCloseProfile]);
+  }, [isMobile, closeExistingPopup]);
 
   // Handle action buttons
   const handleRequestRide = useCallback((parentId: string, parentName: string) => {
     setSelectedParentId(parentId);
     setSelectedParentName(parentName);
-    handleCloseProfile(); // Close profile popup
+    setProfilePopupOpen(false);
+    closeExistingPopup();
     setRequestModalOpen(true);
-  }, [handleCloseProfile]);
+  }, [closeExistingPopup]);
 
   const handleOfferRide = useCallback((parentId: string, parentName: string) => {
     setSelectedParentId(parentId);
     setSelectedParentName(parentName);
-    handleCloseProfile(); // Close profile popup
+    setProfilePopupOpen(false);
+    closeExistingPopup();
     setOfferModalOpen(true);
-  }, [handleCloseProfile]);
+  }, [closeExistingPopup]);
 
   const handleRequestSuccess = useCallback(() => {
     if (selectedParentId) {
