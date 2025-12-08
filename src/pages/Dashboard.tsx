@@ -109,19 +109,39 @@ const Dashboard = () => {
       // Fetch my broadcast posts
       const { data: myPosts } = await supabase
         .from('rides')
-        .select('*, profiles!rides_user_id_fkey(first_name, last_name, username)')
+        .select('*')
         .eq('user_id', user.id)
         .eq('transaction_type', 'broadcast')
         .eq('status', 'active')
         .gte('ride_date', new Date().toISOString().split('T')[0])
         .order('ride_date', { ascending: true });
       
-      if (myPosts) setMyBroadcastPosts(myPosts as any);
+      if (myPosts) {
+        // Fetch profiles for these posts
+        const userIds = [...new Set(myPosts.map(p => p.user_id))];
+        let profilesMap: Record<string, any> = {};
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', userIds);
+          if (profiles) {
+            profilesMap = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+        setMyBroadcastPosts(myPosts.map(post => ({
+          ...post,
+          profiles: profilesMap[post.user_id] || null
+        })) as any);
+      }
 
       // Fetch nearby broadcasts (from others)
       const { data: broadcasts } = await supabase
         .from('rides')
-        .select('*, profiles!rides_user_id_fkey(first_name, last_name, username)')
+        .select('*')
         .eq('transaction_type', 'broadcast')
         .eq('status', 'active')
         .neq('user_id', user.id)
@@ -129,24 +149,62 @@ const Dashboard = () => {
         .order('ride_date', { ascending: true })
         .limit(3);
       
-      if (broadcasts) setNearbyBroadcasts(broadcasts as any);
+      if (broadcasts) {
+        // Fetch profiles for these broadcasts
+        const userIds = [...new Set(broadcasts.map(b => b.user_id))];
+        let profilesMap: Record<string, any> = {};
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', userIds);
+          if (profiles) {
+            profilesMap = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+        setNearbyBroadcasts(broadcasts.map(b => ({
+          ...b,
+          profiles: profilesMap[b.user_id] || null
+        })) as any);
+      }
 
       // Fetch active conversations
       const { data: conversations } = await supabase
         .from('ride_conversations')
-        .select(`
-          *,
-          rides!ride_conversations_ride_id_fkey(type, ride_date, ride_time, pickup_location, dropoff_location),
-          sender_profile:profiles!ride_conversations_sender_id_fkey(first_name, last_name, username),
-          recipient_profile:profiles!ride_conversations_recipient_id_fkey(first_name, last_name, username)
-        `)
+        .select('*, rides(type, ride_date, ride_time, pickup_location, dropoff_location)')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(5);
       
       if (conversations) {
-        setActiveConversations(conversations as any);
-        const pendingCount = conversations.filter(c => 
+        // Fetch profiles for senders and recipients
+        const profileIds = [...new Set([
+          ...conversations.map(c => c.sender_id),
+          ...conversations.map(c => c.recipient_id)
+        ])];
+        let profilesMap: Record<string, any> = {};
+        if (profileIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', profileIds);
+          if (profiles) {
+            profilesMap = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+        const enrichedConversations = conversations.map(c => ({
+          ...c,
+          sender_profile: profilesMap[c.sender_id] || null,
+          recipient_profile: profilesMap[c.recipient_id] || null
+        }));
+        setActiveConversations(enrichedConversations as any);
+        const pendingCount = enrichedConversations.filter(c => 
           c.status === 'pending' && c.recipient_id === user.id
         ).length;
         setPendingConversationsCount(pendingCount);
@@ -155,47 +213,103 @@ const Dashboard = () => {
       // Fetch upcoming confirmed rides
       const { data: upcoming } = await supabase
         .from('ride_conversations')
-        .select(`
-          *,
-          rides!ride_conversations_ride_id_fkey(type, ride_date, ride_time, pickup_location, dropoff_location),
-          sender_profile:profiles!ride_conversations_sender_id_fkey(first_name, last_name, username),
-          recipient_profile:profiles!ride_conversations_recipient_id_fkey(first_name, last_name, username)
-        `)
+        .select('*, rides(type, ride_date, ride_time, pickup_location, dropoff_location)')
         .eq('status', 'accepted')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: true })
         .limit(5);
       
       if (upcoming) {
+        // Fetch profiles for senders and recipients
+        const profileIds = [...new Set([
+          ...upcoming.map(c => c.sender_id),
+          ...upcoming.map(c => c.recipient_id)
+        ])];
+        let profilesMap: Record<string, any> = {};
+        if (profileIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', profileIds);
+          if (profiles) {
+            profilesMap = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
         // Filter to only show future rides
         const futureRides = upcoming.filter(ride => {
           if (!ride.rides?.ride_date) return false;
           return new Date(ride.rides.ride_date) >= new Date(new Date().toISOString().split('T')[0]);
-        });
+        }).map(r => ({
+          ...r,
+          sender_profile: profilesMap[r.sender_id] || null,
+          recipient_profile: profilesMap[r.recipient_id] || null
+        }));
         setUpcomingRides(futureRides);
       }
 
       // Fetch private requests sent
       const { data: sentPrivate } = await supabase
         .from('private_ride_requests')
-        .select('*, recipient:users!private_ride_requests_recipient_id_fkey(first_name, last_name, username)')
+        .select('*')
         .eq('sender_id', user.id)
         .order('created_at', { ascending: false })
         .limit(3);
       
-      if (sentPrivate) setPrivateRequestsSent(sentPrivate as any);
+      if (sentPrivate) {
+        // Fetch recipient profiles
+        const recipientIds = [...new Set(sentPrivate.map(r => r.recipient_id))];
+        let recipientProfiles: Record<string, any> = {};
+        if (recipientIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', recipientIds);
+          if (profiles) {
+            recipientProfiles = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+        setPrivateRequestsSent(sentPrivate.map(r => ({
+          ...r,
+          recipient: recipientProfiles[r.recipient_id] || null
+        })) as any);
+      }
 
       // Fetch private requests received
       const { data: receivedPrivate } = await supabase
         .from('private_ride_requests')
-        .select('*, sender:users!private_ride_requests_sender_id_fkey(first_name, last_name, username)')
+        .select('*')
         .eq('recipient_id', user.id)
         .order('created_at', { ascending: false })
         .limit(3);
       
       if (receivedPrivate) {
-        setPrivateRequestsReceived(receivedPrivate as any);
-        const pendingPrivateCount = receivedPrivate.filter(r => r.status === 'pending').length;
+        // Fetch sender profiles
+        const senderIds = [...new Set(receivedPrivate.map(r => r.sender_id))];
+        let senderProfiles: Record<string, any> = {};
+        if (senderIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, username')
+            .in('id', senderIds);
+          if (profiles) {
+            senderProfiles = profiles.reduce((acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+        const enrichedReceived = receivedPrivate.map(r => ({
+          ...r,
+          sender: senderProfiles[r.sender_id] || null
+        }));
+        setPrivateRequestsReceived(enrichedReceived as any);
+        const pendingPrivateCount = enrichedReceived.filter(r => r.status === 'pending').length;
         setPendingPrivateRequestsCount(pendingPrivateCount);
       }
 

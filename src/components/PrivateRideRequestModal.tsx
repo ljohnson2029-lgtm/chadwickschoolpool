@@ -235,7 +235,7 @@ const PrivateRideRequestModal = ({
       form.reset();
       onClose();
       onSuccess?.();
-      navigate('/conversations');
+      navigate('/my-rides');
     } catch (err: any) {
       console.error('Error sending request:', err);
       toast({
