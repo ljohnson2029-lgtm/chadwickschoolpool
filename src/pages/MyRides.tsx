@@ -204,15 +204,24 @@ const MyRides = () => {
   };
 
   const handleDeleteRide = async () => {
-    if (!rideToDelete) return;
+    if (!rideToDelete || !user) return;
 
-    const { error } = await supabase
+    console.log('Deleting ride:', rideToDelete, 'for user:', user.id);
+    
+    const { data, error } = await supabase
       .from('rides')
       .update({ status: 'cancelled' })
-      .eq('id', rideToDelete);
+      .eq('id', rideToDelete)
+      .eq('user_id', user.id)
+      .select();
+
+    console.log('Delete result:', { data, error });
 
     if (error) {
-      toast.error('Failed to delete ride');
+      console.error('Delete error:', error);
+      toast.error('Failed to delete ride: ' + error.message);
+    } else if (!data || data.length === 0) {
+      toast.error('No ride was updated - you may not have permission');
     } else {
       toast.success('Ride deleted successfully');
       fetchBroadcastRides();
