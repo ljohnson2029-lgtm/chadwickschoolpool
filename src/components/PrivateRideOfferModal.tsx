@@ -212,7 +212,7 @@ const PrivateRideOfferModal = ({
 
       if (insertError) throw insertError;
 
-      // Create notification for recipient
+      // Create notification for recipient (don't use link_id as it references account_links, not private_ride_requests)
       const { error: notifError } = await supabase
         .from('notifications')
         .insert({
@@ -220,7 +220,6 @@ const PrivateRideOfferModal = ({
           type: 'private_ride_offer_received',
           message: `${userProfile.first_name || userProfile.username} offered you a ride for ${format(values.ride_date, 'MMM d, yyyy')} at ${values.pickup_time}`,
           is_read: false,
-          link_id: offerData.id,
         });
 
       if (notifError) console.error('Notification error:', notifError);
