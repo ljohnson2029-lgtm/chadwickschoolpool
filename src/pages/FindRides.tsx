@@ -115,23 +115,35 @@ const FindRides = () => {
   };
 
   const handleRespondToRide = async (ride: BroadcastRide) => {
-    // Create a conversation entry
-    const { error } = await supabase
-      .from('ride_conversations')
-      .insert({
-        ride_id: ride.id,
-        sender_id: user?.id,
-        recipient_id: ride.user_id,
-        status: 'pending',
-        message: ride.type === 'request' 
-          ? `I can help with your ride request!`
-          : `I'd like to join your offered ride!`
-      });
+    try {
+      // Create a conversation entry
+      const { error } = await supabase
+        .from('ride_conversations')
+        .insert({
+          ride_id: ride.id,
+          sender_id: user?.id,
+          recipient_id: ride.user_id,
+          status: 'pending',
+          message: ride.type === 'request' 
+            ? `I can help with your ride request!`
+            : `I'd like to join your offered ride!`
+        });
 
-    if (error) {
-      console.error('Error creating conversation:', error);
-    } else {
+      if (error) {
+        console.error('Error creating conversation:', error);
+        if (error.code === '23503') {
+          // Foreign key violation - user doesn't exist
+          alert('This ride was posted by a user who is no longer active. Unable to respond.');
+        } else {
+          alert('Failed to respond to ride. Please try again.');
+        }
+        return;
+      }
+      
       navigate('/conversations');
+    } catch (err) {
+      console.error('Error responding to ride:', err);
+      alert('An error occurred. Please try again.');
     }
   };
 
