@@ -699,7 +699,7 @@ const MapFindParents = () => {
 
             {/* Parent Profile Panel - Fixed position on map */}
             {profilePopupOpen && selectedParentId && !isMobile && (
-              <div className="absolute top-4 left-4 z-10 w-80">
+              <div className="absolute top-4 left-4 z-10 w-64 sm:w-72 max-w-[calc(100vw-2rem)]">
                 <ParentProfilePopup
                   parentId={selectedParentId}
                   distance={selectedParentDistance}
