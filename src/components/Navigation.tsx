@@ -287,17 +287,20 @@ const Navigation = () => {
             </DropdownMenu>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 transition-transform duration-200 hover:scale-110"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? (
-              <X className={`h-6 w-6 ${textColorClass}`} />
-            ) : (
-              <Menu className={`h-6 w-6 ${textColorClass}`} />
-            )}
-          </button>
+          {/* Mobile: Notification Bell + Menu Button */}
+          <div className="md:hidden flex items-center gap-2">
+            {user && <NotificationDropdown />}
+            <button
+              className="p-2 transition-transform duration-200 hover:scale-110"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className={`h-6 w-6 ${textColorClass}`} />
+              ) : (
+                <Menu className={`h-6 w-6 ${textColorClass}`} />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
