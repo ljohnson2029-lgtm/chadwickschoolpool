@@ -1,15 +1,16 @@
-import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="bg-foreground text-background">
-      <div className="section-container">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-3 gap-12 mb-12">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-bold mb-4 text-background">SchoolPool</h3>
+            <h3 className="text-2xl font-bold mb-4 text-background">Chadwick SchoolPool</h3>
             <p className="text-background/80 leading-relaxed">
               Connecting Chadwick families for safer, smarter, and more sustainable carpooling.
             </p>
@@ -20,60 +21,47 @@ const Footer = () => {
             <h4 className="text-lg font-semibold mb-4 text-background">Contact Us</h4>
             <div className="space-y-3">
               <a 
-                href="mailto:info@schoolpool.com" 
+                href="mailto:info@chadwickschoolpool.org" 
                 className="flex items-center gap-2 text-background/80 hover:text-background transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                <span>info@schoolpool.com</span>
+                <span>info@chadwickschoolpool.org</span>
               </a>
               <p className="text-background/80">Chadwick School Community</p>
             </div>
           </div>
 
-          {/* Social Media */}
+          {/* Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-background">Follow Us</h4>
-            <div className="flex gap-4">
-              <a 
-                href="#" 
-                className="w-10 h-10 rounded-full bg-background/10 hover:bg-background/20 flex items-center justify-center transition-colors"
-                aria-label="Facebook"
+            <h4 className="text-lg font-semibold mb-4 text-background">Legal</h4>
+            <div className="space-y-3">
+              <Link 
+                to="/privacy" 
+                className="block text-background/80 hover:text-background transition-colors"
               >
-                <Facebook className="w-5 h-5 text-background" />
-              </a>
-              <a 
-                href="#" 
-                className="w-10 h-10 rounded-full bg-background/10 hover:bg-background/20 flex items-center justify-center transition-colors"
-                aria-label="Twitter"
+                Privacy Policy
+              </Link>
+              <Link 
+                to="/terms" 
+                className="block text-background/80 hover:text-background transition-colors"
               >
-                <Twitter className="w-5 h-5 text-background" />
-              </a>
-              <a 
-                href="#" 
-                className="w-10 h-10 rounded-full bg-background/10 hover:bg-background/20 flex items-center justify-center transition-colors"
-                aria-label="Instagram"
+                Terms of Service
+              </Link>
+              <Link 
+                to="/about" 
+                className="block text-background/80 hover:text-background transition-colors"
               >
-                <Instagram className="w-5 h-5 text-background" />
-              </a>
+                About Us
+              </Link>
             </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-background/20">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-background/60 text-sm">
-              © {currentYear} SchoolPool. All rights reserved.
-            </p>
-            <div className="flex gap-6 text-sm">
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                Terms of Service
-              </a>
-            </div>
-          </div>
+          <p className="text-background/60 text-sm text-center">
+            © {currentYear} Chadwick SchoolPool. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
