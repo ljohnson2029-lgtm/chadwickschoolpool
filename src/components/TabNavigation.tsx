@@ -61,18 +61,18 @@ const TabNavigation = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-xl font-bold text-foreground hover:scale-105 transition-transform"
+            className="flex items-center gap-1.5 sm:gap-2 text-lg sm:text-xl font-bold text-foreground hover:scale-105 transition-transform min-h-[44px]"
           >
             <div className="relative">
-              <Car className="w-7 h-7" />
-              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full animate-glow" />
+              <Car className="w-6 h-6 sm:w-7 sm:h-7" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-primary rounded-full animate-glow" />
             </div>
-            <span>SchoolPool</span>
+            <span className="hidden xs:inline">SchoolPool</span>
           </button>
 
           {/* Main Tabs - Desktop */}
@@ -157,51 +157,6 @@ const TabNavigation = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => {
-              const menu = document.getElementById("mobile-menu");
-              menu?.classList.toggle("hidden");
-            }}
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        <div id="mobile-menu" className="hidden md:hidden pb-4 space-y-2">
-          {user &&
-            mainTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.path}
-                  variant={isActive(tab.path) ? "default" : "ghost"}
-                  onClick={() => navigate(tab.path)}
-                  className="w-full justify-start gap-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                </Button>
-              );
-            })}
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Button
-                key={item.path}
-                variant="ghost"
-                onClick={() => navigate(item.path)}
-                className="w-full justify-start gap-2"
-              >
-                {Icon && <Icon className="h-4 w-4" />}
-                {item.label}
-              </Button>
-            );
-          })}
         </div>
       </div>
     </nav>

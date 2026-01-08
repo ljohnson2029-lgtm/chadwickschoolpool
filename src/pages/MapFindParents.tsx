@@ -16,7 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import MapLoadingState from "@/components/MapLoadingState";
-import { Home, School, Navigation as NavigationIcon } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Home, School, Navigation as NavigationIcon, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import * as turf from "@turf/turf";
 
@@ -577,11 +578,11 @@ const MapFindParents = () => {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen bg-background pt-20 px-4 pb-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">Find Parents Near Your Route</h1>
+      <div className="min-h-screen bg-background pt-14 md:pt-20 pb-20 md:pb-8">
+        <div className="md:max-w-7xl md:mx-auto md:px-4">
+          {/* Header - Hidden on mobile for more map space */}
+          <div className="hidden md:block mb-6 px-4 md:px-0">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Find Parents Near Your Route</h1>
             <p className="text-muted-foreground mb-1">
               Discover carpool partners who live along your route to Chadwick School
             </p>
@@ -590,12 +591,93 @@ const MapFindParents = () => {
             </p>
           </div>
 
-          {/* Map Container */}
-          <div className="relative w-full h-[600px] rounded-lg overflow-hidden shadow-lg">
+          {/* Map Container - Full screen on mobile */}
+          <div className="relative w-full h-[calc(100vh-7rem)] md:h-[600px] md:rounded-lg overflow-hidden md:shadow-lg">
             <div ref={mapContainer} className="absolute inset-0" />
 
-            {/* Control Panel */}
-            <Card className="absolute top-4 right-4 p-4 w-80 bg-background/95 backdrop-blur-sm shadow-xl">
+            {/* Mobile: Floating Stats Badge */}
+            <div className="md:hidden absolute top-3 left-3 right-16 z-10">
+              <div className="bg-background/95 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border inline-flex items-center gap-2">
+                <span className="text-sm">
+                  <span className="font-semibold text-primary">{filteredParents.length}</span> parent{filteredParents.length !== 1 ? 's' : ''} within {radiusMiles[0].toFixed(1)} mi
+                </span>
+              </div>
+            </div>
+
+            {/* Mobile: Collapsible Control Sheet Button */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  size="icon"
+                  className="md:hidden absolute top-3 right-3 z-10 h-10 w-10 rounded-full shadow-lg"
+                  variant="secondary"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-xl">
+                <SheetHeader className="pb-4">
+                  <SheetTitle>Map Controls</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-5 pb-8">
+                  {/* Radius Slider */}
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">
+                      Show parents within:
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        value={radiusMiles}
+                        onValueChange={setRadiusMiles}
+                        min={0.5}
+                        max={10}
+                        step={0.25}
+                        className="flex-1"
+                      />
+                      <span className="text-base font-semibold w-20 text-right">
+                        {radiusMiles[0].toFixed(1)} mi
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* View Toggles */}
+                  <div className="space-y-3 pt-3 border-t">
+                    <div className="flex items-center gap-3 min-h-[44px]">
+                      <Checkbox
+                        id="mobile-show-route"
+                        checked={showRoute}
+                        onCheckedChange={(checked) => setShowRoute(checked as boolean)}
+                      />
+                      <label htmlFor="mobile-show-route" className="text-base cursor-pointer flex-1">
+                        Show my route
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3 min-h-[44px]">
+                      <Checkbox
+                        id="mobile-show-school"
+                        checked={showSchool}
+                        onCheckedChange={(checked) => setShowSchool(checked as boolean)}
+                      />
+                      <label htmlFor="mobile-show-school" className="text-base cursor-pointer flex-1">
+                        Show school location
+                      </label>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleResetView}
+                    className="w-full h-12"
+                  >
+                    <NavigationIcon className="w-4 h-4 mr-2" />
+                    Reset View
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Desktop: Control Panel */}
+            <Card className="hidden md:block absolute top-4 right-4 p-4 w-80 bg-background/95 backdrop-blur-sm shadow-xl">
               <div className="space-y-4">
                 {/* Radius Slider */}
                 <div>
@@ -676,33 +758,29 @@ const MapFindParents = () => {
               </div>
             </Card>
 
-            {/* Legend */}
-            <Card className="absolute bottom-4 left-4 p-3 bg-background/95 backdrop-blur-sm">
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
-                    <Home className="w-3 h-3 text-white" />
+            {/* Legend - Smaller on mobile */}
+            <Card className="absolute bottom-4 left-3 md:left-4 p-2 md:p-3 bg-background/95 backdrop-blur-sm">
+              <div className="flex md:block gap-3 md:space-y-2 text-[10px] md:text-xs">
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <div className="w-4 h-4 md:w-5 md:h-5 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <Home className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                   </div>
-                  <span>Your Home</span>
+                  <span>Home</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center">
-                    <School className="w-3 h-3 text-white" />
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <div className="w-4 h-4 md:w-5 md:h-5 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <School className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                   </div>
-                  <span>Chadwick School</span>
+                  <span>School</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-green-500 rounded-full border-2 border-white" />
+                <div className="flex items-center gap-1.5 md:gap-2">
+                  <div className="w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white" />
                   <span>Within radius</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-gray-400 rounded-full border-2 border-white opacity-50" />
-                  <span>Outside radius</span>
                 </div>
               </div>
             </Card>
 
-            {/* Parent Profile Panel - Fixed position on map */}
+            {/* Parent Profile Panel - Desktop only */}
             {profilePopupOpen && selectedParentId && !isMobile && (
               <div className="absolute top-4 left-4 z-10 w-64 sm:w-72 max-w-[calc(100vw-2rem)]">
                 <ParentProfilePopup

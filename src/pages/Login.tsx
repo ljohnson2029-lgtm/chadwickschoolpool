@@ -156,20 +156,20 @@ const Login = () => {
           onAddressAdded={handleAddressAdded}
         />
       )}
-      <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition pt-20">
+      <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition pt-16 sm:pt-20 pb-8">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blob" style={{ animationDelay: "5s" }} />
       </div>
       
-      <div className="relative z-10 w-full max-w-md space-y-8 animate-fade-up">
+      <div className="relative z-10 w-full max-w-md space-y-6 sm:space-y-8 animate-fade-up">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary-foreground mb-2">Welcome Back</h1>
-          <p className="text-primary-foreground/80">Log in to your SchoolPool account</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-2">Welcome Back</h1>
+          <p className="text-sm sm:text-base text-primary-foreground/80">Log in to your SchoolPool account</p>
         </div>
 
         {!showCodeInput ? (
-          <form onSubmit={handleLogin} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-6 shadow-2xl">
+          <form onSubmit={handleLogin} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8 space-y-5 sm:space-y-6 shadow-2xl">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -177,7 +177,7 @@ const Login = () => {
             )}
 
             <div>
-              <Label htmlFor="email" className="text-foreground">Email or Username</Label>
+              <Label htmlFor="email" className="text-foreground text-sm sm:text-base">Email or Username</Label>
               <Input
                 id="email"
                 type="text"
@@ -185,19 +185,19 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email or username"
                 required
-                className="mt-1"
+                className="mt-1 h-11 sm:h-10 text-base sm:text-sm"
               />
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Label htmlFor="password" className="text-foreground text-sm sm:text-base">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1"
+                className="mt-1 h-11 sm:h-10 text-base sm:text-sm"
               />
             </div>
 
@@ -205,13 +205,13 @@ const Login = () => {
               type="submit" 
               loading={loading}
               loadingText="Signing in..."
-              className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="w-full h-12 sm:h-11 text-base sm:text-sm bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
               Continue
             </LoadingButton>
 
             <div className="text-center space-y-2">
-              <Button variant="ghost" className="text-sm text-foreground/70 hover:text-foreground">
+              <Button variant="ghost" className="text-sm text-foreground/70 hover:text-foreground h-10">
                 Forgot Password?
               </Button>
               <p className="text-sm text-foreground/70">
@@ -223,7 +223,7 @@ const Login = () => {
             </div>
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-6 shadow-2xl animate-fade-in">
+          <form onSubmit={handleVerifyCode} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8 space-y-5 sm:space-y-6 shadow-2xl animate-fade-in">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>
@@ -234,8 +234,8 @@ const Login = () => {
             )}
 
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl">📧</span>
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <span className="text-xl sm:text-2xl">📧</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 We've sent a verification code to your email
@@ -243,7 +243,7 @@ const Login = () => {
             </div>
 
             <div>
-              <Label htmlFor="code" className="text-foreground">Verification Code</Label>
+              <Label htmlFor="code" className="text-foreground text-sm sm:text-base">Verification Code</Label>
               <Input
                 id="code"
                 type="text"
@@ -252,7 +252,7 @@ const Login = () => {
                 placeholder="Enter 6-digit code"
                 required
                 maxLength={6}
-                className="mt-1 text-center text-2xl tracking-widest"
+                className="mt-1 text-center text-xl sm:text-2xl tracking-widest h-12 sm:h-auto"
               />
             </div>
 
@@ -260,7 +260,7 @@ const Login = () => {
               type="submit" 
               loading={loading}
               loadingText="Verifying..."
-              className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
+              className="w-full h-12 sm:h-11 text-base sm:text-sm bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
               Verify & Log In
             </LoadingButton>
@@ -273,7 +273,7 @@ const Login = () => {
                 setCode('');
                 setError('');
               }}
-              className="w-full text-foreground/70 hover:text-foreground"
+              className="w-full text-foreground/70 hover:text-foreground h-10"
             >
               ← Back to login
             </Button>
