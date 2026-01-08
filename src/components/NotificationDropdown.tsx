@@ -1,16 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, X, MapPin, MessageSquare } from 'lucide-react';
+import { 
+  Bell, 
+  Check, 
+  X, 
+  MapPin, 
+  MessageSquare, 
+  Link2, 
+  CheckCircle2, 
+  XCircle, 
+  UserMinus,
+  Car,
+  BellOff,
+  Users
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 interface Notification {
   id: string;
@@ -25,6 +46,7 @@ interface Notification {
 export const NotificationDropdown = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -47,8 +69,10 @@ export const NotificationDropdown = () => {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setNotifications((prev) => [payload.new as Notification, ...prev]);
-            toast.info('New notification received');
+            setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 10));
+            toast.info('New notification received', {
+              icon: <Bell className="h-4 w-4" />,
+            });
           } else if (payload.eventType === 'UPDATE') {
             setNotifications((prev) =>
               prev.map((n) =>
@@ -136,7 +160,6 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    // Mark notification as read
     await markAsRead(notificationId);
     toast.success('Link request approved!');
   };
@@ -153,7 +176,6 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    // Mark notification as read
     await markAsRead(notificationId);
     toast.success('Link request denied');
   };
@@ -167,145 +189,245 @@ export const NotificationDropdown = () => {
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return created.toLocaleDateString();
   };
 
-  // Check if notification is ride-related
+  // Get icon based on notification type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'link_request':
+        return <Link2 className="h-4 w-4 text-blue-500" />;
+      case 'link_request_sent':
+        return <Link2 className="h-4 w-4 text-blue-500" />;
+      case 'link_approved':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'link_denied':
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'unlinked':
+      case 'student_unlinked':
+        return <UserMinus className="h-4 w-4 text-orange-500" />;
+      case 'co_parent_request':
+        return <Users className="h-4 w-4 text-purple-500" />;
+      case 'co_parent_approved':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'co_parent_denied':
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'ride_request':
+      case 'ride_offer':
+      case 'private_ride_request_received':
+      case 'private_ride_offer_received':
+        return <Car className="h-4 w-4 text-primary" />;
+      case 'private_request_accepted':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'private_request_declined':
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      default:
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
   const isRideNotification = (type: string) => {
     return type === 'ride_request' || type === 'ride_offer' || type.includes('ride');
   };
 
-  // Check if notification is private request related
   const isPrivateRequestNotification = (type: string) => {
     return type === 'private_request_accepted' || type === 'private_request_declined' || 
            type === 'private_ride_request_received' || type === 'private_ride_offer_received';
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // Navigate based on notification type
+    if (notification.type.includes('link') || notification.type.includes('unlinked')) {
+      setIsOpen(false);
+      navigate('/family-links');
+    } else if (isPrivateRequestNotification(notification.type)) {
+      setIsOpen(false);
+      navigate('/requests/private');
+    } else if (isRideNotification(notification.type)) {
+      setIsOpen(false);
+      navigate('/map');
+    }
+  };
+
+  const NotificationBell = () => (
+    <Button variant="ghost" size="icon" className="relative">
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold animate-in zoom-in duration-200">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </Button>
+  );
+
+  const NotificationContent = () => (
+    <>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="font-semibold text-foreground">Notifications</h3>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={markAllAsRead}
+            className="h-auto py-1 text-xs text-primary hover:text-primary/80"
+          >
+            Mark all as read
+          </Button>
+        )}
+      </div>
+      <ScrollArea className={isMobile ? "h-[calc(100vh-120px)]" : "max-h-[400px]"}>
+        {notifications.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <BellOff className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="font-medium text-foreground">You're all caught up!</p>
+            <p className="text-sm text-muted-foreground mt-1">No new notifications</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-4 hover:bg-accent/50 cursor-pointer transition-colors ${
+                  !notification.is_read ? 'bg-primary/5' : ''
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getTimeAgo(notification.created_at)}
+                    </p>
+                    
+                    {/* Action buttons for ride notifications */}
+                    {isRideNotification(notification.type) && !notification.type.includes('link') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/map');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        View on Map
+                      </Button>
+                    )}
+
+                    {/* Action buttons for private request notifications */}
+                    {isPrivateRequestNotification(notification.type) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/requests/private');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        View Requests
+                      </Button>
+                    )}
+                    
+                    {/* Inline actions for link requests */}
+                    {notification.type === 'link_request' && notification.link_id && (
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApproveLink(notification.link_id!, notification.id);
+                          }}
+                          className="h-7 text-xs"
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDenyLink(notification.link_id!, notification.id);
+                          }}
+                          className="h-7 text-xs"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Deny
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {!notification.is_read && (
+                    <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+      {notifications.length > 0 && (
+        <div className="border-t border-border p-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/settings');
+            }}
+          >
+            View all notifications
+          </Button>
+        </div>
+      )}
+    </>
+  );
+
+  // Mobile: Use Sheet for full-screen experience
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <NotificationBell />
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Notifications</SheetTitle>
+          </SheetHeader>
+          <NotificationContent />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: Use Dropdown
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
+        <NotificationBell />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96 p-0 bg-background border-border z-50">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h3 className="font-semibold text-foreground">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="h-auto py-1 text-xs"
-            >
-              Mark all as read
-            </Button>
-          )}
-        </div>
-        <ScrollArea className="max-h-[400px]">
-          {notifications.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <Bell className="mx-auto h-12 w-12 mb-2 opacity-50" />
-              <p>No notifications yet</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 hover:bg-accent/50 cursor-pointer transition-colors ${
-                    !notification.is_read ? 'bg-primary/5' : ''
-                  }`}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <p className="text-sm text-foreground whitespace-pre-wrap">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {getTimeAgo(notification.created_at)}
-                      </p>
-                      
-                      {/* View on Map button for ride notifications */}
-                      {isRideNotification(notification.type) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                            navigate('/map');
-                          }}
-                          className="h-8 mt-2 gap-1"
-                        >
-                          <MapPin className="h-3 w-3" />
-                          View on Map
-                        </Button>
-                      )}
-
-                      {/* View Requests button for private request notifications */}
-                      {isPrivateRequestNotification(notification.type) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsOpen(false);
-                            navigate('/requests/private');
-                          }}
-                          className="h-8 mt-2 gap-1"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          View Requests
-                        </Button>
-                      )}
-                      
-                      {/* Inline actions for link requests */}
-                      {notification.type === 'link_request' && notification.link_id && (
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveLink(notification.link_id!, notification.id);
-                            }}
-                            className="h-8"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDenyLink(notification.link_id!, notification.id);
-                            }}
-                            className="h-8"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Deny
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {!notification.is_read && (
-                      <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+        <NotificationContent />
       </DropdownMenuContent>
     </DropdownMenu>
   );
