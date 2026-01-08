@@ -9,6 +9,7 @@ import ParentProfileSheet from "@/components/ParentProfileSheet";
 import ParentProfilePopup from "@/components/ParentProfilePopup";
 import PrivateRideRequestModal from "@/components/PrivateRideRequestModal";
 import PrivateRideOfferModal from "@/components/PrivateRideOfferModal";
+import AddressRequiredAlert from "@/components/AddressRequiredAlert";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,6 +60,7 @@ const MapFindParents = () => {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [offerModalOpen, setOfferModalOpen] = useState(false);
   const [contactedParents, setContactedParents] = useState<Set<string>>(new Set());
+  const [showAddressAlert, setShowAddressAlert] = useState(false);
   
   const isMobile = useIsMobile();
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -165,11 +167,7 @@ const MapFindParents = () => {
         if (error) throw error;
 
         if (!profile?.home_latitude || !profile?.home_longitude) {
-          toast({
-            title: "Address Required",
-            description: "Please add your home address in Settings to use this feature.",
-            variant: "destructive",
-          });
+          setShowAddressAlert(true);
           setLoading(false);
           return;
         }
@@ -555,14 +553,18 @@ const MapFindParents = () => {
     return (
       <>
         <Navigation />
+        <AddressRequiredAlert 
+          open={showAddressAlert} 
+          onClose={() => setShowAddressAlert(false)} 
+        />
         <div className="min-h-screen bg-background pt-20 px-4">
           <div className="max-w-4xl mx-auto text-center py-20">
             <Home className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-semibold mb-4">Address Required</h2>
             <p className="text-muted-foreground mb-6">
-              Please add your home address in Settings to use the map feature.
+              Please add your home address to use the map feature and find carpool partners.
             </p>
-            <Button onClick={() => navigate('/settings')}>Go to Settings</Button>
+            <Button onClick={() => navigate('/profile/setup')}>Add Home Address</Button>
           </div>
         </div>
       </>

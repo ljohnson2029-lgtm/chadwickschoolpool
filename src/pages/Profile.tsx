@@ -166,12 +166,32 @@ const Profile = () => {
                 </div>
               )}
 
-              {profile.home_address && (
-                <div className="flex items-center gap-3">
-                  <Home className="h-5 w-5 text-muted-foreground" />
-                  <div>
+              {profile.home_address ? (
+                <div className="flex items-start gap-3">
+                  <Home className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
                     <p className="text-sm text-muted-foreground">Address</p>
                     <p className="font-medium">{profile.home_address}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ⚠️ Changing your address will update your location on the map
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <Home className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-yellow-600">Address Required</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add your home address to use map features and find carpool partners.
+                    </p>
+                    <Button 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => navigate('/profile/setup')}
+                    >
+                      Add Address
+                    </Button>
                   </div>
                 </div>
               )}

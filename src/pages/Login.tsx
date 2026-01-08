@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import WelcomeModal from '@/components/WelcomeModal';
+import AddressRequiredModal from '@/components/AddressRequiredModal';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,8 +21,10 @@ const Login = () => {
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
   const [actualEmail, setActualEmail] = useState('');
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [userAccountType, setUserAccountType] = useState<'student' | 'parent' | 'staff'>('parent');
   const [userFirstName, setUserFirstName] = useState('');
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -98,19 +101,23 @@ const Login = () => {
           .eq('id', authUser.id)
           .maybeSingle();
 
-        // Check if this is first login (no home_address set yet)
-        const isFirstLogin = !profileData?.home_address;
-        
-        if (isFirstLogin && profileData) {
-          // Show welcome modal for first-time users
-          setUserAccountType(profileData.account_type as 'student' | 'parent' | 'staff');
-          setUserFirstName(profileData.first_name || '');
-          setShowWelcomeModal(true);
+        // Store user info for modals
+        setLoggedInUserId(authUser.id);
+        setUserAccountType((profileData?.account_type as 'student' | 'parent' | 'staff') || 'parent');
+        setUserFirstName(profileData?.first_name || '');
+
+        const isParentOrStaff = profileData?.account_type === 'parent' || profileData?.account_type === 'staff';
+        const needsAddress = !profileData?.home_address;
+
+        // For parents/staff without address, show address modal
+        if (isParentOrStaff && needsAddress) {
+          setShowAddressModal(true);
           return;
         }
 
-        if (!profileData?.home_address) {
-          navigate('/profile/setup');
+        // For students without address, show welcome modal then navigate
+        if (profileData?.account_type === 'student' && needsAddress) {
+          setShowWelcomeModal(true);
           return;
         }
       }
@@ -125,6 +132,12 @@ const Login = () => {
 
   const handleWelcomeModalClose = () => {
     setShowWelcomeModal(false);
+    navigate('/family-links');
+  };
+
+  const handleAddressAdded = () => {
+    setShowAddressModal(false);
+    navigate('/dashboard');
   };
 
   return (
@@ -136,6 +149,13 @@ const Login = () => {
         accountType={userAccountType}
         firstName={userFirstName}
       />
+      {loggedInUserId && (
+        <AddressRequiredModal
+          open={showAddressModal}
+          userId={loggedInUserId}
+          onAddressAdded={handleAddressAdded}
+        />
+      )}
       <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition pt-20">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
