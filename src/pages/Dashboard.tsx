@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import StudentDashboard from "@/components/StudentDashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -325,6 +326,11 @@ const Dashboard = () => {
     }
     return username.substring(0, 2).toUpperCase();
   };
+
+  // Show student dashboard for student accounts
+  if (profile?.account_type === 'student') {
+    return <StudentDashboard />;
+  }
 
   if (!user || !profile) {
     return (

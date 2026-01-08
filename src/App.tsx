@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import ParentOnlyRoute from "./components/ParentOnlyRoute";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Features from "./pages/Features";
@@ -50,7 +51,6 @@ const App = () => (
             <Route path="/carpools/create" element={<FamilyCarpools />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/profile/setup" element={<ProfileSetup />} />
-            {/* Redirect old route */}
             <Route path="/family-carpools" element={<FamilyCarpools />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
@@ -60,13 +60,28 @@ const App = () => (
             <Route path="/student-linking" element={<FamilyLinks />} />
             <Route path="/parent-approvals" element={<FamilyLinks />} />
             <Route path="/map" element={<MapDemo />} />
-            <Route path="/map/find-parents" element={<MapFindParents />} />
-            <Route path="/requests/private" element={<MyPrivateRequests />} />
-            <Route path="/find-rides" element={<FindRides />} />
-            <Route path="/post-ride" element={<PostRide />} />
-            <Route path="/conversations" element={<Conversations />} />
-            <Route path="/my-rides" element={<MyRides />} />
             <Route path="/settings" element={<Settings />} />
+            
+            {/* Parent-only routes - restricted for students */}
+            <Route path="/map/find-parents" element={
+              <ParentOnlyRoute><MapFindParents /></ParentOnlyRoute>
+            } />
+            <Route path="/requests/private" element={
+              <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
+            } />
+            <Route path="/find-rides" element={
+              <ParentOnlyRoute><FindRides /></ParentOnlyRoute>
+            } />
+            <Route path="/post-ride" element={
+              <ParentOnlyRoute><PostRide /></ParentOnlyRoute>
+            } />
+            <Route path="/conversations" element={
+              <ParentOnlyRoute><Conversations /></ParentOnlyRoute>
+            } />
+            <Route path="/my-rides" element={
+              <ParentOnlyRoute><MyRides /></ParentOnlyRoute>
+            } />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
