@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
 import Navigation from "@/components/Navigation";
 
 const Register = () => {
@@ -390,6 +390,29 @@ const Register = () => {
         <CardContent>
           {step === 1 && (
             <form onSubmit={handleEmailSubmit} className="space-y-4">
+              {/* Account Types Info Card */}
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground mb-2">Account Types:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-primary" />
+                        <span><strong>Students:</strong> Use your @chadwickschool.org email</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span><strong>Parents:</strong> Use any other email address</span>
+                      </li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      Your account type is automatically determined by your email domain.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
@@ -397,7 +420,7 @@ const Register = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@school.org"
+                    placeholder="your.email@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
@@ -405,9 +428,6 @@ const Register = () => {
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Enter your email to create an account
-                </p>
               </div>
 
               <Button 
@@ -433,60 +453,105 @@ const Register = () => {
           )}
 
           {step === 2 && (
-            <form onSubmit={handleVerificationSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">Verification Code</Label>
-                <div className="relative">
-                  <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="code"
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="pl-10"
-                    maxLength={6}
-                    required
-                    disabled={loading}
-                  />
+            <div className="space-y-4">
+              {/* Success Message based on email type */}
+              <div className={`p-4 rounded-lg border ${isStudentEmail ? 'bg-blue-500/10 border-blue-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isStudentEmail ? 'text-blue-600' : 'text-green-600'}`} />
+                  <div>
+                    {isStudentEmail ? (
+                      <>
+                        <p className="text-sm font-semibold text-foreground mb-2">
+                          🎓 Student Email Detected!
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Check your Chadwick email for the verification code.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Next steps after verification:</strong>
+                        </p>
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          <li>• Link to your parent's account</li>
+                          <li>• View your family's carpool schedule</li>
+                        </ul>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-foreground mb-2">
+                          👨‍👩‍👧 Parent/Staff Email Detected!
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Check your email for the verification code.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Next steps after verification:</strong>
+                        </p>
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          <li>• Add your home address</li>
+                          <li>• Find carpool partners near you</li>
+                          <li>• Create or request rides</li>
+                        </ul>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  We sent a verification code to {email}
-                </p>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
-                disabled={loading}
-              >
-                {loading ? "Verifying..." : "Verify Email"}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <form onSubmit={handleVerificationSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code">Verification Code</Label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="code"
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="pl-10"
+                      maxLength={6}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    We sent a verification code to <strong>{email}</strong>
+                  </p>
+                </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setStep(1)}
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                   disabled={loading}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {loading ? "Verifying..." : "Verify Email"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResendCode}
-                  disabled={loading}
-                  className="text-primary hover:text-primary/80"
-                >
-                  Resend code
-                </Button>
-              </div>
-            </form>
+
+                <div className="flex items-center justify-between text-sm">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStep(1)}
+                    disabled={loading}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResendCode}
+                    disabled={loading}
+                    className="text-primary hover:text-primary/80"
+                  >
+                    Resend code
+                  </Button>
+                </div>
+              </form>
+            </div>
           )}
 
           {step === 3 && (
