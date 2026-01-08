@@ -192,9 +192,9 @@ const RideOfferForm = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
+    <Card className="border-0 shadow-none sm:border sm:shadow-sm">
+      <CardHeader className="px-0 sm:px-6 pt-0 sm:pt-6">
+        <CardTitle className="text-lg sm:text-xl">
           {recipientParentName ? `Offer Ride to ${recipientParentName}` : 'Offer a Ride'}
         </CardTitle>
         {recipientParentName && (
@@ -203,55 +203,59 @@ const RideOfferForm = ({
           </p>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0 sm:px-6 pb-0 sm:pb-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="start">Starting Location</Label>
+            <Label htmlFor="start" className="text-sm sm:text-base">Starting Location</Label>
             <Input
               id="start"
               value={pickupLocation}
               onChange={(e) => setPickupLocation(e.target.value)}
               placeholder="Enter starting address"
               required
+              className="h-11 sm:h-10 text-base sm:text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="destination">Destination</Label>
+            <Label htmlFor="destination" className="text-sm sm:text-base">Destination</Label>
             <Input
               id="destination"
               value={dropoffLocation}
               onChange={(e) => setDropoffLocation(e.target.value)}
               placeholder="Enter destination address"
               required
+              className="h-11 sm:h-10 text-base sm:text-sm"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date" className="text-sm sm:text-base">Date</Label>
               <Input
                 id="date"
                 type="date"
                 value={rideDate}
                 onChange={(e) => setRideDate(e.target.value)}
                 required
+                className="h-11 sm:h-10 text-base sm:text-sm"
               />
             </div>
             <div>
-              <Label htmlFor="time">Time</Label>
+              <Label htmlFor="time" className="text-sm sm:text-base">Time</Label>
               <Input
                 id="time"
                 type="time"
                 value={rideTime}
                 onChange={(e) => setRideTime(e.target.value)}
                 required
+                className="h-11 sm:h-10 text-base sm:text-sm"
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="seats">Available Seats</Label>
+            <Label htmlFor="seats" className="text-sm sm:text-base">Available Seats</Label>
             <Input
               id="seats"
               type="number"
@@ -261,57 +265,60 @@ const RideOfferForm = ({
               onChange={(e) => setSeatsAvailable(e.target.value)}
               placeholder="How many seats are available?"
               required
+              className="h-11 sm:h-10 text-base sm:text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="route">Route Details (Optional)</Label>
+            <Label htmlFor="route" className="text-sm sm:text-base">Route Details (Optional)</Label>
             <Textarea
               id="route"
               value={routeDetails}
               onChange={(e) => setRouteDetails(e.target.value)}
               placeholder="Describe your route (e.g., stops along the way, flexibility)"
               rows={3}
+              className="text-base sm:text-sm"
             />
           </div>
 
           {!isBroadcast && recipientParentName && (
             <div>
-              <Label htmlFor="message">Personal Message (Optional)</Label>
+              <Label htmlFor="message" className="text-sm sm:text-base">Personal Message (Optional)</Label>
               <Textarea
                 id="message"
                 value={personalMessage}
                 onChange={(e) => setPersonalMessage(e.target.value)}
                 placeholder="Add any additional details or notes..."
                 rows={3}
+                className="text-base sm:text-sm"
               />
             </div>
           )}
 
           <div className="space-y-3">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3 min-h-[44px]">
               <Checkbox
                 id="recurring"
                 checked={isRecurring}
                 onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
               />
-              <Label htmlFor="recurring" className="cursor-pointer">
+              <Label htmlFor="recurring" className="cursor-pointer text-sm sm:text-base">
                 Recurring ride
               </Label>
             </div>
 
             {isRecurring && (
               <div className="pl-6 space-y-2">
-                <Label>Select days</Label>
+                <Label className="text-sm sm:text-base">Select days</Label>
                 <div className="flex flex-wrap gap-2">
                   {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="flex items-center space-x-2">
+                    <div key={day} className="flex items-center space-x-2 min-h-[44px]">
                       <Checkbox
-                        id={day}
+                        id={`offer-${day}`}
                         checked={recurringDays.includes(day)}
                         onCheckedChange={() => toggleDay(day)}
                       />
-                      <Label htmlFor={day} className="cursor-pointer capitalize">
+                      <Label htmlFor={`offer-${day}`} className="cursor-pointer capitalize text-sm sm:text-base">
                         {day}
                       </Label>
                     </div>
@@ -321,7 +328,7 @@ const RideOfferForm = ({
             )}
           </div>
 
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
           </Button>
         </form>

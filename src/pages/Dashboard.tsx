@@ -388,35 +388,35 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, {profile.first_name}!</h1>
-          <p className="text-muted-foreground">Manage your carpools and find ride partners</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {profile.first_name}!</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your carpools and find ride partners</p>
         </div>
 
         {/* SECTION 1: Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Find Rides (Browse + Post) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/find-rides')}>
-              <CardHeader>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/find-rides')}>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-primary/10">
-                    <Radio className="h-6 w-6 text-primary" />
+                  <div className="p-2.5 sm:p-3 rounded-full bg-primary/10">
+                    <Radio className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Find Rides</CardTitle>
-                    <CardDescription>Browse & post public</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Find Rides</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Browse & post public</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
                   Browse available rides or post your own for all parents to see
                 </p>
-                <Button className="w-full gap-2">
+                <Button className="w-full gap-2 h-10 sm:h-11">
                   <Radio className="h-4 w-4" />
                   View Rides
                 </Button>
@@ -424,23 +424,23 @@ const Dashboard = () => {
             </Card>
 
             {/* Find on Map (Private Requests) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/map/find-parents')}>
-              <CardHeader>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/map/find-parents')}>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-blue-500/10">
-                    <MapIcon className="h-6 w-6 text-blue-600" />
+                  <div className="p-2.5 sm:p-3 rounded-full bg-blue-500/10">
+                    <MapIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Find Parents</CardTitle>
-                    <CardDescription>Map-based discovery</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Find Parents</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Map-based discovery</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
                   Discover parents near your route and send private ride requests
                 </p>
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2 h-10 sm:h-11">
                   <MapIcon className="h-4 w-4" />
                   Open Map
                 </Button>
@@ -448,23 +448,23 @@ const Dashboard = () => {
             </Card>
 
             {/* My Rides (All Management) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2" onClick={() => navigate('/my-rides')}>
-              <CardHeader>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/my-rides')}>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-full bg-green-500/10">
-                    <Car className="h-6 w-6 text-green-600" />
+                  <div className="p-2.5 sm:p-3 rounded-full bg-green-500/10">
+                    <Car className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">My Rides</CardTitle>
-                    <CardDescription>All your rides</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">My Rides</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">All your rides</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
                   Manage your posted rides and private requests
                 </p>
-                <Button variant="outline" className="w-full gap-2">
+                <Button variant="outline" className="w-full gap-2 h-10 sm:h-11">
                   <Car className="h-4 w-4" />
                   View All
                 </Button>
@@ -474,11 +474,11 @@ const Dashboard = () => {
         </div>
 
         {/* SECTION 2: Your Broadcast Posts */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Your Broadcast Posts</h2>
-            <Button variant="ghost" onClick={() => navigate('/my-rides')} className="gap-2">
-              View All
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-xl sm:text-2xl font-semibold">Your Broadcast Posts</h2>
+            <Button variant="ghost" onClick={() => navigate('/my-rides')} className="gap-2 text-sm h-9">
+              <span className="hidden sm:inline">View All</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
