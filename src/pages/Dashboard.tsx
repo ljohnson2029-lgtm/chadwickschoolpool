@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  SkeletonQuickActionCard, 
+  SkeletonRideCard, 
+  SkeletonListItem 
+} from "@/components/ui/skeleton-card";
 import { 
   Radio, 
   Map as MapIcon, 
@@ -335,8 +341,46 @@ const Dashboard = () => {
   if (!user || !profile) {
     return (
       <DashboardLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Loading...</div>
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Header skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-80" />
+          </div>
+
+          {/* Quick Actions skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-8 w-40 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <SkeletonQuickActionCard />
+              <SkeletonQuickActionCard />
+              <SkeletonQuickActionCard />
+            </div>
+          </div>
+
+          {/* Broadcast Posts skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SkeletonRideCard />
+              <SkeletonRideCard />
+            </div>
+          </div>
+
+          {/* Private Requests skeleton */}
+          <div>
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <SkeletonListItem />
+                <SkeletonListItem />
+              </div>
+              <div className="space-y-3">
+                <SkeletonListItem />
+                <SkeletonListItem />
+              </div>
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -440,11 +484,10 @@ const Dashboard = () => {
           </div>
           
           {loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading your posts...
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SkeletonRideCard />
+              <SkeletonRideCard />
+            </div>
           ) : myBroadcastPosts.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-12 text-center">

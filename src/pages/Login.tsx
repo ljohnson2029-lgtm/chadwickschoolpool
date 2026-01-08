@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import WelcomeModal from '@/components/WelcomeModal';
 import AddressRequiredModal from '@/components/AddressRequiredModal';
@@ -201,14 +201,14 @@ const Login = () => {
               />
             </div>
 
-            <Button 
+            <LoadingButton 
               type="submit" 
-              disabled={loading} 
+              loading={loading}
+              loadingText="Signing in..."
               className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Continue
-            </Button>
+            </LoadingButton>
 
             <div className="text-center space-y-2">
               <Button variant="ghost" className="text-sm text-foreground/70 hover:text-foreground">
@@ -256,14 +256,14 @@ const Login = () => {
               />
             </div>
 
-            <Button 
+            <LoadingButton 
               type="submit" 
-              disabled={loading} 
+              loading={loading}
+              loadingText="Verifying..."
               className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verify & Log In
-            </Button>
+            </LoadingButton>
 
             <Button
               type="button"

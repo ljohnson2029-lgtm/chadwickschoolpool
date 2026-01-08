@@ -15,6 +15,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import MapLoadingState from "@/components/MapLoadingState";
 import { Home, School, Navigation as NavigationIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import * as turf from "@turf/turf";
@@ -542,7 +543,9 @@ const MapFindParents = () => {
           <div className="max-w-7xl mx-auto">
             <Skeleton className="h-8 w-64 mb-2" />
             <Skeleton className="h-4 w-96 mb-6" />
-            <Skeleton className="h-[600px] w-full rounded-lg" />
+            <div className="h-[600px] w-full rounded-lg overflow-hidden border border-border">
+              <MapLoadingState showControls={!isMobile} />
+            </div>
           </div>
         </div>
       </>
