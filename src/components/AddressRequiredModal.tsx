@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { MapPin, Shield, Users, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -128,13 +128,15 @@ const AddressRequiredModal = ({ open, userId, onAddressAdded }: AddressRequiredM
           </div>
         </div>
 
-        <Button 
+        <LoadingButton 
           onClick={handleSubmit} 
-          disabled={!isAddressValid || saving}
+          disabled={!isAddressValid}
+          loading={saving}
+          loadingText="Saving..."
           className="w-full"
         >
-          {saving ? "Saving..." : "Continue to Dashboard"}
-        </Button>
+          Continue to Dashboard
+        </LoadingButton>
       </DialogContent>
     </Dialog>
   );

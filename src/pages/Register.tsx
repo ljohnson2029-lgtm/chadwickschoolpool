@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -519,14 +520,15 @@ const Register = () => {
                   </p>
                 </div>
 
-                <Button 
+                <LoadingButton 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
-                  disabled={loading}
+                  loading={loading}
+                  loadingText="Verifying..."
                 >
-                  {loading ? "Verifying..." : "Verify Email"}
+                  Verify Email
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                </LoadingButton>
 
                 <div className="flex items-center justify-between text-sm">
                   <Button
@@ -673,14 +675,15 @@ const Register = () => {
                 />
               </div>
 
-              <Button 
+              <LoadingButton 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
-                disabled={loading}
+                loading={loading}
+                loadingText="Creating Account..."
               >
-                {loading ? "Creating Account..." : "Create Account"}
+                Create Account
                 <UserPlus className="ml-2 h-4 w-4" />
-              </Button>
+              </LoadingButton>
 
               <Button
                 type="button"

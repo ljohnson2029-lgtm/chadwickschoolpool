@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonListItem, SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
 import { 
   GraduationCap,
   Users,
@@ -108,8 +110,47 @@ const StudentDashboard = () => {
   if (!user || !profile) {
     return (
       <DashboardLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Loading...</div>
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
+          {/* Header skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+
+          {/* Linked Parents skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-7 w-40 mb-4" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SkeletonListItem />
+              <SkeletonListItem />
+            </div>
+          </div>
+
+          {/* Family Carpools skeleton */}
+          <div className="mb-8">
+            <Skeleton className="h-7 w-40 mb-4" />
+            <div className="space-y-3">
+              <SkeletonCarpoolItem />
+              <SkeletonCarpoolItem />
+              <SkeletonCarpoolItem />
+            </div>
+          </div>
+
+          {/* Quick Actions skeleton */}
+          <div>
+            <Skeleton className="h-7 w-32 mb-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="py-6 text-center">
+                    <Skeleton className="h-8 w-8 mx-auto mb-3 rounded" />
+                    <Skeleton className="h-4 w-32 mx-auto mb-2" />
+                    <Skeleton className="h-3 w-24 mx-auto" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -139,11 +180,10 @@ const StudentDashboard = () => {
           </h2>
           
           {loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading...
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SkeletonListItem />
+              <SkeletonListItem />
+            </div>
           ) : linkedParents.length === 0 ? (
             <Card className="border-dashed border-2">
               <CardContent className="py-12 text-center">
@@ -217,11 +257,11 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
           ) : loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading carpools...
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <SkeletonCarpoolItem />
+              <SkeletonCarpoolItem />
+              <SkeletonCarpoolItem />
+            </div>
           ) : familyCarpools.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
