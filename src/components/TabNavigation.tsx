@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send } from "lucide-react";
+import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send, Link2, Settings, GraduationCap, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import {
@@ -17,23 +17,45 @@ const TabNavigation = () => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
+  const isStudent = profile?.account_type === 'student';
 
-  const mainTabs = [
+  // Parent/Staff tabs
+  const parentTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
     { label: "Find Rides", path: "/find-rides", icon: Radio },
     { label: "Find Parents", path: "/map/find-parents", icon: MapPin },
     { label: "My Rides", path: "/my-rides", icon: Car },
   ];
 
-  const menuItems = [
+  // Student tabs - restricted
+  const studentTabs = [
+    { label: "Dashboard", path: "/dashboard", icon: Home },
+    { label: "Family Carpools", path: "/family-carpools", icon: Calendar },
+    { label: "Link to Parent", path: "/family-links", icon: Link2 },
+  ];
+
+  const mainTabs = isStudent ? studentTabs : parentTabs;
+
+  // Parent/Staff menu items
+  const parentMenuItems = [
     { label: "Profile", path: "/profile", icon: User },
     { label: "Conversations", path: "/conversations", icon: MessageSquare },
     { label: "Family Links", path: "/family-links", icon: UsersIcon },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
-    { label: "Settings", path: "/settings" },
+    { label: "Settings", path: "/settings", icon: Settings },
   ];
+
+  // Student menu items - restricted
+  const studentMenuItems = [
+    { label: "Profile", path: "/profile", icon: User },
+    { label: "Settings", path: "/settings", icon: Settings },
+    { label: "About", path: "/about" },
+    { label: "Safety", path: "/safety" },
+  ];
+
+  const menuItems = isStudent ? studentMenuItems : parentMenuItems;
 
   const accountType = profile?.account_type;
 
@@ -104,13 +126,20 @@ const TabNavigation = () => {
             {user && accountType && (
               <Badge
                 variant={accountType === "student" ? "secondary" : "default"}
-                className={`hidden sm:flex ${
+                className={`hidden sm:flex gap-1 ${
                   accountType === "student"
                     ? "bg-blue-500/10 text-blue-600"
                     : "bg-green-500/10 text-green-600"
                 }`}
               >
-                {accountType === "student" ? "Child Account" : "Parent Account"}
+                {accountType === "student" ? (
+                  <>
+                    <GraduationCap className="h-3 w-3" />
+                    Student
+                  </>
+                ) : (
+                  "Parent"
+                )}
               </Badge>
             )}
             {user && <NotificationDropdown />}
