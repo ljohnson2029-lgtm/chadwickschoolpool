@@ -14,6 +14,7 @@ import {
   SkeletonRideCard, 
   SkeletonListItem 
 } from "@/components/ui/skeleton-card";
+import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
 import { 
   Radio, 
   Map as MapIcon, 
@@ -97,6 +98,7 @@ interface PrivateRequest {
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const { showTour, completeTour } = useOnboardingTour();
   const [myBroadcastPosts, setMyBroadcastPosts] = useState<BroadcastRide[]>([]);
   const [nearbyBroadcasts, setNearbyBroadcasts] = useState<BroadcastRide[]>([]);
   const [activeConversations, setActiveConversations] = useState<Conversation[]>([]);
@@ -388,6 +390,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
+      {showTour && <OnboardingTour onComplete={completeTour} />}
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-6 sm:mb-8">

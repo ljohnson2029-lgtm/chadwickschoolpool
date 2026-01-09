@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, Car, Home } from "lucide-react";
+import { Menu, X, Car, Home, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -140,6 +140,7 @@ const Navigation = () => {
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
+    { label: "Help Center", path: "/help" },
     { label: "Privacy Policy", path: "/privacy" },
     { label: "Map & Routes", path: "/map", authRequired: true },
     { label: "Settings", path: "/settings", authRequired: true },

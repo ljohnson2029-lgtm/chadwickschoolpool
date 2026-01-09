@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Navigation
 } from 'lucide-react';
+import { HelpTooltip } from './HelpTooltip';
 
 export type ParentFilter = 'all' | 'with-rides' | 'within-radius' | 'linked-only';
 
@@ -100,9 +101,12 @@ const MapControlPanel: React.FC<MapControlPanelProps> = ({
             {/* Radius Slider */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="radius-slider" className="text-sm font-normal">
-                  Search Radius:
-                </Label>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="radius-slider" className="text-sm font-normal">
+                    Search Radius:
+                  </Label>
+                  <HelpTooltip content="Shows parents within this distance from your route to school" />
+                </div>
                 <span 
                   className="text-sm font-bold text-primary"
                   aria-live="polite"

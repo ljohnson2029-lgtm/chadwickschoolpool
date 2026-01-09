@@ -30,6 +30,7 @@ import PostRide from "./pages/PostRide";
 import Conversations from "./pages/Conversations";
 import MyRides from "./pages/MyRides";
 import Privacy from "./pages/Privacy";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const AppRoutes = () => {
       <Route path="/map" element={<MapDemo />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/help" element={<Help />} />
       
       {/* Parent-only routes - restricted for students */}
       <Route path="/map/find-parents" element={
