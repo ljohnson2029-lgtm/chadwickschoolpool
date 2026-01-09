@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Link } from 'lucide-react';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Link, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import VerifiedBadge from "@/components/VerifiedBadge";
 
 interface LinkedStudent {
   student_id: string;
@@ -107,28 +108,31 @@ const Profile = () => {
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle>Personal Information</CardTitle>
-                <Badge 
-                  variant={isChild ? 'secondary' : 'default'}
-                  className={`gap-1 ${
-                    isChild 
-                      ? 'bg-blue-500/10 text-blue-600' 
-                      : 'bg-green-500/10 text-green-600'
-                  }`}
-                >
-                  {isChild ? (
-                    <>
-                      <GraduationCap className="h-3 w-3" />
-                      Child Account
-                    </>
-                  ) : (
-                    <>
-                      <Users className="h-3 w-3" />
-                      Parent Account
-                    </>
-                  )}
-                </Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <VerifiedBadge size="sm" />
+                  <Badge 
+                    variant={isChild ? 'secondary' : 'default'}
+                    className={`gap-1 ${
+                      isChild 
+                        ? 'bg-blue-500/10 text-blue-600' 
+                        : 'bg-green-500/10 text-green-600'
+                    }`}
+                  >
+                    {isChild ? (
+                      <>
+                        <GraduationCap className="h-3 w-3" />
+                        Child Account
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-3 w-3" />
+                        Parent Account
+                      </>
+                    )}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
