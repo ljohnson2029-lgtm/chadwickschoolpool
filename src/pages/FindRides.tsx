@@ -23,6 +23,9 @@ import {
   Filter
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
+import { LoadMoreButton } from "@/components/LoadMoreButton";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useInfiniteScroll } from "@/hooks/usePagination";
 import { format } from "date-fns";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
@@ -53,6 +56,9 @@ const FindRides = () => {
   const [loadingRides, setLoadingRides] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [directionFilter, setDirectionFilter] = useState("all");
+  
+  // Debounce search query for better performance
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -154,19 +160,37 @@ const FindRides = () => {
     return username.substring(0, 2).toUpperCase();
   };
 
+  // Use debounced search for filtering
   const filteredRequests = broadcasts.filter(r => {
     if (r.type !== 'request') return false;
-    if (searchQuery && !r.pickup_location.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !r.dropoff_location.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (debouncedSearch && !r.pickup_location.toLowerCase().includes(debouncedSearch.toLowerCase()) &&
+        !r.dropoff_location.toLowerCase().includes(debouncedSearch.toLowerCase())) return false;
     return true;
   });
 
   const filteredOffers = broadcasts.filter(r => {
     if (r.type !== 'offer') return false;
-    if (searchQuery && !r.pickup_location.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !r.dropoff_location.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (debouncedSearch && !r.pickup_location.toLowerCase().includes(debouncedSearch.toLowerCase()) &&
+        !r.dropoff_location.toLowerCase().includes(debouncedSearch.toLowerCase())) return false;
     return true;
   });
+
+  // Infinite scroll for lists
+  const {
+    visibleItems: visibleRequests,
+    hasMore: hasMoreRequests,
+    loadMore: loadMoreRequests,
+    loadedCount: requestsLoaded,
+    totalCount: requestsTotal,
+  } = useInfiniteScroll({ items: filteredRequests, pageSize: 12 });
+
+  const {
+    visibleItems: visibleOffers,
+    hasMore: hasMoreOffers,
+    loadMore: loadMoreOffers,
+    loadedCount: offersLoaded,
+    totalCount: offersTotal,
+  } = useInfiniteScroll({ items: filteredOffers, pageSize: 12 });
 
   if (loading || !user || !profile) {
     return (
@@ -331,11 +355,19 @@ const FindRides = () => {
                     description="No parents have posted ride requests yet. Be the first!"
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredRequests.map((ride) => (
-                      <RideCard key={ride.id} ride={ride} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {visibleRequests.map((ride) => (
+                        <RideCard key={ride.id} ride={ride} />
+                      ))}
+                    </div>
+                    <LoadMoreButton
+                      onLoadMore={loadMoreRequests}
+                      hasMore={hasMoreRequests}
+                      loadedCount={requestsLoaded}
+                      totalCount={requestsTotal}
+                    />
+                  </>
                 )}
               </TabsContent>
 
@@ -349,11 +381,19 @@ const FindRides = () => {
                     description="No parents have offered rides yet. Post one to help!"
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredOffers.map((ride) => (
-                      <RideCard key={ride.id} ride={ride} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {visibleOffers.map((ride) => (
+                        <RideCard key={ride.id} ride={ride} />
+                      ))}
+                    </div>
+                    <LoadMoreButton
+                      onLoadMore={loadMoreOffers}
+                      hasMore={hasMoreOffers}
+                      loadedCount={offersLoaded}
+                      totalCount={offersTotal}
+                    />
+                  </>
                 )}
               </TabsContent>
             </Tabs>
