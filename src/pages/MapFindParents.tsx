@@ -10,6 +10,7 @@ import ParentProfilePopup from "@/components/ParentProfilePopup";
 import PrivateRideRequestModal from "@/components/PrivateRideRequestModal";
 import PrivateRideOfferModal from "@/components/PrivateRideOfferModal";
 import AddressRequiredAlert from "@/components/AddressRequiredAlert";
+import PrivacyInfoBox from "@/components/PrivacyInfoBox";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import MapLoadingState from "@/components/MapLoadingState";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Home, School, Navigation as NavigationIcon, Menu } from "lucide-react";
+import { Home, School, Navigation as NavigationIcon, Menu, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import * as turf from "@turf/turf";
 
@@ -779,6 +780,11 @@ const MapFindParents = () => {
                 </div>
               </div>
             </Card>
+
+            {/* Privacy Info Box - Desktop only */}
+            {!isMobile && (
+              <PrivacyInfoBox className="absolute bottom-4 right-4 max-w-xs hidden md:block" />
+            )}
 
             {/* Parent Profile Panel - Desktop only */}
             {profilePopupOpen && selectedParentId && !isMobile && (

@@ -298,6 +298,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accept_requests_from_anyone: boolean | null
           account_type: string
           car_make: string | null
           car_model: string | null
@@ -310,10 +311,14 @@ export type Database = {
           id: string
           last_name: string | null
           phone_number: string | null
+          share_email: boolean | null
+          share_phone: boolean | null
+          show_on_map: boolean | null
           updated_at: string
           username: string
         }
         Insert: {
+          accept_requests_from_anyone?: boolean | null
           account_type: string
           car_make?: string | null
           car_model?: string | null
@@ -326,10 +331,14 @@ export type Database = {
           id: string
           last_name?: string | null
           phone_number?: string | null
+          share_email?: boolean | null
+          share_phone?: boolean | null
+          show_on_map?: boolean | null
           updated_at?: string
           username: string
         }
         Update: {
+          accept_requests_from_anyone?: boolean | null
           account_type?: string
           car_make?: string | null
           car_model?: string | null
@@ -342,6 +351,9 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone_number?: string | null
+          share_email?: boolean | null
+          share_phone?: boolean | null
+          show_on_map?: boolean | null
           updated_at?: string
           username?: string
         }
