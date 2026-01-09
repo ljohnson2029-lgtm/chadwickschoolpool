@@ -16,24 +16,30 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Contact */}
+          {/* Contact & Support */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-background">Contact Us</h4>
+            <h4 className="text-lg font-semibold mb-4 text-background">Contact & Support</h4>
             <div className="space-y-3">
               <a 
-                href="mailto:info@chadwickschoolpool.org" 
+                href="mailto:support@chadwickschoolpool.org" 
                 className="flex items-center gap-2 text-background/80 hover:text-background transition-colors"
               >
                 <Mail className="w-4 h-4" />
-                <span>info@chadwickschoolpool.org</span>
+                <span>support@chadwickschoolpool.org</span>
               </a>
-              <p className="text-background/80">Chadwick School Community</p>
+              <p className="text-background/60 text-sm">Response time: 24-48 hours</p>
+              <Link 
+                to="/help" 
+                className="block text-background/80 hover:text-background transition-colors"
+              >
+                Help Center
+              </Link>
             </div>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-background">Legal</h4>
+            <h4 className="text-lg font-semibold mb-4 text-background">Quick Links</h4>
             <div className="space-y-3">
               <Link 
                 to="/privacy" 
@@ -52,6 +58,12 @@ const Footer = () => {
                 className="block text-background/80 hover:text-background transition-colors"
               >
                 About Us
+              </Link>
+              <Link 
+                to="/safety" 
+                className="block text-background/80 hover:text-background transition-colors"
+              >
+                Safety
               </Link>
             </div>
           </div>

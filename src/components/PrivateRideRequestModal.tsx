@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, Clock, MapPin, Users, Home as HomeIcon, School, Lock, Send, X } from "lucide-react";
+import { HelpTooltip } from "./HelpTooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -254,8 +255,9 @@ const PrivateRideRequestModal = ({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl flex items-center justify-between pr-8">
+            <DialogTitle className="text-2xl flex items-center gap-2 pr-8">
               Request Ride from {recipientName}
+              <HelpTooltip content="This request is sent only to this specific parent. They will be notified and can accept or decline." />
             </DialogTitle>
             <DialogDescription>
               Fill in the details for your ride request

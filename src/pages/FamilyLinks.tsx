@@ -23,6 +23,7 @@ import {
 import Navigation from '@/components/Navigation';
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { HelpTooltip } from "@/components/HelpTooltip";
 
 interface LinkedAccount {
   id: string;
@@ -451,6 +452,7 @@ export default function FamilyLinks() {
                   <CardTitle className="flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
                     Link to Parent
+                    <HelpTooltip content="Linking to your parent allows them to schedule rides for you and keeps you informed about your carpools" />
                   </CardTitle>
                   <CardDescription>
                     Enter the email your parent used to register (not @chadwickschool.org)
