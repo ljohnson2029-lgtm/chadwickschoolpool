@@ -6,19 +6,32 @@ export const createNotification = async (
   message: string,
   linkId?: string
 ) => {
-  const { error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      type,
-      message,
-      link_id: linkId || null,
-      is_read: false,
-    });
+  // Use edge function to create notifications securely
+  // This allows authenticated users to create notifications for other users
+  // without exposing an overly permissive RLS policy
+  const { data: sessionData } = await supabase.auth.getSession();
+  
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-notification`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionData.session?.access_token || ''}`,
+      },
+      body: JSON.stringify({
+        userId,
+        type,
+        message,
+        linkId: linkId || null,
+      }),
+    }
+  );
 
-  if (error) {
-    console.error('Error creating notification:', error);
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    console.error('Error creating notification:', errorData);
+    throw new Error(errorData.error || 'Failed to create notification');
   }
 };
 
