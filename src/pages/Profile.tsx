@@ -1,15 +1,16 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Link, Shield } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import { SignOutDialog } from "@/components/ConfirmDialogs";
 
 interface LinkedStudent {
   student_id: string;
@@ -24,6 +25,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [linkedChildren, setLinkedChildren] = useState<LinkedStudent[]>([]);
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -69,8 +72,13 @@ const Profile = () => {
   }, [user, profile]);
 
   const handleLogout = async () => {
+    setSigningOut(true);
     await logout();
     navigate('/');
+  };
+
+  const openSignOutDialog = () => {
+    setSignOutDialogOpen(true);
   };
 
   if (loading || !user || !profile) {
@@ -99,7 +107,7 @@ const Profile = () => {
               <Button onClick={() => navigate('/profile/setup')} variant="outline">
                 Edit Profile
               </Button>
-              <Button onClick={handleLogout} variant="outline">
+              <Button onClick={openSignOutDialog} variant="outline">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </Button>
@@ -291,6 +299,13 @@ const Profile = () => {
             </Card>
           )}
         </div>
+
+        <SignOutDialog
+          open={signOutDialogOpen}
+          onOpenChange={setSignOutDialogOpen}
+          onConfirm={handleLogout}
+          loading={signingOut}
+        />
       </div>
     </DashboardLayout>
   );

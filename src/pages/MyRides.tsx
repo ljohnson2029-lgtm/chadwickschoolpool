@@ -26,6 +26,11 @@ import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
+  DeleteRideDialog,
+  CancelRequestDialog,
+  DeclineRequestDialog,
+} from "@/components/ConfirmDialogs";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -93,9 +98,12 @@ const MyRides = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<PrivateRequest | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -206,6 +214,7 @@ const MyRides = () => {
   const handleDeleteRide = async () => {
     if (!rideToDelete || !user) return;
 
+    setDeleteLoading(true);
     console.log('Deleting ride:', rideToDelete, 'for user:', user.id);
     
     const { data, error } = await supabase
@@ -226,13 +235,46 @@ const MyRides = () => {
       toast.success('Ride deleted successfully');
       fetchBroadcastRides();
     }
+    setDeleteLoading(false);
     setDeleteDialogOpen(false);
     setRideToDelete(null);
+  };
+
+  const handleCancelRequest = async () => {
+    if (!selectedRequest) return;
+
+    setActionLoading(true);
+    const { error } = await supabase
+      .from('private_ride_requests')
+      .update({
+        status: 'cancelled',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', selectedRequest.id);
+
+    if (error) {
+      toast.error('Failed to cancel request');
+    } else {
+      // Notify the recipient
+      await supabase.from('notifications').insert({
+        user_id: selectedRequest.recipient_id,
+        type: 'private_request_cancelled',
+        message: `${profile?.first_name} ${profile?.last_name} cancelled their ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
+        is_read: false
+      });
+
+      toast.success('Request cancelled');
+      fetchPrivateRequests();
+    }
+    setActionLoading(false);
+    setCancelDialogOpen(false);
+    setSelectedRequest(null);
   };
 
   const handleAcceptRequest = async () => {
     if (!selectedRequest) return;
 
+    setActionLoading(true);
     const { error } = await supabase
       .from('private_ride_requests')
       .update({
@@ -243,6 +285,7 @@ const MyRides = () => {
 
     if (error) {
       toast.error('Failed to accept request');
+      setActionLoading(false);
       return;
     }
 
@@ -256,13 +299,15 @@ const MyRides = () => {
 
     toast.success('Request accepted!');
     fetchPrivateRequests();
+    setActionLoading(false);
     setAcceptDialogOpen(false);
     setSelectedRequest(null);
   };
 
-  const handleDeclineRequest = async () => {
+  const handleDeclineRequest = async (reason?: string) => {
     if (!selectedRequest) return;
 
+    setActionLoading(true);
     const { error } = await supabase
       .from('private_ride_requests')
       .update({
@@ -273,19 +318,22 @@ const MyRides = () => {
 
     if (error) {
       toast.error('Failed to decline request');
+      setActionLoading(false);
       return;
     }
 
-    // Create notification
+    // Create notification with optional reason
+    const reasonText = reason ? ` Reason: "${reason}"` : "";
     await supabase.from('notifications').insert({
       user_id: selectedRequest.sender_id,
       type: 'private_request_declined',
-      message: `${profile?.first_name} ${profile?.last_name} declined your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
+      message: `${profile?.first_name} ${profile?.last_name} declined your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}.${reasonText}`,
       is_read: false
     });
 
     toast.success('Request declined');
     fetchPrivateRequests();
+    setActionLoading(false);
     setDeclineDialogOpen(false);
     setSelectedRequest(null);
   };
@@ -430,6 +478,7 @@ const MyRides = () => {
             </p>
           )}
 
+          {/* Actions for received pending requests */}
           {!isSent && request.status === 'pending' && (
             <div className="flex gap-2 pt-2">
               <Button 
@@ -456,6 +505,22 @@ const MyRides = () => {
                 Decline
               </Button>
             </div>
+          )}
+
+          {/* Cancel button for sent pending requests */}
+          {isSent && request.status === 'pending' && (
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="w-full gap-2 mt-2"
+              onClick={() => {
+                setSelectedRequest(request);
+                setCancelDialogOpen(true);
+              }}
+            >
+              <X className="h-4 w-4" />
+              Cancel Request
+            </Button>
           )}
 
           <p className="text-xs text-muted-foreground">
@@ -558,22 +623,12 @@ const MyRides = () => {
         </Tabs>
 
         {/* Delete Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this ride?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will remove your ride post. Other parents will no longer be able to see or respond to it.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteRide} className="bg-destructive text-destructive-foreground">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteRideDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDeleteRide}
+          loading={deleteLoading}
+        />
 
         {/* Accept Dialog */}
         <AlertDialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
@@ -585,31 +640,31 @@ const MyRides = () => {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleAcceptRequest}>
-                Accept Request
+              <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAcceptRequest} disabled={actionLoading}>
+                {actionLoading ? "Accepting..." : "Accept Request"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
         {/* Decline Dialog */}
-        <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Decline this request?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {selectedRequest?.sender_profile?.first_name} will be notified that you declined their request.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeclineRequest} className="bg-destructive text-destructive-foreground">
-                Decline
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeclineRequestDialog
+          open={declineDialogOpen}
+          onOpenChange={setDeclineDialogOpen}
+          onConfirm={handleDeclineRequest}
+          senderName={`${selectedRequest?.sender_profile?.first_name || ''} ${selectedRequest?.sender_profile?.last_name || ''}`.trim() || 'This parent'}
+          loading={actionLoading}
+        />
+
+        {/* Cancel Request Dialog */}
+        <CancelRequestDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleCancelRequest}
+          recipientName={`${selectedRequest?.recipient_profile?.first_name || ''} ${selectedRequest?.recipient_profile?.last_name || ''}`.trim() || 'The recipient'}
+          loading={actionLoading}
+        />
       </div>
     </DashboardLayout>
   );

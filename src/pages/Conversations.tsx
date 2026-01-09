@@ -21,6 +21,11 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import {
+  CancelRequestDialog,
+  DeclineRequestDialog,
+  ConfirmDialog,
+} from "@/components/ConfirmDialogs";
 
 interface Conversation {
   id: string;
@@ -56,6 +61,11 @@ const Conversations = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -92,11 +102,14 @@ const Conversations = () => {
     setLoadingConversations(false);
   };
 
-  const handleAccept = async (conversationId: string) => {
+  const handleAccept = async () => {
+    if (!selectedConversation) return;
+    setActionLoading(true);
+    
     const { error } = await supabase
       .from('ride_conversations')
       .update({ status: 'accepted' })
-      .eq('id', conversationId);
+      .eq('id', selectedConversation.id);
 
     if (error) {
       toast.error('Failed to accept ride');
@@ -104,13 +117,19 @@ const Conversations = () => {
       toast.success('Ride accepted!');
       fetchConversations();
     }
+    setActionLoading(false);
+    setAcceptDialogOpen(false);
+    setSelectedConversation(null);
   };
 
-  const handleDecline = async (conversationId: string) => {
+  const handleDecline = async (reason?: string) => {
+    if (!selectedConversation) return;
+    setActionLoading(true);
+    
     const { error } = await supabase
       .from('ride_conversations')
       .update({ status: 'declined' })
-      .eq('id', conversationId);
+      .eq('id', selectedConversation.id);
 
     if (error) {
       toast.error('Failed to decline ride');
@@ -118,13 +137,19 @@ const Conversations = () => {
       toast.success('Ride declined');
       fetchConversations();
     }
+    setActionLoading(false);
+    setDeclineDialogOpen(false);
+    setSelectedConversation(null);
   };
 
-  const handleCancel = async (conversationId: string) => {
+  const handleCancel = async () => {
+    if (!selectedConversation) return;
+    setActionLoading(true);
+    
     const { error } = await supabase
       .from('ride_conversations')
       .update({ status: 'cancelled' })
-      .eq('id', conversationId);
+      .eq('id', selectedConversation.id);
 
     if (error) {
       toast.error('Failed to cancel request');
@@ -132,6 +157,9 @@ const Conversations = () => {
       toast.success('Request cancelled');
       fetchConversations();
     }
+    setActionLoading(false);
+    setCancelDialogOpen(false);
+    setSelectedConversation(null);
   };
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
@@ -234,7 +262,10 @@ const Conversations = () => {
           {canRespond && (
             <div className="flex gap-2 pt-2">
               <Button 
-                onClick={() => handleAccept(conversation.id)}
+                onClick={() => {
+                  setSelectedConversation(conversation);
+                  setAcceptDialogOpen(true);
+                }}
                 className="flex-1 gap-2"
               >
                 <Check className="h-4 w-4" />
@@ -242,7 +273,10 @@ const Conversations = () => {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => handleDecline(conversation.id)}
+                onClick={() => {
+                  setSelectedConversation(conversation);
+                  setDeclineDialogOpen(true);
+                }}
                 className="flex-1 gap-2"
               >
                 <X className="h-4 w-4" />
@@ -254,7 +288,10 @@ const Conversations = () => {
           {canCancel && (
             <Button 
               variant="outline"
-              onClick={() => handleCancel(conversation.id)}
+              onClick={() => {
+                setSelectedConversation(conversation);
+                setCancelDialogOpen(true);
+              }}
               className="w-full gap-2"
             >
               <X className="h-4 w-4" />
@@ -297,6 +334,37 @@ const Conversations = () => {
             ))}
           </div>
         )}
+
+        {/* Accept Dialog */}
+        <ConfirmDialog
+          open={acceptDialogOpen}
+          onOpenChange={setAcceptDialogOpen}
+          onConfirm={handleAccept}
+          title="Accept this request?"
+          description={`By accepting, ${selectedConversation?.sender_profile?.first_name || 'the requester'} will be notified and receive your contact information.`}
+          confirmLabel="Accept Request"
+          cancelLabel="Cancel"
+          loading={actionLoading}
+          icon={<Check className="w-5 h-5 text-green-600" />}
+        />
+
+        {/* Decline Dialog */}
+        <DeclineRequestDialog
+          open={declineDialogOpen}
+          onOpenChange={setDeclineDialogOpen}
+          onConfirm={handleDecline}
+          senderName={`${selectedConversation?.sender_profile?.first_name || ''} ${selectedConversation?.sender_profile?.last_name || ''}`.trim() || 'This user'}
+          loading={actionLoading}
+        />
+
+        {/* Cancel Dialog */}
+        <CancelRequestDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleCancel}
+          recipientName={`${selectedConversation?.recipient_profile?.first_name || ''} ${selectedConversation?.recipient_profile?.last_name || ''}`.trim() || 'The recipient'}
+          loading={actionLoading}
+        />
       </div>
     </DashboardLayout>
   );
