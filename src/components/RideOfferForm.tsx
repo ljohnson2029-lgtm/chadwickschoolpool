@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
+import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 
 interface RideOfferFormProps {
   onSuccess: () => void;
@@ -40,7 +41,9 @@ const RideOfferForm = ({
   const [canCreate, setCanCreate] = useState(true);
 
   const [pickupLocation, setPickupLocation] = useState("");
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffLocation, setDropoffLocation] = useState("");
+  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [rideDate, setRideDate] = useState("");
   const [rideTime, setRideTime] = useState("");
   const [seatsAvailable, setSeatsAvailable] = useState("");
@@ -101,6 +104,10 @@ const RideOfferForm = ({
         type: "offer",
         pickup_location: pickupLocation,
         dropoff_location: dropoffLocation,
+        pickup_latitude: pickupCoords?.lat || null,
+        pickup_longitude: pickupCoords?.lng || null,
+        dropoff_latitude: dropoffCoords?.lat || null,
+        dropoff_longitude: dropoffCoords?.lng || null,
         ride_date: rideDate,
         ride_time: rideTime,
         seats_available: parseInt(seatsAvailable),
@@ -145,7 +152,9 @@ const RideOfferForm = ({
 
       // Reset form
       setPickupLocation("");
+      setPickupCoords(null);
       setDropoffLocation("");
+      setDropoffCoords(null);
       setRideDate("");
       setRideTime("");
       setSeatsAvailable("");
@@ -207,25 +216,27 @@ const RideOfferForm = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="start" className="text-sm sm:text-base">Starting Location</Label>
-            <Input
-              id="start"
+            <AddressAutocompleteInput
               value={pickupLocation}
-              onChange={(e) => setPickupLocation(e.target.value)}
+              onAddressSelect={(address, lat, lng) => {
+                setPickupLocation(address);
+                setPickupCoords({ lat, lng });
+              }}
               placeholder="Enter starting address"
               required
-              className="h-11 sm:h-10 text-base sm:text-sm"
             />
           </div>
 
           <div>
             <Label htmlFor="destination" className="text-sm sm:text-base">Destination</Label>
-            <Input
-              id="destination"
+            <AddressAutocompleteInput
               value={dropoffLocation}
-              onChange={(e) => setDropoffLocation(e.target.value)}
+              onAddressSelect={(address, lat, lng) => {
+                setDropoffLocation(address);
+                setDropoffCoords({ lat, lng });
+              }}
               placeholder="Enter destination address"
               required
-              className="h-11 sm:h-10 text-base sm:text-sm"
             />
           </div>
 

@@ -417,10 +417,14 @@ export type Database = {
       rides: {
         Row: {
           created_at: string | null
+          dropoff_latitude: number | null
           dropoff_location: string
+          dropoff_longitude: number | null
           id: string
           is_recurring: boolean | null
+          pickup_latitude: number | null
           pickup_location: string
+          pickup_longitude: number | null
           recipient_id: string | null
           recurring_days: string[] | null
           ride_date: string
@@ -437,10 +441,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          dropoff_latitude?: number | null
           dropoff_location: string
+          dropoff_longitude?: number | null
           id?: string
           is_recurring?: boolean | null
+          pickup_latitude?: number | null
           pickup_location: string
+          pickup_longitude?: number | null
           recipient_id?: string | null
           recurring_days?: string[] | null
           ride_date: string
@@ -457,10 +465,14 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          dropoff_latitude?: number | null
           dropoff_location?: string
+          dropoff_longitude?: number | null
           id?: string
           is_recurring?: boolean | null
+          pickup_latitude?: number | null
           pickup_location?: string
+          pickup_longitude?: number | null
           recipient_id?: string | null
           recurring_days?: string[] | null
           ride_date?: string

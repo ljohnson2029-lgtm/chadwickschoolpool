@@ -426,30 +426,6 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Find on Map (Private Requests) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/map/find-parents')}>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 sm:p-3 rounded-full bg-blue-500/10">
-                    <MapIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg">Find Parents</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Map-based discovery</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
-                  Discover parents near your route and send private ride requests
-                </p>
-                <Button variant="outline" className="w-full gap-2 h-10 sm:h-11">
-                  <MapIcon className="h-4 w-4" />
-                  Open Map
-                </Button>
-              </CardContent>
-            </Card>
-
             {/* My Rides (All Management) */}
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/my-rides')}>
               <CardHeader className="p-4 sm:p-6">
