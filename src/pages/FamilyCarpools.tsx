@@ -2,33 +2,32 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, AlertCircle, Map as MapIcon, List, Hand, Car } from "lucide-react";
+import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import RidesList from "@/components/RidesList";
 import FindRidesMap from "@/components/FindRidesMap";
-import { isParent as checkIsParent, isStudent as checkIsStudent, getStudentPermissionError } from "@/lib/permissions";
+import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
 const FamilyCarpools = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
-  const [userEmail, setUserEmail] = useState<string>("");
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,16 +39,6 @@ const FamilyCarpools = () => {
     const fetchUserInfo = async () => {
       if (!user) return;
 
-      // Fetch role
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setUserRole(roleData?.role || null);
-      setRoleLoading(false);
-
       // Fetch email to determine parent/student
       const { data: userData } = await supabase
         .from('users')
@@ -58,10 +47,10 @@ const FamilyCarpools = () => {
         .single();
       
       if (userData?.email) {
-        setUserEmail(userData.email);
         setIsUserParent(checkIsParent(userData.email));
         setIsUserStudent(checkIsStudent(userData.email));
       }
+      setRoleLoading(false);
     };
 
     fetchUserInfo();
@@ -69,6 +58,8 @@ const FamilyCarpools = () => {
 
   const handleRideCreated = () => {
     setRefreshKey((prev) => prev + 1);
+    setShowRequestDialog(false);
+    setShowOfferDialog(false);
   };
 
   if (loading || roleLoading || !user || !profile) {
@@ -89,6 +80,7 @@ const FamilyCarpools = () => {
         <Breadcrumbs items={[{ label: "Family Carpools" }]} />
         
         <div className="space-y-6">
+          {/* Header */}
           <div className="flex justify-between items-start flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3">
@@ -107,6 +99,8 @@ const FamilyCarpools = () => {
                 Browse, request, and offer rides to families
               </p>
             </div>
+            
+            {/* View Toggle */}
             <div className="flex gap-2">
               <Button
                 variant={viewMode === 'map' ? 'default' : 'outline'}
@@ -127,6 +121,7 @@ const FamilyCarpools = () => {
             </div>
           </div>
 
+          {/* Student Alert */}
           {isUserStudent && (
             <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
               <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -139,6 +134,62 @@ const FamilyCarpools = () => {
             </Alert>
           )}
 
+          {/* Action Buttons - Always visible for both roles */}
+          <div className="flex gap-3 flex-wrap">
+            {isUserParent ? (
+              <>
+                <Button 
+                  onClick={() => setShowRequestDialog(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Hand className="h-4 w-4" />
+                  Post Ride Request
+                </Button>
+                <Button 
+                  onClick={() => setShowOfferDialog(true)}
+                  className="gap-2"
+                >
+                  <Car className="h-4 w-4" />
+                  Post Ride Offer
+                </Button>
+              </>
+            ) : (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      className="gap-2"
+                      disabled
+                    >
+                      <Hand className="h-4 w-4" />
+                      Post Ride Request
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Only parents can post ride requests</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      className="gap-2"
+                      disabled
+                    >
+                      <Car className="h-4 w-4" />
+                      Post Ride Offer
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Only parents can post ride offers</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+          </div>
+
+          {/* Map View */}
           {viewMode === 'map' && (
             <FindRidesMap 
               height="500px"
@@ -149,72 +200,37 @@ const FamilyCarpools = () => {
             />
           )}
 
+          {/* List View */}
           {viewMode === 'list' && (
-            <Tabs defaultValue="browse" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="browse">Browse Available Rides</TabsTrigger>
-                <TabsTrigger value="request" disabled={isUserStudent}>
-                  Request a Ride
-                  {isUserStudent && <span className="text-xs ml-1">(Parents)</span>}
-                </TabsTrigger>
-                <TabsTrigger value="offer" disabled={isUserStudent}>
-                  Offer a Ride
-                  {isUserStudent && <span className="text-xs ml-1">(Parents)</span>}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="browse">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Available Rides</h2>
-                    {isUserStudent && (
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate("/family-links")}
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        Link to Parent
-                      </Button>
-                    )}
-                  </div>
-                  <RidesList key={refreshKey} />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="request">
-                {isUserStudent ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      {getStudentPermissionError("request rides")}
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Request a Ride</h2>
-                    <RideRequestForm onSuccess={handleRideCreated} />
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="offer">
-                {isUserStudent ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      {getStudentPermissionError("offer rides")}
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Offer a Ride</h2>
-                    <RideOfferForm onSuccess={handleRideCreated} />
-                  </Card>
-                )}
-              </TabsContent>
-            </Tabs>
+            <RidesList key={refreshKey} />
           )}
         </div>
+
+        {/* Post Ride Request Dialog */}
+        <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Hand className="h-5 w-5" />
+                Post a Ride Request
+              </DialogTitle>
+            </DialogHeader>
+            <RideRequestForm onSuccess={handleRideCreated} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Post Ride Offer Dialog */}
+        <Dialog open={showOfferDialog} onOpenChange={setShowOfferDialog}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Car className="h-5 w-5" />
+                Post a Ride Offer
+              </DialogTitle>
+            </DialogHeader>
+            <RideOfferForm onSuccess={handleRideCreated} />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
