@@ -142,7 +142,6 @@ const Navigation = () => {
     { label: "How It Works", path: "/how-it-works" },
     { label: "Help Center", path: "/help" },
     { label: "Privacy Policy", path: "/privacy" },
-    { label: "Map & Routes", path: "/map", authRequired: true },
     { label: "Settings", path: "/settings", authRequired: true },
   ];
 

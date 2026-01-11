@@ -27,7 +27,6 @@ const AdminVerifiedEmails = lazy(() => import("./pages/AdminVerifiedEmails"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const FamilyLinks = lazy(() => import("./pages/FamilyLinks"));
 const MapDemo = lazy(() => import("./pages/MapDemo"));
-const MapFindParents = lazy(() => import("./pages/MapFindParents"));
 const MyPrivateRequests = lazy(() => import("./pages/MyPrivateRequests"));
 const Settings = lazy(() => import("./pages/Settings"));
 const FindRides = lazy(() => import("./pages/FindRides"));
@@ -94,24 +93,17 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/help" element={<Help />} />
         
-        {/* Parent-only routes - restricted for students */}
-        <Route path="/map/find-parents" element={
-          <ParentOnlyRoute><MapFindParents /></ParentOnlyRoute>
-        } />
-        <Route path="/requests/private" element={
-          <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
-        } />
-        <Route path="/find-rides" element={
-          <ParentOnlyRoute><FindRides /></ParentOnlyRoute>
-        } />
+        {/* Rides - accessible to all but with permission differences */}
+        <Route path="/find-rides" element={<FindRides />} />
         <Route path="/post-ride" element={
           <ParentOnlyRoute><PostRide /></ParentOnlyRoute>
         } />
-        <Route path="/conversations" element={
-          <ParentOnlyRoute><Conversations /></ParentOnlyRoute>
-        } />
-        <Route path="/my-rides" element={
-          <ParentOnlyRoute><MyRides /></ParentOnlyRoute>
+        <Route path="/conversations" element={<Conversations />} />
+        <Route path="/my-rides" element={<MyRides />} />
+        
+        {/* Parent-only routes */}
+        <Route path="/requests/private" element={
+          <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
         } />
         
         <Route path="*" element={<NotFound />} />

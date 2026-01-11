@@ -1,0 +1,514 @@
+import React, { useEffect, useState, useRef } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Phone, Mail } from 'lucide-react';
+import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
+
+interface Ride {
+  id: string;
+  type: 'request' | 'offer';
+  pickup_location: string;
+  dropoff_location: string;
+  ride_date: string;
+  ride_time: string;
+  seats_needed: number | null;
+  seats_available: number | null;
+  route_details: string | null;
+  user_id: string;
+  profile?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+    phone_number?: string | null;
+    share_phone?: boolean | null;
+    share_email?: boolean | null;
+  };
+  userEmail?: string;
+}
+
+interface FindRidesMapProps {
+  height?: string;
+  showRequests: boolean;
+  showOffers: boolean;
+  onToggleRequests: (value: boolean) => void;
+  onToggleOffers: (value: boolean) => void;
+}
+
+const FindRidesMap: React.FC<FindRidesMapProps> = ({ 
+  height = '500px',
+  showRequests,
+  showOffers,
+  onToggleRequests,
+  onToggleOffers
+}) => {
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [isUserParent, setIsUserParent] = useState(false);
+
+  // Fetch user email and determine role
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data?.email) {
+        setUserEmail(data.email);
+        setIsUserParent(checkIsParent(data.email));
+      }
+    };
+    fetchUserInfo();
+  }, [user]);
+
+  // Fetch Mapbox token
+  useEffect(() => {
+    const fetchToken = async () => {
+      const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+      if (error) {
+        console.error('Error fetching Mapbox token:', error);
+      } else if (data?.token) {
+        setMapboxToken(data.token);
+      }
+    };
+    fetchToken();
+  }, []);
+
+  // Fetch rides data
+  useEffect(() => {
+    const fetchRides = async () => {
+      if (!user) return;
+
+      const { data: ridesData, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('status', 'active')
+        .gte('ride_date', new Date().toISOString().split('T')[0]);
+
+      if (error) {
+        console.error('Error fetching rides:', error);
+        return;
+      }
+
+      // Get unique user IDs and fetch profiles
+      const userIds = [...new Set(ridesData?.map(r => r.user_id) || [])];
+      let profilesMap: Record<string, any> = {};
+      let emailsMap: Record<string, string> = {};
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
+          .in('id', userIds);
+        
+        if (profilesData) {
+          profilesMap = profilesData.reduce((acc, p) => {
+            acc[p.id] = p;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+
+        // Fetch emails for users who share them
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('user_id, email')
+          .in('user_id', userIds);
+        
+        if (usersData) {
+          emailsMap = usersData.reduce((acc, u) => {
+            acc[u.user_id] = u.email;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+
+      const combinedData = (ridesData || []).map(ride => ({
+        ...ride,
+        profile: profilesMap[ride.user_id] || null,
+        userEmail: emailsMap[ride.user_id] || null
+      }));
+
+      setRides(combinedData as Ride[]);
+    };
+
+    fetchRides();
+  }, [user]);
+
+  // Geocode address
+  const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('geocode-address', {
+        body: { address }
+      });
+
+      if (error || !data?.coordinates) {
+        return null;
+      }
+
+      return [data.coordinates.longitude, data.coordinates.latitude];
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainer.current || !mapboxToken || !profile) return;
+
+    mapboxgl.accessToken = mapboxToken;
+
+    const userLat = (profile as any)?.home_latitude;
+    const userLng = (profile as any)?.home_longitude;
+    const centerCoord: [number, number] = userLat && userLng 
+      ? [userLng, userLat] 
+      : [-118.3964, 33.7447]; // Default to Chadwick area
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: centerCoord,
+      zoom: 11,
+    });
+
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.current.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+
+    return () => {
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      map.current?.remove();
+    };
+  }, [mapboxToken, profile]);
+
+  // Add markers
+  useEffect(() => {
+    if (!map.current || !mapboxToken) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    const addMarkers = async () => {
+      // Add user's home marker (blue)
+      const userLat = (profile as any)?.home_latitude;
+      const userLng = (profile as any)?.home_longitude;
+
+      if (profile?.home_address && userLat && userLng) {
+        const el = document.createElement('div');
+        el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
+        el.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([userLng, userLat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
+              <div class="p-2">
+                <p class="font-semibold text-blue-600">Your Home</p>
+                <p class="text-sm text-gray-600">${profile.home_address}</p>
+              </div>
+            `)
+          )
+          .addTo(map.current!);
+        
+        markersRef.current.push(marker);
+      }
+
+      // Add ride markers
+      const filteredRides = rides.filter(r => 
+        (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
+      );
+
+      for (const ride of filteredRides) {
+        const pickupCoord = await geocodeAddress(ride.pickup_location);
+        
+        if (pickupCoord) {
+          const isRequest = ride.type === 'request';
+          const color = isRequest ? '#ef4444' : '#22c55e'; // Red for requests, Green for offers
+          
+          const el = document.createElement('div');
+          el.className = `flex items-center justify-center w-7 h-7 rounded-full shadow-lg border-2 border-white cursor-pointer`;
+          el.style.backgroundColor = color;
+          el.innerHTML = isRequest 
+            ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>'
+            : '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>';
+
+          el.addEventListener('click', () => {
+            setSelectedRide(ride);
+          });
+
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat(pickupCoord)
+            .addTo(map.current!);
+          
+          markersRef.current.push(marker);
+        }
+
+        // Add dropoff marker with different style
+        const dropoffCoord = await geocodeAddress(ride.dropoff_location);
+        if (dropoffCoord) {
+          const isRequest = ride.type === 'request';
+          const color = isRequest ? '#fca5a5' : '#86efac'; // Lighter version
+          
+          const el = document.createElement('div');
+          el.className = `flex items-center justify-center w-5 h-5 rounded-full shadow border-2 border-white cursor-pointer`;
+          el.style.backgroundColor = color;
+          el.innerHTML = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path></svg>';
+
+          el.addEventListener('click', () => {
+            setSelectedRide(ride);
+          });
+
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat(dropoffCoord)
+            .addTo(map.current!);
+          
+          markersRef.current.push(marker);
+        }
+      }
+    };
+
+    addMarkers();
+  }, [rides, showRequests, showOffers, profile, mapboxToken]);
+
+  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    return username.substring(0, 2).toUpperCase();
+  };
+
+  const handleRespondToRide = async (ride: Ride) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('ride_conversations')
+        .insert({
+          ride_id: ride.id,
+          sender_id: user.id,
+          recipient_id: ride.user_id,
+          status: 'pending',
+          message: ride.type === 'request' 
+            ? `I can help with your ride request!`
+            : `I'd like to join your offered ride!`
+        });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to respond to ride. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success!",
+        description: ride.type === 'request' 
+          ? "You've offered to help with this ride request!"
+          : "You've requested to join this ride!",
+      });
+      setSelectedRide(null);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!mapboxToken) {
+    return (
+      <div 
+        className="w-full bg-muted rounded-lg flex items-center justify-center border border-border" 
+        style={{ height }}
+      >
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative" style={{ height }}>
+      {/* Map Container */}
+      <div ref={mapContainer} className="w-full h-full rounded-lg" />
+      
+      {/* Legend */}
+      <Card className="absolute top-4 left-4 p-3 bg-background/95 backdrop-blur-sm">
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
+            <span>Your Home</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow" />
+            <span>Ride Requests</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow" />
+            <span>Ride Offers</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Selected Ride Panel */}
+      {selectedRide && (
+        <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className={selectedRide.type === 'request' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
+                    {getInitials(selectedRide.profile?.first_name || null, selectedRide.profile?.last_name || null, selectedRide.profile?.username || '')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle className="text-lg">
+                    {selectedRide.profile?.first_name} {selectedRide.profile?.last_name}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">@{selectedRide.profile?.username}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className={selectedRide.type === 'request' ? 'bg-red-500' : 'bg-green-500'}>
+                  {selectedRide.type === 'request' ? (
+                    <><Hand className="h-3 w-3 mr-1" /> Request</>
+                  ) : (
+                    <><Car className="h-3 w-3 mr-1" /> Offer</>
+                  )}
+                </Badge>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => setSelectedRide(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
+                <div className="text-sm">
+                  <div className="font-medium">{selectedRide.pickup_location}</div>
+                  <div className="text-muted-foreground">to {selectedRide.dropoff_location}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  {format(new Date(selectedRide.ride_date), 'MMM d, yyyy')}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  {selectedRide.ride_time}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                {selectedRide.type === 'offer'
+                  ? `${selectedRide.seats_available} seats available`
+                  : `${selectedRide.seats_needed} seats needed`}
+              </div>
+
+              {/* Contact Info */}
+              {selectedRide.profile?.share_phone && selectedRide.profile?.phone_number && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  {selectedRide.profile.phone_number}
+                </div>
+              )}
+              {selectedRide.profile?.share_email && selectedRide.userEmail && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  {selectedRide.userEmail}
+                </div>
+              )}
+
+              {selectedRide.route_details && (
+                <p className="text-sm text-muted-foreground pt-2 border-t">
+                  {selectedRide.route_details}
+                </p>
+              )}
+            </div>
+
+            {/* Action Button - Only for Parents */}
+            {isUserParent ? (
+              <Button 
+                className="w-full gap-2"
+                onClick={() => handleRespondToRide(selectedRide)}
+                disabled={selectedRide.user_id === user?.id}
+              >
+                {selectedRide.type === 'request' ? (
+                  <>
+                    <Car className="h-4 w-4" />
+                    I Can Help!
+                  </>
+                ) : (
+                  <>
+                    <Hand className="h-4 w-4" />
+                    I Need This!
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    className="w-full gap-2"
+                    disabled
+                    variant="secondary"
+                  >
+                    {selectedRide.type === 'request' ? (
+                      <>
+                        <Car className="h-4 w-4" />
+                        I Can Help!
+                      </>
+                    ) : (
+                      <>
+                        <Hand className="h-4 w-4" />
+                        I Need This!
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Only parents can manage rides. Ask your parent for help.</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default FindRidesMap;
