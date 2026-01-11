@@ -20,6 +20,10 @@ interface Ride {
   type: 'request' | 'offer';
   pickup_location: string;
   dropoff_location: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  dropoff_latitude: number | null;
+  dropoff_longitude: number | null;
   ride_date: string;
   ride_time: string;
   seats_needed: number | null;
@@ -240,7 +244,13 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       );
 
       for (const ride of filteredRides) {
-        const pickupCoord = await geocodeAddress(ride.pickup_location);
+        // Use stored coordinates if available, otherwise geocode
+        let pickupCoord: [number, number] | null = null;
+        if (ride.pickup_latitude && ride.pickup_longitude) {
+          pickupCoord = [ride.pickup_longitude, ride.pickup_latitude];
+        } else {
+          pickupCoord = await geocodeAddress(ride.pickup_location);
+        }
         
         if (pickupCoord) {
           const isRequest = ride.type === 'request';
@@ -265,7 +275,13 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         }
 
         // Add dropoff marker with different style
-        const dropoffCoord = await geocodeAddress(ride.dropoff_location);
+        let dropoffCoord: [number, number] | null = null;
+        if (ride.dropoff_latitude && ride.dropoff_longitude) {
+          dropoffCoord = [ride.dropoff_longitude, ride.dropoff_latitude];
+        } else {
+          dropoffCoord = await geocodeAddress(ride.dropoff_location);
+        }
+
         if (dropoffCoord) {
           const isRequest = ride.type === 'request';
           const color = isRequest ? '#fca5a5' : '#86efac'; // Lighter version
