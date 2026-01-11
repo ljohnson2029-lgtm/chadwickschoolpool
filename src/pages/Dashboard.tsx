@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import StudentDashboard from "@/components/StudentDashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,7 @@ import {
   SkeletonListItem 
 } from "@/components/ui/skeleton-card";
 import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Radio, 
   Map as MapIcon, 
@@ -26,10 +26,13 @@ import {
   Car,
   CheckCircle2,
   Clock,
-  Send
+  Send,
+  Users,
+  Link2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { isStudent as checkIsStudent } from "@/lib/permissions";
 
 interface BroadcastRide {
   id: string;
@@ -108,6 +111,25 @@ const Dashboard = () => {
   const [privateRequestsReceived, setPrivateRequestsReceived] = useState<PrivateRequest[]>([]);
   const [pendingPrivateRequestsCount, setPendingPrivateRequestsCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [isUserStudent, setIsUserStudent] = useState(false);
+
+  // Fetch user email to determine if student
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+      if (data?.email) {
+        setUserEmail(data.email);
+        setIsUserStudent(checkIsStudent(data.email));
+      }
+    };
+    fetchUserEmail();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -335,10 +357,7 @@ const Dashboard = () => {
     return username.substring(0, 2).toUpperCase();
   };
 
-  // Show student dashboard for student accounts
-  if (profile?.account_type === 'student') {
-    return <StudentDashboard />;
-  }
+  // Both students and parents now see the same unified UI
 
   if (!user || !profile) {
     return (
@@ -394,9 +413,51 @@ const Dashboard = () => {
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {profile.first_name}!</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage your carpools and find ride partners</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, {profile.first_name}!</h1>
+            <Badge 
+              variant={isUserStudent ? 'secondary' : 'default'}
+              className={isUserStudent 
+                ? 'bg-blue-500/10 text-blue-600' 
+                : 'bg-green-500/10 text-green-600'
+              }
+            >
+              {isUserStudent ? 'Student Account' : 'Parent Account'}
+            </Badge>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            {isUserStudent 
+              ? 'View carpool information and browse available rides'
+              : 'Manage your carpools and find ride partners'
+            }
+          </p>
         </div>
+
+        {/* Student Alert */}
+        {isUserStudent && (
+          <Card className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <CardContent className="py-4">
+              <div className="flex items-start gap-3">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-900 dark:text-blue-100">Student Account - View Only</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    You can browse all rides, but ask your parent to manage ride requests and offers.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate('/family-links')}
+                    className="mt-2 gap-2"
+                  >
+                    <Link2 className="h-4 w-4" />
+                    Link to Parent
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* SECTION 1: Quick Actions */}
         <div className="mb-6 sm:mb-8">
@@ -473,12 +534,31 @@ const Dashboard = () => {
                 <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No Broadcast Posts</h3>
                 <p className="text-muted-foreground mb-4">
-                  Post your first ride to find carpool partners!
+                  {isUserStudent 
+                    ? 'Your linked parents will post rides here'
+                    : 'Post your first ride to find carpool partners!'
+                  }
                 </p>
-                <Button onClick={() => navigate('/post-ride')} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Post a Ride
-                </Button>
+                {isUserStudent ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button disabled className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          Post a Ride
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Only parents can post rides. Ask your parent for help.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Button onClick={() => navigate('/post-ride')} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Post a Ride
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (

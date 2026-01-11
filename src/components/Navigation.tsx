@@ -129,10 +129,10 @@ const Navigation = () => {
     parentOnly?: boolean;
   };
 
-  // Main navigation items (always visible)
+  // Main navigation items (same for all users)
   const mainNavItems: NavItem[] = [
     { label: "Features", path: "/features" },
-    { label: userRole === 'student' ? "Family Carpools" : "Dashboard", path: "/dashboard", authRequired: true },
+    { label: "Dashboard", path: "/dashboard", authRequired: true },
   ];
 
   // Additional navigation items (in hamburger menu)
