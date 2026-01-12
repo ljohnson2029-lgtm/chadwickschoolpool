@@ -293,8 +293,9 @@ const Navigation = () => {
             </DropdownMenu>
           </div>
 
-          {/* Mobile: Notification Bell + Menu Button */}
+          {/* Mobile: Theme Toggle + Notification Bell + Menu Button */}
           <div className="md:hidden flex items-center gap-2">
+            <ThemeToggle />
             {user && <NotificationDropdown />}
             <button
               className="p-2 transition-transform duration-200 hover:scale-110"
