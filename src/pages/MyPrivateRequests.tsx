@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Hand, 
@@ -33,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import RideUserBadge from "@/components/RideUserBadge";
 
 interface PrivateRequest {
   id: string;
@@ -319,23 +319,19 @@ const MyPrivateRequests = () => {
                   <Card key={request.id}>
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(
-                              request.recipient?.first_name || null,
-                              request.recipient?.last_name || null,
-                              request.recipient?.username || ''
-                            )}
-                          </AvatarFallback>
-                        </Avatar>
-
                         <div className="flex-1 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="font-semibold">
-                                {request.recipient?.first_name} {request.recipient?.last_name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <RideUserBadge
+                                userId={request.recipient_id}
+                                firstName={request.recipient?.first_name || null}
+                                lastName={request.recipient?.last_name || null}
+                                username={request.recipient?.username || 'Unknown'}
+                                accountType="parent"
+                                variant="compact"
+                                showViewButton={false}
+                              />
+                              <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="outline" className="gap-1">
                                   {request.request_type === 'request' ? (
                                     <>
@@ -447,23 +443,19 @@ const MyPrivateRequests = () => {
                   <Card key={request.id}>
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(
-                              request.sender?.first_name || null,
-                              request.sender?.last_name || null,
-                              request.sender?.username || ''
-                            )}
-                          </AvatarFallback>
-                        </Avatar>
-
                         <div className="flex-1 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="font-semibold">
-                                {request.sender?.first_name} {request.sender?.last_name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <RideUserBadge
+                                userId={request.sender_id}
+                                firstName={request.sender?.first_name || null}
+                                lastName={request.sender?.last_name || null}
+                                username={request.sender?.username || 'Unknown'}
+                                accountType="parent"
+                                variant="compact"
+                                showViewButton={false}
+                              />
+                              <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="outline" className="gap-1">
                                   {request.request_type === 'request' ? (
                                     <>

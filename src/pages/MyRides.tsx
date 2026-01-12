@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Calendar, 
   Clock, 
@@ -40,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import RideUserBadge from "@/components/RideUserBadge";
 
 interface BroadcastRide {
   id: string;
@@ -420,23 +420,22 @@ const MyRides = () => {
 
   const PrivateRequestCard = ({ request, isSent }: { request: PrivateRequest; isSent: boolean }) => {
     const otherProfile = isSent ? request.recipient_profile : request.sender_profile;
+    const otherUserId = isSent ? request.recipient_id : request.sender_id;
     
     return (
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                  {getInitials(otherProfile?.first_name || null, otherProfile?.last_name || null, otherProfile?.username || 'U')}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-base">
-                  {otherProfile?.first_name} {otherProfile?.last_name}
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">@{otherProfile?.username}</p>
-              </div>
+            <div className="flex-1">
+              <RideUserBadge
+                userId={otherUserId}
+                firstName={otherProfile?.first_name || null}
+                lastName={otherProfile?.last_name || null}
+                username={otherProfile?.username || 'Unknown'}
+                accountType="parent"
+                variant="compact"
+                showViewButton={false}
+              />
             </div>
             <Badge className={getStatusColor(request.status)}>
               {request.status}
