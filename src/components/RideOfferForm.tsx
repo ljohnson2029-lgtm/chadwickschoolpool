@@ -96,6 +96,25 @@ const RideOfferForm = ({
       return;
     }
 
+    // Validate that addresses have been selected from autocomplete
+    if (!pickupCoords) {
+      toast({
+        title: "Invalid Starting Location",
+        description: "Please select a starting address from the suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dropoffCoords) {
+      toast({
+        title: "Invalid Destination",
+        description: "Please select a destination address from the suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
