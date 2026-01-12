@@ -8,9 +8,9 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Phone, Mail } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Car, Hand, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
@@ -76,6 +76,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [isUserParent, setIsUserParent] = useState(false);
+  const [isUserStudent, setIsUserStudent] = useState(false);
 
   // Fetch user email and determine role
   useEffect(() => {
@@ -90,6 +91,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       if (data?.email) {
         setUserEmail(data.email);
         setIsUserParent(checkIsParent(data.email));
+        setIsUserStudent(checkIsStudent(data.email));
       }
     };
     fetchUserInfo();
@@ -448,20 +450,25 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className={selectedRide.type === 'request' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
-                    {getInitials(selectedRide.profile?.first_name || null, selectedRide.profile?.last_name || null, selectedRide.profile?.username || '')}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-lg">
-                    {selectedRide.profile?.first_name} {selectedRide.profile?.last_name}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">@{selectedRide.profile?.username}</p>
-                </div>
+              <div className="flex-1">
+                <RideUserBadge
+                  userId={selectedRide.user_id}
+                  firstName={selectedRide.profile?.first_name || null}
+                  lastName={selectedRide.profile?.last_name || null}
+                  username={selectedRide.profile?.username || 'Unknown'}
+                  accountType="parent"
+                  email={selectedRide.userEmail}
+                  phoneNumber={selectedRide.profile?.phone_number}
+                  shareEmail={selectedRide.profile?.share_email ?? false}
+                  sharePhone={selectedRide.profile?.share_phone ?? false}
+                  isCurrentUser={selectedRide.user_id === user?.id}
+                  viewerIsStudent={isUserStudent}
+                  variant="full"
+                  showViewButton={true}
+                  distance={0}
+                />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-2">
                 <Badge className={selectedRide.type === 'request' ? 'bg-red-500' : 'bg-green-500'}>
                   {selectedRide.type === 'request' ? (
                     <><Hand className="h-3 w-3 mr-1" /> Request</>
@@ -507,20 +514,6 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
                   ? `${selectedRide.seats_available} seats available`
                   : `${selectedRide.seats_needed} seats needed`}
               </div>
-
-              {/* Contact Info */}
-              {selectedRide.profile?.share_phone && selectedRide.profile?.phone_number && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  {selectedRide.profile.phone_number}
-                </div>
-              )}
-              {selectedRide.profile?.share_email && selectedRide.userEmail && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  {selectedRide.userEmail}
-                </div>
-              )}
 
               {selectedRide.route_details && (
                 <p className="text-sm text-muted-foreground pt-2 border-t">

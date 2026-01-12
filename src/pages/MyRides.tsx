@@ -434,7 +434,7 @@ const MyRides = () => {
                 username={otherProfile?.username || 'Unknown'}
                 accountType="parent"
                 variant="compact"
-                showViewButton={false}
+                showViewButton={true}
               />
             </div>
             <Badge className={getStatusColor(request.status)}>
