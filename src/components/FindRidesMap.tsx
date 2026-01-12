@@ -232,16 +232,27 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
         el.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
 
+        // Create popup content safely using DOM methods to prevent XSS
+        const popupDiv = document.createElement('div');
+        popupDiv.className = 'p-2';
+        
+        const title = document.createElement('p');
+        title.className = 'font-semibold text-blue-600';
+        title.textContent = 'Your Home';
+        
+        const address = document.createElement('p');
+        address.className = 'text-sm text-gray-600';
+        address.textContent = profile.home_address; // Safe - uses textContent
+        
+        popupDiv.appendChild(title);
+        popupDiv.appendChild(address);
+        
+        const popup = new mapboxgl.Popup({ offset: 25 });
+        popup.setDOMContent(popupDiv);
+
         const marker = new mapboxgl.Marker(el)
           .setLngLat([userLng, userLat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(`
-              <div class="p-2">
-                <p class="font-semibold text-blue-600">Your Home</p>
-                <p class="text-sm text-gray-600">${profile.home_address}</p>
-              </div>
-            `)
-          )
+          .setPopup(popup)
           .addTo(map.current!);
         
         markersRef.current.push(marker);
