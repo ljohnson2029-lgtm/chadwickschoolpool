@@ -58,15 +58,32 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Generate 6-digit code using cryptographically secure random
+    const randomBytes = new Uint8Array(4);
+    crypto.getRandomValues(randomBytes);
+    const randomNumber = (randomBytes[0] << 24 | randomBytes[1] << 16 | randomBytes[2] << 8 | randomBytes[3]) >>> 0;
+    const code = String(100000 + (randomNumber % 900000));
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes (reduced from 10)
 
-    // Store code in database
+    const normalizedEmail = email.toLowerCase();
+
+    // Invalidate all previous unused codes for this email to prevent brute-force on old codes
+    const { error: invalidateError } = await supabase
+      .from('verification_codes')
+      .update({ is_used: true })
+      .eq('email', normalizedEmail)
+      .eq('is_used', false);
+
+    if (invalidateError) {
+      console.error('Error invalidating old codes:', invalidateError);
+      // Continue anyway - not critical
+    }
+
+    // Store new code in database
     const { error: dbError } = await supabase
       .from('verification_codes')
       .insert({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         code,
         expires_at: expiresAt.toISOString(),
       });
@@ -100,7 +117,7 @@ serve(async (req) => {
             <div style="background-color: #f5f5f5; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
               <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${code}</span>
             </div>
-            <p style="font-size: 14px; color: #999;">This code will expire in 10 minutes.</p>
+            <p style="font-size: 14px; color: #999;">This code will expire in 5 minutes.</p>
             <p style="font-size: 14px; color: #999;">If you didn't request this code, please ignore this email.</p>
           </div>
         `,
