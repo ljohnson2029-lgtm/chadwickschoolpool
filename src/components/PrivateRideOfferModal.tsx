@@ -21,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import RideSafetyChecklist from "@/components/RideSafetyChecklist";
 
 const CHADWICK_SCHOOL = {
   name: "Chadwick School",
@@ -98,6 +99,12 @@ const PrivateRideOfferModal = ({
   const [recipientProfile, setRecipientProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // Safety checklist state
+  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
+  const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
+  const [carSeatsConfirmed, setCarSeatsConfirmed] = useState(false);
+  const [emergencyContactsConfirmed, setEmergencyContactsConfirmed] = useState(false);
+
   const form = useForm<OfferFormValues>({
     resolver: zodResolver(offerFormSchema),
     defaultValues: {
@@ -159,6 +166,16 @@ const PrivateRideOfferModal = ({
   };
 
   const onSubmit = async (values: OfferFormValues) => {
+    // Validate safety checklist
+    if (!licenseConfirmed || !vehicleConfirmed || !carSeatsConfirmed || !emergencyContactsConfirmed) {
+      toast({
+        title: "Safety Confirmation Required",
+        description: "Please confirm all safety requirements before sending your ride offer",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -500,6 +517,19 @@ const PrivateRideOfferModal = ({
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+
+              {/* Safety Checklist */}
+              <RideSafetyChecklist
+                licenseConfirmed={licenseConfirmed}
+                vehicleConfirmed={vehicleConfirmed}
+                carSeatsConfirmed={carSeatsConfirmed}
+                emergencyContactsConfirmed={emergencyContactsConfirmed}
+                onLicenseChange={setLicenseConfirmed}
+                onVehicleChange={setVehicleConfirmed}
+                onCarSeatsChange={setCarSeatsConfirmed}
+                onEmergencyContactsChange={setEmergencyContactsConfirmed}
+                disabled={submitting}
               />
 
               {/* Action Buttons */}

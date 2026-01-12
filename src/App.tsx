@@ -35,6 +35,7 @@ const PostRide = lazy(() => import("./pages/PostRide"));
 const Conversations = lazy(() => import("./pages/Conversations"));
 const MyRides = lazy(() => import("./pages/MyRides"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const Help = lazy(() => import("./pages/Help"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 
@@ -93,6 +94,7 @@ const AppRoutes = () => {
         <Route path="/map" element={<MapDemo />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/help" element={<Help />} />
         <Route path="/feedback" element={<Feedback />} />
         
