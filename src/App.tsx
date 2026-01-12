@@ -35,6 +35,7 @@ const Conversations = lazy(() => import("./pages/Conversations"));
 const MyRides = lazy(() => import("./pages/MyRides"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Help = lazy(() => import("./pages/Help"));
+const Feedback = lazy(() => import("./pages/Feedback"));
 
 // Loading component for lazy loaded pages
 const PageLoader = () => (
@@ -92,6 +93,7 @@ const AppRoutes = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/help" element={<Help />} />
+        <Route path="/feedback" element={<Feedback />} />
         
         {/* Rides - accessible to all but with permission differences */}
         <Route path="/find-rides" element={<FindRides />} />
