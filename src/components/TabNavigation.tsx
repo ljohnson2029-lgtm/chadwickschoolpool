@@ -1,9 +1,26 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send, Link2, Settings, GraduationCap, Calendar, MessageSquarePlus } from "lucide-react";
+import {
+  Menu,
+  Car,
+  User,
+  Users as UsersIcon,
+  Home,
+  Radio,
+  Plus,
+  MessageSquare,
+  MapPin,
+  Send,
+  Link2,
+  Settings,
+  GraduationCap,
+  Calendar,
+  MessageSquarePlus,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,8 +139,9 @@ const TabNavigation = () => {
             </DropdownMenu>
           </div>
 
-          {/* Right side - Account Badge & Notifications */}
+          {/* Right side - Theme Toggle, Account Badge & Notifications */}
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             {user && accountType && (
               <Badge
                 variant={accountType === "student" ? "secondary" : "default"}
