@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send, Link2, Settings, GraduationCap, Calendar } from "lucide-react";
+import { Menu, Car, User, Users as UsersIcon, Home, Radio, Plus, MessageSquare, MapPin, Send, Link2, Settings, GraduationCap, Calendar, MessageSquarePlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import {
@@ -40,6 +40,7 @@ const TabNavigation = () => {
     { label: "Profile", path: "/profile", icon: User },
     { label: "Conversations", path: "/conversations", icon: MessageSquare },
     { label: "Family Links", path: "/family-links", icon: UsersIcon },
+    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
@@ -49,6 +50,7 @@ const TabNavigation = () => {
   // Student menu items - restricted
   const studentMenuItems = [
     { label: "Profile", path: "/profile", icon: User },
+    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
     { label: "Settings", path: "/settings", icon: Settings },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
