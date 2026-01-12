@@ -141,6 +141,7 @@ const Navigation = () => {
     { label: "Safety", path: "/safety" },
     { label: "How It Works", path: "/how-it-works" },
     { label: "Help Center", path: "/help" },
+    { label: "Give Feedback", path: "/feedback" },
     { label: "Privacy Policy", path: "/privacy" },
     { label: "Settings", path: "/settings", authRequired: true },
   ];

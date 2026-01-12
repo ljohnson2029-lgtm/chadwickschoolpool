@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageSquare } from "lucide-react";
 import TestDataGenerator from "@/components/TestDataGenerator";
 import PrivacySettings from "@/components/PrivacySettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
@@ -44,6 +46,27 @@ const Settings = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">More settings coming soon...</p>
+            </CardContent>
+          </Card>
+
+          {/* Feedback */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Feedback
+              </CardTitle>
+              <CardDescription>
+                Help us improve Chadwick SchoolPool
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Found a bug or have a suggestion? We'd love to hear from you!
+              </p>
+              <Button asChild>
+                <Link to="/feedback">Send Feedback</Link>
+              </Button>
             </CardContent>
           </Card>
 

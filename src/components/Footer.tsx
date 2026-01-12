@@ -65,6 +65,12 @@ const Footer = () => {
               >
                 Safety
               </Link>
+              <Link 
+                to="/feedback" 
+                className="block text-background/80 hover:text-background transition-colors"
+              >
+                Send Feedback
+              </Link>
             </div>
           </div>
         </div>
