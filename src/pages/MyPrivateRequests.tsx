@@ -203,18 +203,22 @@ const MyPrivateRequests = () => {
   };
 
   const handleCancelRequest = async (requestId: string) => {
+    // Delete the request entirely so it disappears from the list
     const { error } = await supabase
       .from('private_ride_requests')
-      .update({ status: 'cancelled' })
-      .eq('id', requestId);
+      .delete()
+      .eq('id', requestId)
+      .eq('sender_id', user?.id);
 
     if (error) {
+      console.error('Delete error:', error);
       toast.error('Failed to cancel request');
       return;
     }
 
-    toast.success('Request cancelled');
-    fetchRequests();
+    // Remove from local state immediately for instant UI feedback
+    setSentRequests(prev => prev.filter(r => r.id !== requestId));
+    toast.success('Request cancelled and removed');
   };
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
