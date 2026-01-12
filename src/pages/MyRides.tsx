@@ -217,20 +217,16 @@ const MyRides = () => {
     setDeleteLoading(true);
     console.log('Deleting ride:', rideToDelete, 'for user:', user.id);
     
-    const { data, error } = await supabase
+    // Actually delete the ride from the database
+    const { error } = await supabase
       .from('rides')
-      .update({ status: 'cancelled' })
+      .delete()
       .eq('id', rideToDelete)
-      .eq('user_id', user.id)
-      .select();
-
-    console.log('Delete result:', { data, error });
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Delete error:', error);
       toast.error('Failed to delete ride: ' + error.message);
-    } else if (!data || data.length === 0) {
-      toast.error('No ride was updated - you may not have permission');
     } else {
       toast.success('Ride deleted successfully');
       fetchBroadcastRides();
@@ -244,26 +240,25 @@ const MyRides = () => {
     if (!selectedRequest) return;
 
     setActionLoading(true);
+    
+    // Notify the recipient before deleting
+    await supabase.from('notifications').insert({
+      user_id: selectedRequest.recipient_id,
+      type: 'private_request_cancelled',
+      message: `${profile?.first_name} ${profile?.last_name} cancelled their ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
+      is_read: false
+    });
+
+    // Actually delete the request from the database
     const { error } = await supabase
       .from('private_ride_requests')
-      .update({
-        status: 'cancelled',
-        responded_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', selectedRequest.id);
 
     if (error) {
       toast.error('Failed to cancel request');
     } else {
-      // Notify the recipient
-      await supabase.from('notifications').insert({
-        user_id: selectedRequest.recipient_id,
-        type: 'private_request_cancelled',
-        message: `${profile?.first_name} ${profile?.last_name} cancelled their ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
-        is_read: false
-      });
-
-      toast.success('Request cancelled');
+      toast.success('Request cancelled and removed');
       fetchPrivateRequests();
     }
     setActionLoading(false);
