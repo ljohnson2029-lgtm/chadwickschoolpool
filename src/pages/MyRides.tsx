@@ -584,10 +584,6 @@ const MyRides = () => {
                 icon={Send}
                 title="No Sent Requests"
                 description="You haven't sent any private ride requests yet"
-                action={{
-                  label: "Find Parents on Map",
-                  onClick: () => navigate('/map/find-parents')
-                }}
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
