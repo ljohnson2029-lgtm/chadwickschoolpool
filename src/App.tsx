@@ -38,6 +38,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Help = lazy(() => import("./pages/Help"));
 const Feedback = lazy(() => import("./pages/Feedback"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
 // Loading component for lazy loaded pages
 const PageLoader = () => (
@@ -110,6 +111,9 @@ const AppRoutes = () => {
         <Route path="/requests/private" element={
           <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
         } />
+        
+        {/* Public profile view */}
+        <Route path="/profile/:userId" element={<PublicProfile />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>
