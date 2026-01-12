@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import SignupWaiverCheckboxes from "@/components/SignupWaiverCheckboxes";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -31,6 +32,11 @@ const Register = () => {
   const [usernameHint, setUsernameHint] = useState('');
   const [isStudentEmail, setIsStudentEmail] = useState(false);
   const [userType, setUserType] = useState<'parent' | 'staff'>('parent');
+  
+  // Waiver checkboxes state
+  const [insuranceAgreed, setInsuranceAgreed] = useState(false);
+  const [safetyAgreed, setSafetyAgreed] = useState(false);
+  const [liabilityAgreed, setLiabilityAgreed] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -139,6 +145,16 @@ const Register = () => {
 
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate waivers are agreed (only for parent/staff accounts)
+    if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
+      toast({
+        title: "Agreement Required",
+        description: "Please read and agree to all the required waivers before creating your account.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (password !== confirmPassword) {
       toast({
@@ -674,6 +690,19 @@ const Register = () => {
                   disabled={loading}
                 />
               </div>
+
+              {/* Waiver Checkboxes - Only for parent/staff accounts */}
+              {!isStudentEmail && (
+                <SignupWaiverCheckboxes
+                  insuranceAgreed={insuranceAgreed}
+                  safetyAgreed={safetyAgreed}
+                  liabilityAgreed={liabilityAgreed}
+                  onInsuranceChange={setInsuranceAgreed}
+                  onSafetyChange={setSafetyAgreed}
+                  onLiabilityChange={setLiabilityAgreed}
+                  disabled={loading}
+                />
+              )}
 
               <LoadingButton 
                 type="submit" 
