@@ -51,18 +51,20 @@ const RideUserBadge = ({
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const safeUsername = (username || "User").trim() || "User";
+
   const getInitials = () => {
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
-    return username.substring(0, 2).toUpperCase();
+    return safeUsername.substring(0, 2).toUpperCase();
   };
 
   const getDisplayName = () => {
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
     }
-    return username;
+    return safeUsername;
   };
 
   const handleViewProfile = () => {
@@ -89,50 +91,60 @@ const RideUserBadge = ({
   if (variant === 'compact') {
     return (
       <>
-        <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button 
-                onClick={handleViewProfile}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback 
-                    className={accountType === 'parent' 
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 text-xs'
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 text-xs'
-                    }
-                  >
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-medium text-sm">{getDisplayName()}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>View {accountType === 'parent' ? 'parent' : 'student'} profile</p>
-            </TooltipContent>
-          </Tooltip>
-          <Badge 
-            variant={accountType === 'student' ? 'secondary' : 'default'}
-            className={`text-xs gap-1 ${
-              accountType === 'student' 
-                ? 'bg-blue-500/10 text-blue-600' 
-                : 'bg-green-500/10 text-green-600'
-            }`}
-          >
-            {accountType === 'student' ? (
-              <GraduationCap className="h-3 w-3" />
-            ) : (
-              <Users className="h-3 w-3" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleViewProfile}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback
+                      className={accountType === 'parent'
+                        ? 'bg-primary/10 text-primary text-xs'
+                        : 'bg-secondary/20 text-secondary-foreground text-xs'
+                      }
+                    >
+                      {getInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-sm">{getDisplayName()}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View {accountType === 'parent' ? 'parent' : 'student'} profile</p>
+              </TooltipContent>
+            </Tooltip>
+            <Badge
+              variant={accountType === 'student' ? 'secondary' : 'default'}
+              className="text-xs gap-1"
+            >
+              {accountType === 'student' ? (
+                <GraduationCap className="h-3 w-3" />
+              ) : (
+                <Users className="h-3 w-3" />
+              )}
+              {accountType === 'student' ? 'Student' : 'Parent'}
+            </Badge>
+            {isCurrentUser && (
+              <Badge variant="outline" className="text-xs">You</Badge>
             )}
-            {accountType === 'student' ? 'Student' : 'Parent'}
-          </Badge>
-          {isCurrentUser && (
-            <Badge variant="outline" className="text-xs">You</Badge>
+          </div>
+
+          {showViewButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleViewProfile}
+              className="gap-1"
+            >
+              <Eye className="h-4 w-4" />
+              View
+            </Button>
           )}
         </div>
-        
+
         {accountType === 'parent' && (
           <ParentProfileSheet
             open={sheetOpen}

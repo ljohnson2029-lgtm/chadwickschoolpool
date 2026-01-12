@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Mail, Phone, MapPin, Users, Hand, Car } from "lucide-react";
+import { X, Mail, Phone, MapPin, Users, Hand, Car, ShieldCheck } from "lucide-react";
+import { isStudent as checkIsStudent } from "@/lib/permissions";
 
 interface ParentProfilePopupProps {
   parentId: string;
@@ -21,6 +22,9 @@ interface ParentProfile {
   last_name: string | null;
   home_address: string | null;
   phone_number: string | null;
+  share_phone: boolean;
+  share_email: boolean;
+  email: string | null;
   created_at: string;
 }
 
@@ -31,13 +35,33 @@ const ParentProfilePopup = ({
   onRequestRide,
   onOfferRide,
 }: ParentProfilePopupProps) => {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ParentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [linkedStudentsCount, setLinkedStudentsCount] = useState(0);
+  const [viewerIsStudent, setViewerIsStudent] = useState(false);
+
+  useEffect(() => {
+    const fetchViewerRole = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data?.email) {
+        setViewerIsStudent(checkIsStudent(data.email));
+      }
+    };
+
+    fetchViewerRole();
+  }, [user]);
 
   useEffect(() => {
     fetchParentProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentId]);
 
   const fetchParentProfile = async () => {
@@ -45,7 +69,7 @@ const ParentProfilePopup = ({
     setError(false);
 
     try {
-      // Use edge function to fetch profile (bypasses RLS)
+      // Backend function fetch (bypasses RLS) — UI enforces privacy
       const { data, error: fetchError } = await supabase.functions.invoke('get-parent-profile', {
         body: { parentId },
       });
@@ -60,9 +84,11 @@ const ParentProfilePopup = ({
         last_name: data.profile.last_name,
         home_address: data.profile.home_address,
         phone_number: data.profile.phone_number,
+        share_phone: data.profile.share_phone ?? false,
+        share_email: data.profile.share_email ?? false,
+        email: data.profile.email ?? null,
         created_at: data.profile.created_at,
-        email: data.profile.email,
-      } as any);
+      });
 
       setLinkedStudentsCount(data.profile.linked_students_count || 0);
     } catch (err) {
@@ -71,13 +97,6 @@ const ParentProfilePopup = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    return username.substring(0, 2).toUpperCase();
   };
 
   const getDisplayName = () => {
@@ -92,14 +111,6 @@ const ParentProfilePopup = ({
     if (!profile) return '';
     return profile.first_name || profile.username;
   };
-
-  const formatAddress = (address: string | null) => {
-    if (!address) return 'Address not shared';
-    // Show only first line (street and number)
-    const parts = address.split(',');
-    return parts.slice(0, 2).join(',');
-  };
-
 
   if (loading) {
     return (
@@ -154,10 +165,12 @@ const ParentProfilePopup = ({
     );
   }
 
+  const showEmail = !viewerIsStudent && profile.share_email && !!profile.email;
+  const showPhone = !viewerIsStudent && profile.share_phone && !!profile.phone_number;
+
   return (
     <Card className="w-full bg-background/95 backdrop-blur-sm shadow-xl animate-scale-in">
       <CardHeader className="relative pb-2 pt-4 px-4">
-        {/* Close Button */}
         <Button
           variant="ghost"
           size="icon"
@@ -168,39 +181,44 @@ const ParentProfilePopup = ({
           <X className="h-4 w-4" />
         </Button>
 
-        {/* Profile Header - Compact */}
-        <div className="flex items-center gap-3 pr-6">
-          <Avatar className="h-11 w-11 border-2 border-white shadow-md flex-shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm">
-              {getInitials(profile.first_name, profile.last_name, profile.username)}
-            </AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold truncate">{getDisplayName()}</h3>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 flex-shrink-0" />
-              <span className="font-medium text-primary">{distance.toFixed(1)} mi</span>
-              <span>from route</span>
-            </div>
+        <div className="pr-6">
+          <h3 className="text-base font-bold truncate">{getDisplayName()}</h3>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="font-medium text-primary">{distance.toFixed(1)} mi</span>
+            <span>from route</span>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-3 px-4 pb-4 pt-0">
-        {/* Contact Info - Compact */}
+        {/* Contact Info (parent-only) */}
         <div className="space-y-1.5 py-2 border-t border-b text-xs">
-          {(profile as any).email && (
+          {viewerIsStudent && (
+            <div className="flex items-start gap-2 text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 mt-0.5" />
+              <span>Contact info is hidden for student accounts. Ask your parent to connect.</span>
+            </div>
+          )}
+
+          {showEmail ? (
             <a
-              href={`mailto:${(profile as any).email}?subject=Chadwick SchoolPool Carpool`}
+              href={`mailto:${profile.email}?subject=SchoolPool Carpool`}
               className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
             >
               <Mail className="h-3.5 w-3.5" />
-              <span className="truncate">{(profile as any).email}</span>
+              <span className="truncate">{profile.email}</span>
             </a>
+          ) : (
+            !viewerIsStudent && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-3.5 w-3.5" />
+                <span>Email not shared</span>
+              </div>
+            )
           )}
-          
-          {profile.phone_number && (
+
+          {showPhone ? (
             <a
               href={`tel:${profile.phone_number}`}
               className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
@@ -208,6 +226,13 @@ const ParentProfilePopup = ({
               <Phone className="h-3.5 w-3.5" />
               <span>{profile.phone_number}</span>
             </a>
+          ) : (
+            !viewerIsStudent && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Phone className="h-3.5 w-3.5" />
+                <span>Phone not shared</span>
+              </div>
+            )
           )}
 
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -220,25 +245,31 @@ const ParentProfilePopup = ({
           </div>
         </div>
 
-        {/* Action Buttons - Compact */}
-        <div className="space-y-2">
-          <Button
-            className="w-full gap-2 h-9 text-sm"
-            onClick={() => onRequestRide(parentId, getFirstName())}
-          >
-            <Hand className="h-3.5 w-3.5" />
-            Request Ride
-          </Button>
+        {/* Actions (parent-only) */}
+        {!viewerIsStudent ? (
+          <div className="space-y-2">
+            <Button
+              className="w-full gap-2 h-9 text-sm"
+              onClick={() => onRequestRide(parentId, getFirstName())}
+            >
+              <Hand className="h-3.5 w-3.5" />
+              Request Ride
+            </Button>
 
-          <Button
-            variant="outline"
-            className="w-full gap-2 h-9 text-sm"
-            onClick={() => onOfferRide(parentId, getFirstName())}
-          >
-            <Car className="h-3.5 w-3.5" />
-            Offer Ride
-          </Button>
-        </div>
+            <Button
+              variant="outline"
+              className="w-full gap-2 h-9 text-sm"
+              onClick={() => onOfferRide(parentId, getFirstName())}
+            >
+              <Car className="h-3.5 w-3.5" />
+              Offer Ride
+            </Button>
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            Ride requests/offers must be managed by a parent account.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
