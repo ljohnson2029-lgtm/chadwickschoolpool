@@ -95,6 +95,25 @@ const RideRequestForm = ({
       return;
     }
 
+    // Validate that addresses have been selected from autocomplete
+    if (!pickupCoords) {
+      toast({
+        title: "Invalid Pickup Location",
+        description: "Please select a pickup address from the suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dropoffCoords) {
+      toast({
+        title: "Invalid Dropoff Location",
+        description: "Please select a dropoff address from the suggestions",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
