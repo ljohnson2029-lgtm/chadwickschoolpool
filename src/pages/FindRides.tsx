@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import FindRidesMap from "@/components/FindRidesMap";
+import RideUserBadge from "@/components/RideUserBadge";
 import { isParent as checkIsParent, isStudent as checkIsStudent, getStudentPermissionError } from "@/lib/permissions";
 
 interface BroadcastRide {
@@ -232,20 +233,24 @@ const FindRides = () => {
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className={ride.type === 'request' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
-                {getInitials(ride.profiles?.first_name || null, ride.profiles?.last_name || null, ride.profiles?.username || '')}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-lg">
-                {ride.profiles?.first_name} {ride.profiles?.last_name}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">@{ride.profiles?.username}</p>
-            </div>
+          <div className="flex-1">
+            <RideUserBadge
+              userId={ride.user_id}
+              firstName={ride.profiles?.first_name || null}
+              lastName={ride.profiles?.last_name || null}
+              username={ride.profiles?.username || 'Unknown'}
+              accountType="parent"
+              email={ride.userEmail}
+              phoneNumber={ride.profiles?.phone_number}
+              shareEmail={ride.profiles?.share_email ?? false}
+              sharePhone={ride.profiles?.share_phone ?? false}
+              isCurrentUser={ride.user_id === user?.id}
+              viewerIsStudent={isUserStudent}
+              variant="full"
+              showViewButton={true}
+            />
           </div>
-          <Badge className={`gap-1 ${ride.type === 'request' ? 'bg-red-500' : 'bg-green-500'}`}>
+          <Badge className={`gap-1 ml-2 ${ride.type === 'request' ? 'bg-red-500' : 'bg-green-500'}`}>
             {ride.type === 'request' ? <Hand className="h-3 w-3" /> : <Car className="h-3 w-3" />}
             {ride.type === 'request' ? 'Request' : 'Offer'}
           </Badge>
@@ -277,20 +282,6 @@ const FindRides = () => {
             ? `${ride.seats_available} seats available`
             : `${ride.seats_needed} seats needed`}
         </div>
-
-        {/* Contact Info */}
-        {ride.profiles?.share_phone && ride.profiles?.phone_number && (
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            {ride.profiles.phone_number}
-          </div>
-        )}
-        {ride.profiles?.share_email && ride.userEmail && (
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            {ride.userEmail}
-          </div>
-        )}
 
         {ride.route_details && (
           <p className="text-sm text-muted-foreground pt-2 border-t">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Calendar, Clock, Users, User, Map, Radio } from "lucide-react";
+import RideUserBadge from "./RideUserBadge";
 
   interface Ride {
     id: string;
@@ -141,10 +143,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   };
 
   const RideCard = ({ ride }: { ride: Ride }) => {
-    const parentName = ride.profiles
-      ? `${ride.profiles.first_name || ""} ${ride.profiles.last_name || ""}`.trim() || ride.profiles.username
-      : "Unknown";
-
     const isOwnRide = ride.user_id === user?.id;
     const showParentBadge = userRole === 'student' && !isOwnRide;
 
@@ -152,8 +150,18 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-lg">{parentName}</CardTitle>
+            <div className="flex-1">
+              {/* Clickable user profile */}
+              <RideUserBadge
+                userId={ride.user_id}
+                firstName={ride.profiles?.first_name || null}
+                lastName={ride.profiles?.last_name || null}
+                username={ride.profiles?.username || 'Unknown'}
+                accountType="parent"
+                isCurrentUser={isOwnRide}
+                viewerIsStudent={userRole === 'student'}
+                variant="compact"
+              />
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant={ride.type === "offer" ? "default" : "secondary"}>
                   {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
@@ -168,11 +176,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                   <Badge variant="outline" className="gap-1">
                     <User className="h-3 w-3" />
                     Direct
-                  </Badge>
-                )}
-                {showParentBadge && (
-                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
-                    Created by {parentName}
                   </Badge>
                 )}
               </div>
