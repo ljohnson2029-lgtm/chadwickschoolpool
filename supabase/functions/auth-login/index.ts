@@ -38,23 +38,44 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Find user by username or email
-    // Query for username match OR email match (email comparison is case-insensitive)
-    // Use sanitizedInput to prevent filter injection attacks
-    const { data: users, error: queryError } = await supabase
+    // Find user by username or email using separate queries to prevent filter injection
+    // First try username match
+    let user = null;
+    const { data: usernameUsers, error: usernameError } = await supabase
       .from('users')
       .select('*')
-      .or(`username.eq.${sanitizedInput},email.eq.${sanitizedInput.toLowerCase()}`);
+      .eq('username', sanitizedInput)
+      .limit(1);
 
-    if (queryError) {
-      console.error('Database query error:', queryError);
+    if (usernameError) {
+      console.error('Database query error:', usernameError);
       return new Response(
         JSON.stringify({ error: 'Database error occurred' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const user = users && users.length > 0 ? users[0] : null;
+    if (usernameUsers && usernameUsers.length > 0) {
+      user = usernameUsers[0];
+    } else {
+      // If no username match, try email match (case-insensitive)
+      const { data: emailUsers, error: emailError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', sanitizedInput.toLowerCase())
+        .limit(1);
+
+      if (emailError) {
+        console.error('Database query error:', emailError);
+        return new Response(
+          JSON.stringify({ error: 'Database error occurred' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      user = emailUsers && emailUsers.length > 0 ? emailUsers[0] : null;
+    }
+
 
     if (!user) {
       console.log('User not found for:', usernameOrEmail);
