@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
-import RidesList from "@/components/RidesList";
+import RidesList, { type Ride } from "@/components/RidesList";
 import FindRidesMap from "@/components/FindRidesMap";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
@@ -28,6 +28,12 @@ const FamilyCarpools = () => {
   const [isUserStudent, setIsUserStudent] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
+  const [focusRide, setFocusRide] = useState<{
+    id: string;
+    pickup_latitude: number | null;
+    pickup_longitude: number | null;
+    pickup_location: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -60,6 +66,17 @@ const FamilyCarpools = () => {
     setRefreshKey((prev) => prev + 1);
     setShowRequestDialog(false);
     setShowOfferDialog(false);
+  };
+
+  const handleViewOnMap = (ride: Ride) => {
+    // Switch to map view and focus on the ride
+    setViewMode('map');
+    setFocusRide({
+      id: ride.id,
+      pickup_latitude: (ride as any).pickup_latitude || null,
+      pickup_longitude: (ride as any).pickup_longitude || null,
+      pickup_location: ride.pickup_location
+    });
   };
 
   if (loading || roleLoading || !user || !profile) {
@@ -197,12 +214,14 @@ const FamilyCarpools = () => {
               showOffers={showOffers}
               onToggleRequests={setShowRequests}
               onToggleOffers={setShowOffers}
+              focusRide={focusRide}
+              onFocusRideHandled={() => setFocusRide(null)}
             />
           )}
 
           {/* List View */}
           {viewMode === 'list' && (
-            <RidesList key={refreshKey} />
+            <RidesList key={refreshKey} onViewOnMap={handleViewOnMap} />
           )}
         </div>
 

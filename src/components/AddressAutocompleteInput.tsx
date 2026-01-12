@@ -26,6 +26,7 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<{ lat: number; lng: number } | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -50,17 +51,23 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
   const fetchSuggestions = async (query: string) => {
     if (!query.trim() || query.length < 3) {
       setSuggestions([]);
+      setFetchError(null);
       return;
     }
 
     setIsLoading(true);
+    setFetchError(null);
+    
     try {
-      // Get Mapbox token from environment or fetch from edge function
-      const tokenResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-mapbox-token`);
-      const { token } = await tokenResponse.json();
-
+      // Use Nominatim (OpenStreetMap) for geocoding - no auth required
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=5&types=address,place`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'ChadwickCarpools/1.0'
+          }
+        }
       );
 
       if (!response.ok) {
@@ -68,15 +75,24 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
       }
 
       const data = await response.json();
-      setSuggestions(data.features || []);
+      console.log('Nominatim response:', data);
+      
+      // Transform Nominatim format to our format
+      const formattedSuggestions: AddressSuggestion[] = data.map((item: any) => ({
+        place_name: item.display_name,
+        center: [parseFloat(item.lon), parseFloat(item.lat)] as [number, number]
+      }));
+      
+      setSuggestions(formattedSuggestions);
       setShowSuggestions(true);
+      
+      if (formattedSuggestions.length === 0) {
+        setFetchError('No addresses found. Try a different search.');
+      }
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch address suggestions",
-        variant: "destructive"
-      });
+      setFetchError('Unable to find address suggestions. Please try again.');
+      setSuggestions([]);
     } finally {
       setIsLoading(false);
     }
@@ -160,8 +176,15 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
         </div>
       )}
 
+      {/* Error message */}
+      {fetchError && !isLoading && (
+        <p className="text-xs text-destructive mt-1">
+          {fetchError}
+        </p>
+      )}
+
       {/* Validation message */}
-      {required && inputValue && !selectedAddress && (
+      {required && inputValue && !selectedAddress && !fetchError && (
         <p className="text-xs text-muted-foreground mt-1">
           Please select an address from the suggestions
         </p>

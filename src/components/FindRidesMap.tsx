@@ -48,6 +48,13 @@ interface FindRidesMapProps {
   showOffers: boolean;
   onToggleRequests: (value: boolean) => void;
   onToggleOffers: (value: boolean) => void;
+  focusRide?: {
+    id: string;
+    pickup_latitude: number | null;
+    pickup_longitude: number | null;
+    pickup_location: string;
+  } | null;
+  onFocusRideHandled?: () => void;
 }
 
 const FindRidesMap: React.FC<FindRidesMapProps> = ({ 
@@ -55,7 +62,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   showRequests,
   showOffers,
   onToggleRequests,
-  onToggleOffers
+  onToggleOffers,
+  focusRide,
+  onFocusRideHandled
 }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -306,6 +315,40 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
     addMarkers();
   }, [rides, showRequests, showOffers, profile, mapboxToken]);
+
+  // Handle focus on a specific ride from list view
+  useEffect(() => {
+    if (!focusRide || !map.current) return;
+
+    const focusOnRide = async () => {
+      // Find the ride in our rides array
+      const ride = rides.find(r => r.id === focusRide.id);
+      if (ride) {
+        setSelectedRide(ride);
+      }
+
+      // Get coordinates to center on
+      let coords: [number, number] | null = null;
+      if (focusRide.pickup_latitude && focusRide.pickup_longitude) {
+        coords = [focusRide.pickup_longitude, focusRide.pickup_latitude];
+      } else if (focusRide.pickup_location) {
+        coords = await geocodeAddress(focusRide.pickup_location);
+      }
+
+      if (coords && map.current) {
+        map.current.flyTo({
+          center: coords,
+          zoom: 14,
+          duration: 1500
+        });
+      }
+
+      // Clear the focus after handling
+      onFocusRideHandled?.();
+    };
+
+    focusOnRide();
+  }, [focusRide, rides, onFocusRideHandled]);
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) {
