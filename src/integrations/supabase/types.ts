@@ -391,6 +391,7 @@ export type Database = {
           created_at: string | null
           id: string
           message: string | null
+          read_at: string | null
           recipient_id: string
           ride_id: string
           sender_id: string
@@ -401,6 +402,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string | null
+          read_at?: string | null
           recipient_id: string
           ride_id: string
           sender_id: string
@@ -411,6 +413,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string | null
+          read_at?: string | null
           recipient_id?: string
           ride_id?: string
           sender_id?: string
