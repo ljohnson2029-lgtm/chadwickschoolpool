@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, GraduationCap } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-
+import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 interface Child {
   id?: string;
   name: string;
@@ -29,6 +30,7 @@ const ProfileSetup = () => {
   const [carMake, setCarMake] = useState("");
   const [carModel, setCarModel] = useState("");
   const [carSeats, setCarSeats] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
   const [children, setChildren] = useState<Child[]>([{ name: "", age: "", school: "" }]);
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +48,12 @@ const ProfileSetup = () => {
       setCarMake(profile.car_make || "");
       setCarModel(profile.car_model || "");
       setCarSeats(profile.car_seats?.toString() || "");
+      // Auto-set grade level for parents, or load existing value
+      if (profile.account_type === 'parent') {
+        setGradeLevel(profile.grade_level || PARENT_GRADE_LEVEL);
+      } else {
+        setGradeLevel(profile.grade_level || "");
+      }
       fetchChildren();
     }
   }, [profile]);
@@ -95,13 +103,33 @@ const ProfileSetup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !profile) return;
 
     // Validate that address has been geocoded
     if (homeAddress && !homeLatitude && !homeLongitude) {
       toast({
         title: "Invalid Address",
         description: "Please select an address from the suggestions",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate grade level is required
+    if (!gradeLevel) {
+      toast({
+        title: "Grade Level Required",
+        description: "Please select your grade level",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate students can't select Parent/Adult
+    if (profile.account_type === 'student' && gradeLevel === PARENT_GRADE_LEVEL) {
+      toast({
+        title: "Invalid Grade Level",
+        description: "Students must select their actual grade level",
         variant: "destructive"
       });
       return;
@@ -120,6 +148,7 @@ const ProfileSetup = () => {
           car_make: carMake,
           car_model: carModel,
           car_seats: carSeats ? parseInt(carSeats) : null,
+          grade_level: gradeLevel,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -188,6 +217,34 @@ const ProfileSetup = () => {
               <CardTitle>Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="gradeLevel" className="flex items-center gap-2">
+                  <GraduationCap className="h-4 w-4" />
+                  Grade Level <span className="text-destructive">*</span>
+                </Label>
+                {profile?.account_type === 'parent' ? (
+                  <div className="mt-2 p-3 bg-muted rounded-md text-sm">
+                    <span className="font-medium">{PARENT_GRADE_LEVEL}</span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Automatically set for parent accounts
+                    </p>
+                  </div>
+                ) : (
+                  <Select value={gradeLevel} onValueChange={setGradeLevel}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select your grade level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADE_LEVELS.map((grade) => (
+                        <SelectItem key={grade} value={grade}>
+                          {grade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
               <div>
                 <Label htmlFor="homeAddress">Home Address</Label>
                 <AddressAutocompleteInput
