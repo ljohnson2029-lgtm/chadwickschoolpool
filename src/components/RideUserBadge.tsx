@@ -21,6 +21,7 @@ interface RideUserBadgeProps {
   phoneNumber?: string | null;
   shareEmail?: boolean;
   sharePhone?: boolean;
+  gradeLevel?: string | null;
   isCurrentUser?: boolean;
   viewerIsStudent?: boolean;
   variant?: 'compact' | 'full';
@@ -40,6 +41,7 @@ const RideUserBadge = ({
   phoneNumber,
   shareEmail = false,
   sharePhone = false,
+  gradeLevel,
   isCurrentUser = false,
   viewerIsStudent = false,
   variant = 'compact',
@@ -125,7 +127,7 @@ const RideUserBadge = ({
               ) : (
                 <Users className="h-3 w-3" />
               )}
-              {accountType === 'student' ? 'Student' : 'Parent'}
+              {gradeLevel || (accountType === 'student' ? 'Student' : 'Parent')}
             </Badge>
             {isCurrentUser && (
               <Badge variant="outline" className="text-xs">You</Badge>
@@ -207,7 +209,7 @@ const RideUserBadge = ({
               ) : (
                 <Users className="h-3 w-3" />
               )}
-              {accountType === 'student' ? 'Student' : 'Parent'}
+              {gradeLevel || (accountType === 'student' ? 'Student' : 'Parent')}
             </Badge>
             {isCurrentUser && (
               <Badge variant="outline" className="text-xs">You</Badge>

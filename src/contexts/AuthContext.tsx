@@ -15,6 +15,7 @@ interface Profile {
   car_model: string | null;
   car_seats: number | null;
   account_type: 'parent' | 'student';
+  grade_level: string | null;
   created_at: string;
   updated_at: string;
 }

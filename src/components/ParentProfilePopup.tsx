@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Mail, Phone, MapPin, Users, Hand, Car, ShieldCheck } from "lucide-react";
+import { X, Mail, Phone, MapPin, Users, Hand, Car, ShieldCheck, GraduationCap } from "lucide-react";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 
 interface ParentProfilePopupProps {
@@ -25,6 +25,7 @@ interface ParentProfile {
   share_phone: boolean;
   share_email: boolean;
   email: string | null;
+  grade_level: string | null;
   created_at: string;
 }
 
@@ -87,6 +88,7 @@ const ParentProfilePopup = ({
         share_phone: data.profile.share_phone ?? false,
         share_email: data.profile.share_email ?? false,
         email: data.profile.email ?? null,
+        grade_level: data.profile.grade_level ?? null,
         created_at: data.profile.created_at,
       });
 
@@ -233,6 +235,13 @@ const ParentProfilePopup = ({
                 <span>Phone not shared</span>
               </div>
             )
+          )}
+
+          {profile.grade_level && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>{profile.grade_level}</span>
+            </div>
           )}
 
           <div className="flex items-center gap-2 text-muted-foreground">

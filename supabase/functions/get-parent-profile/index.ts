@@ -53,7 +53,7 @@ serve(async (req) => {
     // Fetch profile data
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("id, username, first_name, last_name, home_address, phone_number, created_at, account_type")
+      .select("id, username, first_name, last_name, home_address, phone_number, created_at, account_type, grade_level, share_phone, share_email")
       .eq("id", parentId)
       .eq("account_type", "parent")
       .single();

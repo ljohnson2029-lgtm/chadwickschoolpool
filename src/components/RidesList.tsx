@@ -27,6 +27,7 @@ import RideUserBadge from "./RideUserBadge";
       first_name: string | null;
       last_name: string | null;
       username: string;
+      grade_level: string | null;
     } | null;
   }
 
@@ -108,7 +109,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         (data || []).map(async (ride) => {
           const { data: profileData } = await (supabase as any)
             .from("profiles")
-            .select("first_name, last_name, username")
+            .select("first_name, last_name, username, grade_level")
             .eq("id", ride.user_id)
             .maybeSingle();
 
@@ -157,6 +158,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 firstName={ride.profiles?.first_name || null}
                 lastName={ride.profiles?.last_name || null}
                 username={ride.profiles?.username || 'Unknown'}
+                gradeLevel={ride.profiles?.grade_level || null}
                 accountType="parent"
                 isCurrentUser={isOwnRide}
                 viewerIsStudent={userRole === 'student'}

@@ -208,6 +208,16 @@ const Profile = () => {
                 </div>
               )}
 
+              {profile.grade_level && (
+                <div className="flex items-center gap-3">
+                  <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Grade Level</p>
+                    <p className="font-medium">{profile.grade_level}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>

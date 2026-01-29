@@ -305,6 +305,7 @@ export type Database = {
           car_seats: number | null
           created_at: string
           first_name: string | null
+          grade_level: string | null
           home_address: string | null
           home_latitude: number | null
           home_longitude: number | null
@@ -325,6 +326,7 @@ export type Database = {
           car_seats?: number | null
           created_at?: string
           first_name?: string | null
+          grade_level?: string | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
@@ -345,6 +347,7 @@ export type Database = {
           car_seats?: number | null
           created_at?: string
           first_name?: string | null
+          grade_level?: string | null
           home_address?: string | null
           home_latitude?: number | null
           home_longitude?: number | null
