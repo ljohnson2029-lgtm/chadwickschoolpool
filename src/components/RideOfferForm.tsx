@@ -13,7 +13,7 @@ import { AlertCircle, School } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import RideSafetyChecklist from "@/components/RideSafetyChecklist";
+
 
 interface RideOfferFormProps {
   onSuccess: () => void;
@@ -62,11 +62,6 @@ const RideOfferForm = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
 
-  // Safety checklist state
-  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
-  const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
-  const [carSeatsConfirmed, setCarSeatsConfirmed] = useState(false);
-  const [emergencyContactsConfirmed, setEmergencyContactsConfirmed] = useState(false);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -124,15 +119,6 @@ const RideOfferForm = ({
       return;
     }
 
-    // Validate safety checklist
-    if (!licenseConfirmed || !vehicleConfirmed || !carSeatsConfirmed || !emergencyContactsConfirmed) {
-      toast({
-        title: "Safety Confirmation Required",
-        description: "Please confirm all safety requirements before posting your ride offer",
-        variant: "destructive",
-      });
-      return;
-    }
 
     // Validate that addresses have been selected from autocomplete
     if (!pickupCoords) {
@@ -219,10 +205,6 @@ const RideOfferForm = ({
       setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
-      setLicenseConfirmed(false);
-      setVehicleConfirmed(false);
-      setCarSeatsConfirmed(false);
-      setEmergencyContactsConfirmed(false);
 
       onSuccess();
       
@@ -426,18 +408,6 @@ const RideOfferForm = ({
             )}
           </div>
 
-          {/* Safety Checklist */}
-          <RideSafetyChecklist
-            licenseConfirmed={licenseConfirmed}
-            vehicleConfirmed={vehicleConfirmed}
-            carSeatsConfirmed={carSeatsConfirmed}
-            emergencyContactsConfirmed={emergencyContactsConfirmed}
-            onLicenseChange={setLicenseConfirmed}
-            onVehicleChange={setVehicleConfirmed}
-            onCarSeatsChange={setCarSeatsConfirmed}
-            onEmergencyContactsChange={setEmergencyContactsConfirmed}
-            disabled={submitting}
-          />
 
           <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
