@@ -115,19 +115,36 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     const fetchRides = async () => {
       if (!user) return;
 
+      // Fetch ALL active rides (no date filter - show all for debugging)
       const { data: ridesData, error } = await supabase
         .from('rides')
         .select('*')
-        .eq('status', 'active')
-        .gte('ride_date', new Date().toISOString().split('T')[0]);
+        .eq('status', 'active');
 
       if (error) {
-        console.error('Error fetching rides:', error);
+        console.error('[FindRidesMap] Error fetching rides:', error);
         return;
       }
 
+      console.log('[FindRidesMap] Raw rides from DB:', ridesData?.length || 0, ridesData);
+
+      // Filter to show only rides with valid coordinates OR valid addresses
+      const ridesWithLocation = (ridesData || []).filter(ride => {
+        const hasPickupCoords = ride.pickup_latitude != null && ride.pickup_longitude != null;
+        const hasPickupAddress = ride.pickup_location && ride.pickup_location.trim() !== '';
+        const isValid = hasPickupCoords || hasPickupAddress;
+        
+        if (!isValid) {
+          console.log('[FindRidesMap] Filtering out ride (no location):', ride.id, ride);
+        }
+        
+        return isValid;
+      });
+
+      console.log('[FindRidesMap] Rides with valid location:', ridesWithLocation.length);
+
       // Get unique user IDs and fetch profiles
-      const userIds = [...new Set(ridesData?.map(r => r.user_id) || [])];
+      const userIds = [...new Set(ridesWithLocation.map(r => r.user_id) || [])];
       let profilesMap: Record<string, any> = {};
       let emailsMap: Record<string, string> = {};
       
@@ -158,12 +175,13 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         }
       }
 
-      const combinedData = (ridesData || []).map(ride => ({
+      const combinedData = ridesWithLocation.map(ride => ({
         ...ride,
         profile: profilesMap[ride.user_id] || null,
         userEmail: emailsMap[ride.user_id] || null
       }));
 
+      console.log('[FindRidesMap] Final combined rides:', combinedData.length);
       setRides(combinedData as Ride[]);
     };
 
@@ -225,9 +243,12 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     markersRef.current = [];
 
     const addMarkers = async () => {
+      const bounds = new mapboxgl.LngLatBounds();
+      let hasValidMarkers = false;
+
       // Add user's home marker (blue)
-      const userLat = (profile as any)?.home_latitude;
-      const userLng = (profile as any)?.home_longitude;
+      const userLat = profile?.home_latitude;
+      const userLng = profile?.home_longitude;
 
       if (profile?.home_address && userLat && userLng) {
         const el = document.createElement('div');
@@ -258,6 +279,8 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           .addTo(map.current!);
         
         markersRef.current.push(marker);
+        bounds.extend([userLng, userLat]);
+        hasValidMarkers = true;
       }
 
       // Add ride markers
@@ -265,16 +288,25 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
       );
 
+      console.log('[FindRidesMap] Filtering rides - showRequests:', showRequests, 'showOffers:', showOffers);
+      console.log('[FindRidesMap] Filtered rides count:', filteredRides.length);
+
       for (const ride of filteredRides) {
+        console.log('[FindRidesMap] Processing ride:', ride.id, 'type:', ride.type, 
+          'coords:', ride.pickup_latitude, ride.pickup_longitude);
+
         // Use stored coordinates if available, otherwise geocode
         let pickupCoord: [number, number] | null = null;
         if (ride.pickup_latitude && ride.pickup_longitude) {
           pickupCoord = [ride.pickup_longitude, ride.pickup_latitude];
-        } else {
+        } else if (ride.pickup_location) {
+          console.log('[FindRidesMap] Geocoding pickup for ride:', ride.id);
           pickupCoord = await geocodeAddress(ride.pickup_location);
         }
         
         if (pickupCoord) {
+          console.log('[FindRidesMap] Adding pickup marker for ride:', ride.id, 'at:', pickupCoord);
+          
           const isRequest = ride.type === 'request';
           const color = isRequest ? '#ef4444' : '#22c55e'; // Red for requests, Green for offers
           
@@ -294,13 +326,17 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
             .addTo(map.current!);
           
           markersRef.current.push(marker);
+          bounds.extend(pickupCoord);
+          hasValidMarkers = true;
+        } else {
+          console.log('[FindRidesMap] Failed to get pickup coords for ride:', ride.id);
         }
 
         // Add dropoff marker with different style
         let dropoffCoord: [number, number] | null = null;
         if (ride.dropoff_latitude && ride.dropoff_longitude) {
           dropoffCoord = [ride.dropoff_longitude, ride.dropoff_latitude];
-        } else {
+        } else if (ride.dropoff_location) {
           dropoffCoord = await geocodeAddress(ride.dropoff_location);
         }
 
@@ -322,8 +358,22 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
             .addTo(map.current!);
           
           markersRef.current.push(marker);
+          bounds.extend(dropoffCoord);
+          hasValidMarkers = true;
         }
       }
+
+      // Fit map to show all markers
+      if (hasValidMarkers && map.current && !bounds.isEmpty()) {
+        console.log('[FindRidesMap] Fitting bounds to show all markers');
+        map.current.fitBounds(bounds, {
+          padding: { top: 80, bottom: 80, left: 100, right: 100 },
+          maxZoom: 14,
+          duration: 1000
+        });
+      }
+
+      console.log('[FindRidesMap] Total markers added:', markersRef.current.length);
     };
 
     addMarkers();
