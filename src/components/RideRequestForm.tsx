@@ -21,7 +21,16 @@ interface RideRequestFormProps {
   prefillPickup?: string;
   prefillDropoff?: string;
   isBroadcast?: boolean;
+  prefillPickupCoords?: { lat: number; lng: number };
+  prefillDropoffCoords?: { lat: number; lng: number };
 }
+
+// Chadwick School coordinates
+const CHADWICK_SCHOOL = {
+  address: '26800 S Academy Dr, Palos Verdes Peninsula, CA 90274',
+  lat: 33.77667,
+  lng: -118.36111
+};
 
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
@@ -71,8 +80,20 @@ const RideRequestForm = ({
 
   // Pre-fill form when props are provided
   useEffect(() => {
-    if (prefillPickup) setPickupLocation(prefillPickup);
-    if (prefillDropoff) setDropoffLocation(prefillDropoff);
+    if (prefillPickup) {
+      setPickupLocation(prefillPickup);
+      // If it's Chadwick School, set the coordinates too
+      if (prefillPickup === CHADWICK_SCHOOL.address) {
+        setPickupCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+      }
+    }
+    if (prefillDropoff) {
+      setDropoffLocation(prefillDropoff);
+      // If it's Chadwick School, set the coordinates too
+      if (prefillDropoff === CHADWICK_SCHOOL.address) {
+        setDropoffCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+      }
+    }
   }, [prefillPickup, prefillDropoff]);
 
   const toggleDay = (day: string) => {

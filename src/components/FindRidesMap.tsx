@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, School, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
@@ -46,6 +47,14 @@ interface RideResponse {
   status: string;
 }
 
+// Chadwick School coordinates (verified)
+const CHADWICK_SCHOOL = {
+  name: 'Chadwick School',
+  address: '26800 S Academy Dr, Palos Verdes Peninsula, CA 90274',
+  lat: 33.77667,
+  lng: -118.36111
+};
+
 interface FindRidesMapProps {
   height?: string;
   showRequests: boolean;
@@ -61,7 +70,52 @@ interface FindRidesMapProps {
   onFocusRideHandled?: () => void;
 }
 
-const FindRidesMap: React.FC<FindRidesMapProps> = ({ 
+// Quick action component for school rides
+const QuickSchoolRideButtons: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Card className="absolute top-4 right-4 p-3 bg-background/95 backdrop-blur-sm">
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions</p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full gap-2 bg-orange-500 hover:bg-orange-600"
+              onClick={() => navigate('/post-ride?destination=chadwick')}
+            >
+              <School className="h-4 w-4" />
+              Ride to Chadwick
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Create a ride request or offer to Chadwick School</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => navigate('/post-ride?origin=chadwick')}
+            >
+              <School className="h-4 w-4" />
+              Ride from Chadwick
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Create a ride request or offer from Chadwick School</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </Card>
+  );
+};
+
+const FindRidesMap: React.FC<FindRidesMapProps> = ({
   height = '500px',
   showRequests,
   showOffers,
@@ -313,6 +367,37 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         bounds.extend([userLng, userLat]);
         hasValidMarkers = true;
       }
+
+      // Add Chadwick School marker (orange)
+      const schoolEl = document.createElement('div');
+      schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
+      schoolEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
+
+      const schoolPopupDiv = document.createElement('div');
+      schoolPopupDiv.className = 'p-2';
+      
+      const schoolTitle = document.createElement('p');
+      schoolTitle.className = 'font-semibold text-orange-600';
+      schoolTitle.textContent = CHADWICK_SCHOOL.name;
+      
+      const schoolAddress = document.createElement('p');
+      schoolAddress.className = 'text-sm text-gray-600';
+      schoolAddress.textContent = CHADWICK_SCHOOL.address;
+      
+      schoolPopupDiv.appendChild(schoolTitle);
+      schoolPopupDiv.appendChild(schoolAddress);
+      
+      const schoolPopup = new mapboxgl.Popup({ offset: 25 });
+      schoolPopup.setDOMContent(schoolPopupDiv);
+
+      const schoolMarker = new mapboxgl.Marker(schoolEl)
+        .setLngLat([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat])
+        .setPopup(schoolPopup)
+        .addTo(map.current!);
+      
+      markersRef.current.push(schoolMarker);
+      bounds.extend([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat]);
+      hasValidMarkers = true;
 
       // Add ride markers
       const filteredRides = rides.filter(r => 
@@ -583,6 +668,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
             <span>Your Home</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-white shadow" />
+            <span>Chadwick School</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow" />
             <span>Ride Requests</span>
           </div>
@@ -592,6 +681,11 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           </div>
         </div>
       </Card>
+
+      {/* Quick Actions - Ride to/from School */}
+      {isUserParent && (
+        <QuickSchoolRideButtons />
+      )}
 
       {/* Selected Ride Panel */}
       {selectedRide && (
