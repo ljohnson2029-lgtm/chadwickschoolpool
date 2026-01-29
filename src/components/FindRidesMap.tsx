@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, School, Plus } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
@@ -70,50 +69,6 @@ interface FindRidesMapProps {
   onFocusRideHandled?: () => void;
 }
 
-// Quick action component for school rides
-const QuickSchoolRideButtons: React.FC = () => {
-  const navigate = useNavigate();
-
-  return (
-    <Card className="absolute top-4 right-4 p-3 bg-background/95 backdrop-blur-sm">
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions</p>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="default"
-              className="w-full gap-2 bg-orange-500 hover:bg-orange-600"
-              onClick={() => navigate('/post-ride?destination=chadwick')}
-            >
-              <School className="h-4 w-4" />
-              Ride to Chadwick
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Create a ride request or offer to Chadwick School</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={() => navigate('/post-ride?origin=chadwick')}
-            >
-              <School className="h-4 w-4" />
-              Ride from Chadwick
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Create a ride request or offer from Chadwick School</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </Card>
-  );
-};
 
 const FindRidesMap: React.FC<FindRidesMapProps> = ({
   height = '500px',
@@ -682,10 +637,6 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         </div>
       </Card>
 
-      {/* Quick Actions - Ride to/from School */}
-      {isUserParent && (
-        <QuickSchoolRideButtons />
-      )}
 
       {/* Selected Ride Panel */}
       {selectedRide && (
