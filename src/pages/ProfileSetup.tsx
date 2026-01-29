@@ -3,15 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, GraduationCap } from "lucide-react";
 import Navigation from "@/components/Navigation";
-import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
+import ParentProfileForm from "@/components/profile/ParentProfileForm";
+import StudentProfileForm from "@/components/profile/StudentProfileForm";
+import { PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
+import { User, GraduationCap } from "lucide-react";
+
 interface Child {
   id?: string;
   name: string;
@@ -24,15 +22,30 @@ const ProfileSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Common fields
   const [homeAddress, setHomeAddress] = useState("");
   const [homeLatitude, setHomeLatitude] = useState<number | null>(null);
   const [homeLongitude, setHomeLongitude] = useState<number | null>(null);
+
+  // Parent-specific fields
   const [carMake, setCarMake] = useState("");
   const [carModel, setCarModel] = useState("");
+  const [carColor, setCarColor] = useState("");
+  const [licensePlate, setLicensePlate] = useState("");
   const [carSeats, setCarSeats] = useState("");
-  const [gradeLevel, setGradeLevel] = useState("");
   const [children, setChildren] = useState<Child[]>([{ name: "", age: "", school: "" }]);
+
+  // Student-specific fields
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [parentGuardianName, setParentGuardianName] = useState("");
+  const [parentGuardianPhone, setParentGuardianPhone] = useState("");
+  const [parentGuardianEmail, setParentGuardianEmail] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+
   const [saving, setSaving] = useState(false);
+
+  const isParent = profile?.account_type === 'parent';
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,25 +56,31 @@ const ProfileSetup = () => {
   useEffect(() => {
     if (profile) {
       setHomeAddress(profile.home_address || "");
-      setHomeLatitude((profile as any).home_latitude || null);
-      setHomeLongitude((profile as any).home_longitude || null);
-      setCarMake(profile.car_make || "");
-      setCarModel(profile.car_model || "");
-      setCarSeats(profile.car_seats?.toString() || "");
-      // Auto-set grade level for parents, or load existing value
-      if (profile.account_type === 'parent') {
-        setGradeLevel(profile.grade_level || PARENT_GRADE_LEVEL);
+      setHomeLatitude(profile.home_latitude || null);
+      setHomeLongitude(profile.home_longitude || null);
+
+      if (isParent) {
+        setCarMake(profile.car_make || "");
+        setCarModel(profile.car_model || "");
+        setCarColor(profile.car_color || "");
+        setLicensePlate(profile.license_plate || "");
+        setCarSeats(profile.car_seats?.toString() || "");
+        fetchChildren();
       } else {
         setGradeLevel(profile.grade_level || "");
+        setParentGuardianName(profile.parent_guardian_name || "");
+        setParentGuardianPhone(profile.parent_guardian_phone || "");
+        setParentGuardianEmail(profile.parent_guardian_email || "");
+        setEmergencyContactName(profile.emergency_contact_name || "");
+        setEmergencyContactPhone(profile.emergency_contact_phone || "");
       }
-      fetchChildren();
     }
-  }, [profile]);
+  }, [profile, isParent]);
 
   const fetchChildren = async () => {
     if (!user) return;
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("children")
       .select("*")
       .eq("user_id", user.id);
@@ -115,8 +134,8 @@ const ProfileSetup = () => {
       return;
     }
 
-    // Validate grade level is required
-    if (!gradeLevel) {
+    // Validate grade level for students
+    if (!isParent && !gradeLevel) {
       toast({
         title: "Grade Level Required",
         description: "Please select your grade level",
@@ -125,62 +144,67 @@ const ProfileSetup = () => {
       return;
     }
 
-    // Validate students can't select Parent/Adult
-    if (profile.account_type === 'student' && gradeLevel === PARENT_GRADE_LEVEL) {
-      toast({
-        title: "Invalid Grade Level",
-        description: "Students must select their actual grade level",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setSaving(true);
 
     try {
-      // Update profile
-      const { error: profileError } = await (supabase as any)
+      // Build update object based on account type
+      const updateData: Record<string, any> = {
+        home_address: homeAddress,
+        home_latitude: homeLatitude,
+        home_longitude: homeLongitude,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (isParent) {
+        updateData.car_make = carMake;
+        updateData.car_model = carModel;
+        updateData.car_color = carColor;
+        updateData.license_plate = licensePlate;
+        updateData.car_seats = carSeats ? parseInt(carSeats) : null;
+        updateData.grade_level = PARENT_GRADE_LEVEL;
+      } else {
+        updateData.grade_level = gradeLevel;
+        updateData.parent_guardian_name = parentGuardianName;
+        updateData.parent_guardian_phone = parentGuardianPhone;
+        updateData.parent_guardian_email = parentGuardianEmail;
+        updateData.emergency_contact_name = emergencyContactName;
+        updateData.emergency_contact_phone = emergencyContactPhone;
+      }
+
+      const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          home_address: homeAddress,
-          home_latitude: homeLatitude,
-          home_longitude: homeLongitude,
-          car_make: carMake,
-          car_model: carModel,
-          car_seats: carSeats ? parseInt(carSeats) : null,
-          grade_level: gradeLevel,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", user.id);
 
       if (profileError) throw profileError;
 
-      // Delete existing children and insert new ones
-      const { error: deleteError } = await (supabase as any)
-        .from("children")
-        .delete()
-        .eq("user_id", user.id);
-
-      if (deleteError) throw deleteError;
-
-      // Insert children
-      const validChildren = children.filter(child => 
-        child.name && child.age && child.school
-      );
-
-      if (validChildren.length > 0) {
-        const { error: childrenError } = await (supabase as any)
+      // Handle children for parent accounts
+      if (isParent) {
+        const { error: deleteError } = await supabase
           .from("children")
-          .insert(
-            validChildren.map(child => ({
-              user_id: user.id,
-              name: child.name,
-              age: parseInt(child.age),
-              school: child.school,
-            }))
-          );
+          .delete()
+          .eq("user_id", user.id);
 
-        if (childrenError) throw childrenError;
+        if (deleteError) throw deleteError;
+
+        const validChildren = children.filter(child => 
+          child.name && child.age && child.school
+        );
+
+        if (validChildren.length > 0) {
+          const { error: childrenError } = await supabase
+            .from("children")
+            .insert(
+              validChildren.map(child => ({
+                user_id: user.id,
+                name: child.name,
+                age: parseInt(child.age),
+                school: child.school,
+              }))
+            );
+
+          if (childrenError) throw childrenError;
+        }
       }
 
       toast({
@@ -208,154 +232,58 @@ const ProfileSetup = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">Profile Setup</h1>
+        <div className="flex items-center gap-3 mb-8">
+          {isParent ? (
+            <User className="h-8 w-8 text-primary" />
+          ) : (
+            <GraduationCap className="h-8 w-8 text-primary" />
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">Profile Setup</h1>
+            <p className="text-muted-foreground">
+              {isParent ? "Parent Account" : "Student Account"}
+            </p>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="gradeLevel" className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Grade Level <span className="text-destructive">*</span>
-                </Label>
-                {profile?.account_type === 'parent' ? (
-                  <div className="mt-2 p-3 bg-muted rounded-md text-sm">
-                    <span className="font-medium">{PARENT_GRADE_LEVEL}</span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Automatically set for parent accounts
-                    </p>
-                  </div>
-                ) : (
-                  <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select your grade level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRADE_LEVELS.map((grade) => (
-                        <SelectItem key={grade} value={grade}>
-                          {grade}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="homeAddress">Home Address</Label>
-                <AddressAutocompleteInput
-                  value={homeAddress}
-                  onAddressSelect={handleAddressSelect}
-                  placeholder="Start typing your address..."
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Select from suggestions to enable map features
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Car Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Car Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="carMake">Car Make</Label>
-                  <Input
-                    id="carMake"
-                    value={carMake}
-                    onChange={(e) => setCarMake(e.target.value)}
-                    placeholder="e.g., Toyota"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="carModel">Car Model</Label>
-                  <Input
-                    id="carModel"
-                    value={carModel}
-                    onChange={(e) => setCarModel(e.target.value)}
-                    placeholder="e.g., Camry"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="carSeats">Available Seats</Label>
-                <Input
-                  id="carSeats"
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={carSeats}
-                  onChange={(e) => setCarSeats(e.target.value)}
-                  placeholder="Number of seats available"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Children */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Children
-                <Button type="button" onClick={addChild} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Child
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {children.map((child, index) => (
-                <div key={index} className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label>Name</Label>
-                    <Input
-                      value={child.name}
-                      onChange={(e) => updateChild(index, "name", e.target.value)}
-                      placeholder="Child's name"
-                    />
-                  </div>
-                  <div className="w-24">
-                    <Label>Age</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="18"
-                      value={child.age}
-                      onChange={(e) => updateChild(index, "age", e.target.value)}
-                      placeholder="Age"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Label>School</Label>
-                    <Input
-                      value={child.school}
-                      onChange={(e) => updateChild(index, "school", e.target.value)}
-                      placeholder="School name"
-                    />
-                  </div>
-                  {children.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeChild(index)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          {isParent ? (
+            <ParentProfileForm
+              homeAddress={homeAddress}
+              onAddressSelect={handleAddressSelect}
+              carMake={carMake}
+              setCarMake={setCarMake}
+              carModel={carModel}
+              setCarModel={setCarModel}
+              carColor={carColor}
+              setCarColor={setCarColor}
+              licensePlate={licensePlate}
+              setLicensePlate={setLicensePlate}
+              carSeats={carSeats}
+              setCarSeats={setCarSeats}
+              children={children}
+              onAddChild={addChild}
+              onRemoveChild={removeChild}
+              onUpdateChild={updateChild}
+            />
+          ) : (
+            <StudentProfileForm
+              gradeLevel={gradeLevel}
+              setGradeLevel={setGradeLevel}
+              homeAddress={homeAddress}
+              onAddressSelect={handleAddressSelect}
+              parentGuardianName={parentGuardianName}
+              setParentGuardianName={setParentGuardianName}
+              parentGuardianPhone={parentGuardianPhone}
+              setParentGuardianPhone={setParentGuardianPhone}
+              parentGuardianEmail={parentGuardianEmail}
+              setParentGuardianEmail={setParentGuardianEmail}
+              emergencyContactName={emergencyContactName}
+              setEmergencyContactName={setEmergencyContactName}
+              emergencyContactPhone={emergencyContactPhone}
+              setEmergencyContactPhone={setEmergencyContactPhone}
+            />
+          )}
 
           <div className="flex gap-4">
             <Button type="submit" disabled={saving} className="flex-1">

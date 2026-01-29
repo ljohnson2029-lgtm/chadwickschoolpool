@@ -13,9 +13,17 @@ interface Profile {
   home_longitude: number | null;
   car_make: string | null;
   car_model: string | null;
+  car_color: string | null;
+  license_plate: string | null;
   car_seats: number | null;
   account_type: 'parent' | 'student';
   grade_level: string | null;
+  avatar_url: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  parent_guardian_name: string | null;
+  parent_guardian_phone: string | null;
+  parent_guardian_email: string | null;
   created_at: string;
   updated_at: string;
 }
