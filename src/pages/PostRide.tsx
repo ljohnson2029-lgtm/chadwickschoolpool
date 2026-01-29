@@ -1,17 +1,31 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Hand, Car } from "lucide-react";
+import { Hand, Car, School } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
+
+// Chadwick School address (matching FindRidesMap)
+const CHADWICK_SCHOOL_ADDRESS = '26800 S Academy Dr, Palos Verdes Peninsula, CA 90274';
 
 const PostRide = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Check for quick action params
+  const destination = searchParams.get('destination');
+  const origin = searchParams.get('origin');
+  
+  // Pre-fill based on query params
+  const prefillPickup = origin === 'chadwick' ? CHADWICK_SCHOOL_ADDRESS : undefined;
+  const prefillDropoff = destination === 'chadwick' ? CHADWICK_SCHOOL_ADDRESS : undefined;
+  const showSchoolInfo = destination === 'chadwick' || origin === 'chadwick';
 
   useEffect(() => {
     if (!loading && !user) {
@@ -47,6 +61,17 @@ const PostRide = () => {
           </p>
         </div>
 
+        {showSchoolInfo && (
+          <Alert className="mb-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+            <School className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800 dark:text-orange-200">
+              {destination === 'chadwick' 
+                ? 'Creating a ride to Chadwick School - destination has been pre-filled for you.'
+                : 'Creating a ride from Chadwick School - starting location has been pre-filled for you.'}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="request" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="request" className="gap-2">
@@ -70,6 +95,8 @@ const PostRide = () => {
               <RideRequestForm 
                 onSuccess={handleSuccess}
                 isBroadcast={true}
+                prefillPickup={prefillPickup}
+                prefillDropoff={prefillDropoff}
               />
             </Card>
           </TabsContent>
@@ -85,6 +112,8 @@ const PostRide = () => {
               <RideOfferForm 
                 onSuccess={handleSuccess}
                 isBroadcast={true}
+                prefillPickup={prefillPickup}
+                prefillDropoff={prefillDropoff}
               />
             </Card>
           </TabsContent>
