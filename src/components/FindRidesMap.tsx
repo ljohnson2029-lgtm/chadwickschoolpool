@@ -640,10 +640,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
       {/* Selected Ride Panel */}
       {selectedRide && (
-        <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl">
+        <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl z-50">
           <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
                 <RideUserBadge
                   userId={selectedRide.user_id}
                   firstName={selectedRide.profile?.first_name || null}
@@ -661,7 +661,15 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
                   distance={0}
                 />
               </div>
-              <div className="flex items-center gap-2 ml-2">
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => setSelectedRide(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
                 <Badge className={selectedRide.type === 'request' ? 'bg-red-500' : 'bg-green-500'}>
                   {selectedRide.type === 'request' ? (
                     <><Hand className="h-3 w-3 mr-1" /> Request</>
@@ -669,14 +677,6 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
                     <><Car className="h-3 w-3 mr-1" /> Offer</>
                   )}
                 </Badge>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => setSelectedRide(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </CardHeader>
