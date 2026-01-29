@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, School } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canRequestRide, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
@@ -251,7 +251,7 @@ const RideRequestForm = ({
       </CardHeader>
       <CardContent className="px-0 sm:px-6 pb-0 sm:pb-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="pickup" className="text-sm sm:text-base">Pickup Location</Label>
             <AddressAutocompleteInput
               value={pickupLocation}
@@ -262,9 +262,22 @@ const RideRequestForm = ({
               placeholder="Enter pickup address"
               required
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+              onClick={() => {
+                setPickupLocation(CHADWICK_SCHOOL.address);
+                setPickupCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+              }}
+            >
+              <School className="h-4 w-4" />
+              Pickup at Chadwick School
+            </Button>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="dropoff" className="text-sm sm:text-base">Dropoff Location</Label>
             <AddressAutocompleteInput
               value={dropoffLocation}
@@ -275,6 +288,19 @@ const RideRequestForm = ({
               placeholder="Enter dropoff address"
               required
             />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+              onClick={() => {
+                setDropoffLocation(CHADWICK_SCHOOL.address);
+                setDropoffCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+              }}
+            >
+              <School className="h-4 w-4" />
+              Dropoff at Chadwick School
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
