@@ -1,19 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Card, CardContent, CardHeader } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Switch } from './ui/switch';
-import { Label } from './ui/label';
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, MapPin, Users, Car, Hand, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
+import { JoinRideDialog, OfferRideDialog } from './ConfirmDialogs';
 
 interface Ride {
   id: string;
@@ -40,6 +39,11 @@ interface Ride {
     share_email?: boolean | null;
   };
   userEmail?: string;
+}
+
+interface RideResponse {
+  ride_id: string;
+  status: string;
 }
 
 interface FindRidesMapProps {
@@ -77,6 +81,13 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const [userEmail, setUserEmail] = useState<string>('');
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);
+  
+  // Track user's existing responses to rides
+  const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
+  const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Fetch user email and determine role
   useEffect(() => {
@@ -96,6 +107,26 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     };
     fetchUserInfo();
   }, [user]);
+
+  // Fetch user's existing ride responses
+  const fetchUserResponses = useCallback(async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('ride_conversations')
+      .select('ride_id, status')
+      .eq('sender_id', user.id);
+    
+    if (error) {
+      console.error('Error fetching user responses:', error);
+    } else {
+      setUserResponses(data || []);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserResponses();
+  }, [fetchUserResponses]);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -420,37 +451,78 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     return username.substring(0, 2).toUpperCase();
   };
 
-  const handleRespondToRide = async (ride: Ride) => {
-    if (!user) return;
+  // Get user's response status for a ride
+  const getUserResponseStatus = (rideId: string): string | null => {
+    const response = userResponses.find(r => r.ride_id === rideId);
+    return response?.status || null;
+  };
+
+  // Initiate response flow with confirmation dialog
+  const initiateRespondToRide = (ride: Ride) => {
+    setRespondingToRide(ride);
+    if (ride.type === 'offer') {
+      setShowJoinDialog(true);
+    } else {
+      setShowOfferDialog(true);
+    }
+  };
+
+  // Handle the actual response after confirmation
+  const handleConfirmResponse = async () => {
+    if (!user || !respondingToRide) return;
+    setActionLoading(true);
+
+    const ownerName = respondingToRide.profile?.first_name 
+      ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
+      : respondingToRide.profile?.username || 'the ride owner';
 
     try {
       const { error } = await supabase
         .from('ride_conversations')
         .insert({
-          ride_id: ride.id,
+          ride_id: respondingToRide.id,
           sender_id: user.id,
-          recipient_id: ride.user_id,
+          recipient_id: respondingToRide.user_id,
           status: 'pending',
-          message: ride.type === 'request' 
+          message: respondingToRide.type === 'request' 
             ? `I can help with your ride request!`
             : `I'd like to join your offered ride!`
         });
 
       if (error) {
+        console.error('Error responding to ride:', error);
         toast({
           title: "Error",
-          description: "Failed to respond to ride. Please try again.",
+          description: "Failed to send your request. Please try again.",
           variant: "destructive"
         });
         return;
       }
+
+      // Send notification to ride owner
+      try {
+        await supabase.functions.invoke('create-notification', {
+          body: {
+            userId: respondingToRide.user_id,
+            type: respondingToRide.type === 'request' ? 'ride_offer_received' : 'ride_join_request',
+            message: respondingToRide.type === 'request'
+              ? `${profile?.first_name || 'Someone'} offered to help with your ride request`
+              : `${profile?.first_name || 'Someone'} wants to join your ride`
+          }
+        });
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
       
       toast({
-        title: "Success!",
-        description: ride.type === 'request' 
-          ? "You've offered to help with this ride request!"
-          : "You've requested to join this ride!",
+        title: respondingToRide.type === 'request' ? "Offer Sent!" : "Request Sent!",
+        description: respondingToRide.type === 'request'
+          ? `Your ride offer was sent to ${ownerName}! They'll be notified and can accept or decline.`
+          : `Your join request was sent to ${ownerName}! They'll be notified and can approve or decline.`,
       });
+
+      // Refresh user responses to update button state
+      await fetchUserResponses();
       setSelectedRide(null);
     } catch (err) {
       toast({
@@ -458,6 +530,11 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         description: "An error occurred. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setActionLoading(false);
+      setShowJoinDialog(false);
+      setShowOfferDialog(false);
+      setRespondingToRide(null);
     }
   };
 
@@ -573,53 +650,123 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
             </div>
 
             {/* Action Button - Only for Parents */}
-            {isUserParent ? (
-              <Button 
-                className="w-full gap-2"
-                onClick={() => handleRespondToRide(selectedRide)}
-                disabled={selectedRide.user_id === user?.id}
-              >
-                {selectedRide.type === 'request' ? (
-                  <>
-                    <Car className="h-4 w-4" />
-                    I Can Help!
-                  </>
-                ) : (
-                  <>
-                    <Hand className="h-4 w-4" />
-                    I Need This!
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    className="w-full gap-2"
-                    disabled
-                    variant="secondary"
-                  >
-                    {selectedRide.type === 'request' ? (
-                      <>
-                        <Car className="h-4 w-4" />
-                        I Can Help!
-                      </>
-                    ) : (
-                      <>
-                        <Hand className="h-4 w-4" />
-                        I Need This!
-                      </>
-                    )}
+            {(() => {
+              const isOwnRide = selectedRide.user_id === user?.id;
+              const responseStatus = getUserResponseStatus(selectedRide.id);
+              const hasPendingResponse = responseStatus === 'pending';
+              const hasAcceptedResponse = responseStatus === 'accepted';
+              const hasDeclinedResponse = responseStatus === 'declined';
+
+              if (isOwnRide) {
+                return (
+                  <Button className="w-full gap-2" disabled variant="secondary">
+                    <CheckCircle className="h-4 w-4" />
+                    This is your ride
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Only parents can manage rides. Ask your parent for help.</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+                );
+              }
+
+              if (!isUserParent) {
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button className="w-full gap-2" disabled variant="secondary">
+                        {selectedRide.type === 'request' ? (
+                          <>
+                            <Car className="h-4 w-4" />
+                            I Can Help!
+                          </>
+                        ) : (
+                          <>
+                            <Hand className="h-4 w-4" />
+                            I Need This!
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Only parents can manage rides. Ask your parent for help.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              if (hasPendingResponse) {
+                return (
+                  <Button className="w-full gap-2" disabled variant="outline">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {selectedRide.type === 'request' ? 'Offer Sent - Pending' : 'Request Pending'}
+                  </Button>
+                );
+              }
+
+              if (hasAcceptedResponse) {
+                return (
+                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled>
+                    <CheckCircle className="h-4 w-4" />
+                    {selectedRide.type === 'request' ? 'Offer Accepted!' : 'Request Approved!'}
+                  </Button>
+                );
+              }
+
+              if (hasDeclinedResponse) {
+                return (
+                  <Button className="w-full gap-2" disabled variant="secondary">
+                    <X className="h-4 w-4" />
+                    {selectedRide.type === 'request' ? 'Offer Declined' : 'Request Declined'}
+                  </Button>
+                );
+              }
+
+              // No existing response - show action button
+              return (
+                <Button 
+                  className="w-full gap-2"
+                  onClick={() => initiateRespondToRide(selectedRide)}
+                >
+                  {selectedRide.type === 'request' ? (
+                    <>
+                      <Car className="h-4 w-4" />
+                      Offer Your Ride
+                    </>
+                  ) : (
+                    <>
+                      <Hand className="h-4 w-4" />
+                      Request to Join
+                    </>
+                  )}
+                </Button>
+              );
+            })()}
           </CardContent>
         </Card>
       )}
+
+      {/* Join Ride Confirmation Dialog */}
+      <JoinRideDialog
+        open={showJoinDialog}
+        onOpenChange={setShowJoinDialog}
+        onConfirm={handleConfirmResponse}
+        ownerName={
+          respondingToRide?.profile?.first_name 
+            ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
+            : respondingToRide?.profile?.username || 'the ride owner'
+        }
+        loading={actionLoading}
+      />
+
+      {/* Offer Ride Confirmation Dialog */}
+      <OfferRideDialog
+        open={showOfferDialog}
+        onOpenChange={setShowOfferDialog}
+        onConfirm={handleConfirmResponse}
+        requesterName={
+          respondingToRide?.profile?.first_name 
+            ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
+            : respondingToRide?.profile?.username || 'the requester'
+        }
+        loading={actionLoading}
+      />
     </div>
   );
 };

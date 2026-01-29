@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Trash2, X, Unlink, LogOut, Loader2 } from "lucide-react";
+import { AlertTriangle, Trash2, X, Unlink, LogOut, Loader2, Hand, Car } from "lucide-react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -321,3 +321,81 @@ export const UnsavedChangesDialog = ({
     </AlertDialog>
   );
 };
+
+// Join Ride Dialog (for responding to a ride offer)
+interface JoinRideDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void | Promise<void>;
+  ownerName: string;
+  loading?: boolean;
+}
+
+export const JoinRideDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+  ownerName,
+  loading = false,
+}: JoinRideDialogProps) => (
+  <ConfirmDialog
+    open={open}
+    onOpenChange={onOpenChange}
+    onConfirm={onConfirm}
+    title="Send request to join this ride?"
+    description={
+      <div className="space-y-3">
+        <p>
+          Your request will be sent to <strong>{ownerName}</strong>. They must approve your request before you're added to the ride.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          You'll be notified when they respond to your request.
+        </p>
+      </div>
+    }
+    confirmLabel="Send Join Request"
+    cancelLabel="Cancel"
+    variant="default"
+    loading={loading}
+    icon={<Hand className="w-5 h-5 text-primary" />}
+  />
+);
+
+// Offer Ride Dialog (for responding to a ride request)
+interface OfferRideDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void | Promise<void>;
+  requesterName: string;
+  loading?: boolean;
+}
+
+export const OfferRideDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+  requesterName,
+  loading = false,
+}: OfferRideDialogProps) => (
+  <ConfirmDialog
+    open={open}
+    onOpenChange={onOpenChange}
+    onConfirm={onConfirm}
+    title="Offer your ride to fulfill this request?"
+    description={
+      <div className="space-y-3">
+        <p>
+          <strong>{requesterName}</strong> will receive your offer and must accept it before the ride is confirmed.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          You'll be notified when they respond to your offer.
+        </p>
+      </div>
+    }
+    confirmLabel="Send Ride Offer"
+    cancelLabel="Cancel"
+    variant="default"
+    loading={loading}
+    icon={<Car className="w-5 h-5 text-primary" />}
+  />
+);
