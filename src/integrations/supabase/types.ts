@@ -300,10 +300,14 @@ export type Database = {
         Row: {
           accept_requests_from_anyone: boolean | null
           account_type: string
+          avatar_url: string | null
+          car_color: string | null
           car_make: string | null
           car_model: string | null
           car_seats: number | null
           created_at: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           first_name: string | null
           grade_level: string | null
           home_address: string | null
@@ -311,6 +315,10 @@ export type Database = {
           home_longitude: number | null
           id: string
           last_name: string | null
+          license_plate: string | null
+          parent_guardian_email: string | null
+          parent_guardian_name: string | null
+          parent_guardian_phone: string | null
           phone_number: string | null
           share_email: boolean | null
           share_phone: boolean | null
@@ -321,10 +329,14 @@ export type Database = {
         Insert: {
           accept_requests_from_anyone?: boolean | null
           account_type: string
+          avatar_url?: string | null
+          car_color?: string | null
           car_make?: string | null
           car_model?: string | null
           car_seats?: number | null
           created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           first_name?: string | null
           grade_level?: string | null
           home_address?: string | null
@@ -332,6 +344,10 @@ export type Database = {
           home_longitude?: number | null
           id: string
           last_name?: string | null
+          license_plate?: string | null
+          parent_guardian_email?: string | null
+          parent_guardian_name?: string | null
+          parent_guardian_phone?: string | null
           phone_number?: string | null
           share_email?: boolean | null
           share_phone?: boolean | null
@@ -342,10 +358,14 @@ export type Database = {
         Update: {
           accept_requests_from_anyone?: boolean | null
           account_type?: string
+          avatar_url?: string | null
+          car_color?: string | null
           car_make?: string | null
           car_model?: string | null
           car_seats?: number | null
           created_at?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           first_name?: string | null
           grade_level?: string | null
           home_address?: string | null
@@ -353,6 +373,10 @@ export type Database = {
           home_longitude?: number | null
           id?: string
           last_name?: string | null
+          license_plate?: string | null
+          parent_guardian_email?: string | null
+          parent_guardian_name?: string | null
+          parent_guardian_phone?: string | null
           phone_number?: string | null
           share_email?: boolean | null
           share_phone?: boolean | null
