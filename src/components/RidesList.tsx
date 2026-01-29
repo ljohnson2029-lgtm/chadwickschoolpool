@@ -143,6 +143,20 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     });
   };
 
+  // Get display name with proper fallbacks - never show "Unknown"
+  const getDisplayName = (ride: Ride): string => {
+    if (ride.profiles?.first_name && ride.profiles?.last_name) {
+      return `${ride.profiles.first_name} ${ride.profiles.last_name}`;
+    }
+    if (ride.profiles?.first_name) {
+      return ride.profiles.first_name;
+    }
+    if (ride.profiles?.username && ride.profiles.username.trim()) {
+      return ride.profiles.username;
+    }
+    return 'Parent';
+  };
+
   const RideCard = ({ ride }: { ride: Ride }) => {
     const isOwnRide = ride.user_id === user?.id;
     const showParentBadge = userRole === 'student' && !isOwnRide;
@@ -157,7 +171,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 userId={ride.user_id}
                 firstName={ride.profiles?.first_name || null}
                 lastName={ride.profiles?.last_name || null}
-                username={ride.profiles?.username || 'Unknown'}
+                username={getDisplayName(ride)}
                 gradeLevel={ride.profiles?.grade_level || null}
                 accountType="parent"
                 isCurrentUser={isOwnRide}

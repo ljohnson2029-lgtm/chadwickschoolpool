@@ -448,7 +448,28 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
-    return username.substring(0, 2).toUpperCase();
+    if (username && username.trim()) {
+      return username.substring(0, 2).toUpperCase();
+    }
+    return 'NA';
+  };
+
+  // Get display name with proper fallbacks - never show "Unknown"
+  const getDisplayName = (ride: Ride): string => {
+    if (ride.profile?.first_name && ride.profile?.last_name) {
+      return `${ride.profile.first_name} ${ride.profile.last_name}`;
+    }
+    if (ride.profile?.first_name) {
+      return ride.profile.first_name;
+    }
+    if (ride.profile?.username && ride.profile.username.trim()) {
+      return ride.profile.username;
+    }
+    // Fallback to email if available
+    if (ride.userEmail) {
+      return ride.userEmail.split('@')[0]; // Show email prefix
+    }
+    return 'Parent';
   };
 
   // Get user's response status for a ride
@@ -582,7 +603,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
                   userId={selectedRide.user_id}
                   firstName={selectedRide.profile?.first_name || null}
                   lastName={selectedRide.profile?.last_name || null}
-                  username={selectedRide.profile?.username || 'Unknown'}
+                  username={getDisplayName(selectedRide)}
                   accountType="parent"
                   email={selectedRide.userEmail}
                   phoneNumber={selectedRide.profile?.phone_number}
