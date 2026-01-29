@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,56 +6,110 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Calendar, Clock, Users, User, Map, Radio } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { MapPin, Calendar, Clock, Users, User, Map, Radio, Car, Hand, CheckCircle, Loader2, X } from "lucide-react";
 import RideUserBadge from "./RideUserBadge";
+import { JoinRideDialog, OfferRideDialog } from "./ConfirmDialogs";
+import { useToast } from "@/hooks/use-toast";
+import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
-  interface Ride {
-    id: string;
-    user_id: string;
-    type: string;
-    pickup_location: string;
-    dropoff_location: string;
-    ride_date: string;
-    ride_time: string;
-    seats_needed: number | null;
-    seats_available: number | null;
-    route_details: string | null;
-    is_recurring: boolean;
-    recurring_days: string[] | null;
-    transaction_type?: string;
-    profiles: {
-      first_name: string | null;
-      last_name: string | null;
-      username: string;
-      grade_level: string | null;
-    } | null;
-  }
+interface Ride {
+  id: string;
+  user_id: string;
+  type: string;
+  pickup_location: string;
+  dropoff_location: string;
+  ride_date: string;
+  ride_time: string;
+  seats_needed: number | null;
+  seats_available: number | null;
+  route_details: string | null;
+  is_recurring: boolean;
+  recurring_days: string[] | null;
+  transaction_type?: string;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+    username: string;
+    grade_level: string | null;
+  } | null;
+}
+
+interface RideResponse {
+  ride_id: string;
+  status: string;
+}
 
 interface RidesListProps {
   onViewOnMap?: (ride: Ride) => void;
 }
 
 const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [isUserParent, setIsUserParent] = useState(false);
+  const [isUserStudent, setIsUserStudent] = useState(false);
+  
+  // Response tracking
+  const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
+  const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showOfferDialog, setShowOfferDialog] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
+  // Fetch user role and email
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserInfo = async () => {
       if (!user) return;
       
-      const { data } = await supabase
+      const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
       
-      setUserRole(data?.role || null);
+      setUserRole(roleData?.role || null);
+      
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (userData?.email) {
+        setUserEmail(userData.email);
+        setIsUserParent(checkIsParent(userData.email));
+        setIsUserStudent(checkIsStudent(userData.email));
+      }
     };
 
-    fetchUserRole();
+    fetchUserInfo();
   }, [user]);
+
+  // Fetch user's existing responses
+  const fetchUserResponses = useCallback(async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('ride_conversations')
+      .select('ride_id, status')
+      .eq('sender_id', user.id);
+    
+    if (!error && data) {
+      setUserResponses(data);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserResponses();
+    }
+  }, [user, fetchUserResponses]);
 
   useEffect(() => {
     if (userRole !== null) {
@@ -143,7 +197,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     });
   };
 
-  // Get display name with proper fallbacks - never show "Unknown"
+  // Get display name with proper fallbacks
   const getDisplayName = (ride: Ride): string => {
     if (ride.profiles?.first_name && ride.profiles?.last_name) {
       return `${ride.profiles.first_name} ${ride.profiles.last_name}`;
@@ -157,9 +211,183 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     return 'Parent';
   };
 
+  // Get user's response status for a ride
+  const getUserResponseStatus = (rideId: string): string | null => {
+    const response = userResponses.find(r => r.ride_id === rideId);
+    return response?.status || null;
+  };
+
+  // Initiate response flow
+  const initiateRespondToRide = (ride: Ride) => {
+    setRespondingToRide(ride);
+    if (ride.type === 'offer') {
+      setShowJoinDialog(true);
+    } else {
+      setShowOfferDialog(true);
+    }
+  };
+
+  // Handle the actual response after confirmation
+  const handleConfirmResponse = async () => {
+    if (!user || !respondingToRide) return;
+    setActionLoading(true);
+
+    const ownerName = respondingToRide.profiles?.first_name 
+      ? `${respondingToRide.profiles.first_name} ${respondingToRide.profiles.last_name || ''}`.trim()
+      : respondingToRide.profiles?.username || 'the ride owner';
+
+    try {
+      const { error } = await supabase
+        .from('ride_conversations')
+        .insert({
+          ride_id: respondingToRide.id,
+          sender_id: user.id,
+          recipient_id: respondingToRide.user_id,
+          status: 'pending',
+          message: respondingToRide.type === 'request' 
+            ? `I can help with your ride request!`
+            : `I'd like to join your offered ride!`
+        });
+
+      if (error) {
+        console.error('Error responding to ride:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send your request. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Send notification to ride owner
+      try {
+        await supabase.functions.invoke('create-notification', {
+          body: {
+            userId: respondingToRide.user_id,
+            type: respondingToRide.type === 'request' ? 'ride_offer_received' : 'ride_join_request',
+            message: respondingToRide.type === 'request'
+              ? `${profile?.first_name || 'Someone'} offered to help with your ride request`
+              : `${profile?.first_name || 'Someone'} wants to join your ride`
+          }
+        });
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
+      
+      toast({
+        title: respondingToRide.type === 'request' ? "Offer Sent!" : "Request Sent!",
+        description: respondingToRide.type === 'request'
+          ? `Your ride offer was sent to ${ownerName}! They'll be notified and can accept or decline.`
+          : `Your join request was sent to ${ownerName}! They'll be notified and can approve or decline.`,
+      });
+
+      // Refresh user responses to update button state
+      await fetchUserResponses();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(false);
+      setShowJoinDialog(false);
+      setShowOfferDialog(false);
+      setRespondingToRide(null);
+    }
+  };
+
   const RideCard = ({ ride }: { ride: Ride }) => {
     const isOwnRide = ride.user_id === user?.id;
-    const showParentBadge = userRole === 'student' && !isOwnRide;
+    const responseStatus = getUserResponseStatus(ride.id);
+    const hasPendingResponse = responseStatus === 'pending';
+    const hasAcceptedResponse = responseStatus === 'accepted';
+    const hasDeclinedResponse = responseStatus === 'declined';
+
+    // Render action button based on state
+    const renderActionButton = () => {
+      if (isOwnRide) {
+        return (
+          <Button className="w-full gap-2" disabled variant="secondary" size="sm">
+            <CheckCircle className="h-4 w-4" />
+            Your ride
+          </Button>
+        );
+      }
+
+      if (!isUserParent) {
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button className="w-full gap-2" disabled variant="secondary" size="sm">
+                {ride.type === 'request' ? (
+                  <>
+                    <Car className="h-4 w-4" />
+                    I Can Help!
+                  </>
+                ) : (
+                  <>
+                    <Hand className="h-4 w-4" />
+                    I Need This!
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Only parents can manage rides</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      }
+
+      if (hasPendingResponse) {
+        return (
+          <Button className="w-full gap-2" disabled variant="outline" size="sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {ride.type === 'request' ? 'Offer Pending' : 'Request Pending'}
+          </Button>
+        );
+      }
+
+      if (hasAcceptedResponse) {
+        return (
+          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled size="sm">
+            <CheckCircle className="h-4 w-4" />
+            {ride.type === 'request' ? 'Offer Accepted!' : 'Approved!'}
+          </Button>
+        );
+      }
+
+      if (hasDeclinedResponse) {
+        return (
+          <Button className="w-full gap-2" disabled variant="secondary" size="sm">
+            <X className="h-4 w-4" />
+            {ride.type === 'request' ? 'Offer Declined' : 'Declined'}
+          </Button>
+        );
+      }
+
+      // No existing response - show action button
+      return (
+        <Button 
+          className="w-full gap-2"
+          size="sm"
+          onClick={() => initiateRespondToRide(ride)}
+        >
+          {ride.type === 'request' ? (
+            <>
+              <Car className="h-4 w-4" />
+              I Can Help!
+            </>
+          ) : (
+            <>
+              <Hand className="h-4 w-4" />
+              I Need This!
+            </>
+          )}
+        </Button>
+      );
+    };
 
     return (
       <Card className="hover:shadow-lg transition-shadow">
@@ -185,13 +413,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 {ride.transaction_type === 'broadcast' && (
                   <Badge className="gap-1 bg-purple-600 dark:bg-purple-700">
                     <Radio className="h-3 w-3" />
-                    Public Post
-                  </Badge>
-                )}
-                {ride.transaction_type === 'direct' && (
-                  <Badge variant="outline" className="gap-1">
-                    <User className="h-3 w-3" />
-                    Direct
+                    Public
                   </Badge>
                 )}
               </div>
@@ -241,8 +463,11 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             </div>
           )}
 
-          {onViewOnMap && (
-            <div className="pt-3 border-t">
+          {/* Action buttons */}
+          <div className="pt-3 border-t space-y-2">
+            {renderActionButton()}
+            
+            {onViewOnMap && (
               <Button
                 variant="outline"
                 size="sm"
@@ -252,8 +477,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 <Map className="h-4 w-4" />
                 View on Map
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -267,63 +492,91 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const offers = rides.filter(r => r.type === "offer");
 
   return (
-    <Tabs defaultValue="all" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="all">All Rides ({rides.length})</TabsTrigger>
-        <TabsTrigger value="requests">Requests ({requests.length})</TabsTrigger>
-        <TabsTrigger value="offers">Offers ({offers.length})</TabsTrigger>
-      </TabsList>
+    <>
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">All Rides ({rides.length})</TabsTrigger>
+          <TabsTrigger value="requests">Requests ({requests.length})</TabsTrigger>
+          <TabsTrigger value="offers">Offers ({offers.length})</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="all" className="mt-6">
-        {rides.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">
-              {userRole === 'student' ? 'No Family Carpools Yet' : 'No Rides Available'}
-            </p>
-            <p className="text-muted-foreground">
-              {userRole === 'student' 
-                ? "Link to your parent's account to see their carpools" 
-                : "Be the first to post a ride!"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rides.map((ride) => (
-              <RideCard key={ride.id} ride={ride} />
-            ))}
-          </div>
-        )}
-      </TabsContent>
+        <TabsContent value="all" className="mt-6">
+          {rides.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg font-medium mb-2">
+                {userRole === 'student' ? 'No Family Carpools Yet' : 'No Rides Available'}
+              </p>
+              <p className="text-muted-foreground">
+                {userRole === 'student' 
+                  ? "Link to your parent's account to see their carpools" 
+                  : "Be the first to post a ride!"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {rides.map((ride) => (
+                <RideCard key={ride.id} ride={ride} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-      <TabsContent value="requests" className="mt-6">
-        {requests.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No ride requests available.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {requests.map((ride) => (
-              <RideCard key={ride.id} ride={ride} />
-            ))}
-          </div>
-        )}
-      </TabsContent>
+        <TabsContent value="requests" className="mt-6">
+          {requests.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No ride requests available.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {requests.map((ride) => (
+                <RideCard key={ride.id} ride={ride} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-      <TabsContent value="offers" className="mt-6">
-        {offers.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No ride offers available.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {offers.map((ride) => (
-              <RideCard key={ride.id} ride={ride} />
-            ))}
-          </div>
-        )}
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="offers" className="mt-6">
+          {offers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No ride offers available.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {offers.map((ride) => (
+                <RideCard key={ride.id} ride={ride} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Join Ride Confirmation Dialog */}
+      <JoinRideDialog
+        open={showJoinDialog}
+        onOpenChange={setShowJoinDialog}
+        onConfirm={handleConfirmResponse}
+        ownerName={
+          respondingToRide?.profiles?.first_name 
+            ? `${respondingToRide.profiles.first_name} ${respondingToRide.profiles.last_name || ''}`.trim()
+            : respondingToRide?.profiles?.username || 'the ride owner'
+        }
+        loading={actionLoading}
+      />
+
+      {/* Offer Ride Confirmation Dialog */}
+      <OfferRideDialog
+        open={showOfferDialog}
+        onOpenChange={setShowOfferDialog}
+        onConfirm={handleConfirmResponse}
+        requesterName={
+          respondingToRide?.profiles?.first_name 
+            ? `${respondingToRide.profiles.first_name} ${respondingToRide.profiles.last_name || ''}`.trim()
+            : respondingToRide?.profiles?.username || 'the requester'
+        }
+        loading={actionLoading}
+      />
+    </>
   );
 };
 

@@ -76,7 +76,11 @@ serve(async (req) => {
       'co_parent_denied',
       'ride_request',
       'ride_accepted',
-      'ride_declined'
+      'ride_declined',
+      'ride_offer_received',
+      'ride_join_request',
+      'private_ride_request_received',
+      'private_ride_offer_received'
     ];
     
     if (!allowedTypes.includes(type)) {
