@@ -196,7 +196,7 @@ export default function FamilyLinks() {
       // Check for existing link
       const { data: existingLink, error: checkError } = await supabase
         .from('account_links')
-        .select('status')
+        .select('id, status')
         .eq('student_id', isStudent ? user?.id : targetUserId)
         .eq('parent_id', isStudent ? targetUserId : user?.id)
         .maybeSingle();
@@ -219,6 +219,15 @@ export default function FamilyLinks() {
             variant: "destructive",
           });
           return;
+        }
+        // If previously denied, delete the old record to allow a new request
+        if (existingLink.status === 'denied') {
+          const { error: deleteError } = await supabase
+            .from('account_links')
+            .delete()
+            .eq('id', existingLink.id);
+          
+          if (deleteError) throw deleteError;
         }
       }
 
