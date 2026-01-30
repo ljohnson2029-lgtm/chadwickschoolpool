@@ -426,7 +426,7 @@ export const NotificationDropdown = () => {
       <DropdownMenuTrigger asChild>
         <NotificationBell />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96 p-0 bg-background border-border z-50">
+      <DropdownMenuContent align="end" className="w-96 p-0 bg-background border-border z-[100]">
         <NotificationContent />
       </DropdownMenuContent>
     </DropdownMenu>
