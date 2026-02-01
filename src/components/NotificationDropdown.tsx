@@ -149,6 +149,10 @@ export const NotificationDropdown = () => {
     toast.success('All notifications marked as read');
   };
 
+  const removeNotification = (notificationId: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+  };
+
   const handleApproveLink = async (linkId: string, notificationId: string) => {
     const { error } = await supabase
       .from('account_links')
@@ -161,7 +165,8 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    await markAsRead(notificationId);
+    // Remove from list immediately for better UX
+    removeNotification(notificationId);
     toast.success('Link request approved!');
   };
 
@@ -177,7 +182,8 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    await markAsRead(notificationId);
+    // Remove from list immediately for better UX
+    removeNotification(notificationId);
     toast.success('Link request denied');
   };
 
