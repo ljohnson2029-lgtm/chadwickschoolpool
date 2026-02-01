@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -256,8 +257,20 @@ export const NotificationDropdown = () => {
     }
   };
 
-  const NotificationBell = () => (
-    <Button variant="ghost" size="icon" className="relative">
+  // IMPORTANT: This component is used inside Radix "asChild" triggers.
+  // It must forward refs and pass props through so Radix can attach handlers.
+  const NotificationBell = forwardRef<
+    HTMLButtonElement,
+    React.ComponentPropsWithoutRef<typeof Button>
+  >(({ className, ...props }, ref) => (
+    <Button
+      ref={ref}
+      variant="ghost"
+      size="icon"
+      aria-label="Notifications"
+      className={cn('relative', className)}
+      {...props}
+    >
       <Bell className="h-5 w-5" />
       {unreadCount > 0 && (
         <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-bold animate-in zoom-in duration-200">
@@ -265,7 +278,8 @@ export const NotificationDropdown = () => {
         </span>
       )}
     </Button>
-  );
+  ));
+  NotificationBell.displayName = 'NotificationBell';
 
   const NotificationContent = () => (
     <>
