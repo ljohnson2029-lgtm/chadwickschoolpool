@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, School } from "lucide-react";
+import { AlertCircle, School, Home } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
@@ -43,12 +43,18 @@ const RideOfferForm = ({
   prefillDropoff,
   isBroadcast = false
 }: RideOfferFormProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [canCreate, setCanCreate] = useState(true);
+
+  // Get home address from profile
+  const homeAddress = profile?.home_address;
+  const homeCoords = profile?.home_latitude && profile?.home_longitude 
+    ? { lat: profile.home_latitude, lng: profile.home_longitude }
+    : null;
 
   const [pickupLocation, setPickupLocation] = useState("");
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -268,19 +274,36 @@ const RideOfferForm = ({
               placeholder="Enter starting address"
               required
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
-              onClick={() => {
-                setPickupLocation(CHADWICK_SCHOOL.address);
-                setPickupCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
-              }}
-            >
-              <School className="h-4 w-4" />
-              Start at Chadwick School
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+                onClick={() => {
+                  setPickupLocation(CHADWICK_SCHOOL.address);
+                  setPickupCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+                }}
+              >
+                <School className="h-4 w-4" />
+                Chadwick School
+              </Button>
+              {homeAddress && homeCoords && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  onClick={() => {
+                    setPickupLocation(homeAddress);
+                    setPickupCoords(homeCoords);
+                  }}
+                >
+                  <Home className="h-4 w-4" />
+                  My Home
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -294,19 +317,36 @@ const RideOfferForm = ({
               placeholder="Enter destination address"
               required
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
-              onClick={() => {
-                setDropoffLocation(CHADWICK_SCHOOL.address);
-                setDropoffCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
-              }}
-            >
-              <School className="h-4 w-4" />
-              Dropoff at Chadwick School
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+                onClick={() => {
+                  setDropoffLocation(CHADWICK_SCHOOL.address);
+                  setDropoffCoords({ lat: CHADWICK_SCHOOL.lat, lng: CHADWICK_SCHOOL.lng });
+                }}
+              >
+                <School className="h-4 w-4" />
+                Chadwick School
+              </Button>
+              {homeAddress && homeCoords && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  onClick={() => {
+                    setDropoffLocation(homeAddress);
+                    setDropoffCoords(homeCoords);
+                  }}
+                >
+                  <Home className="h-4 w-4" />
+                  My Home
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
