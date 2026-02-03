@@ -70,11 +70,39 @@ serve(async (req) => {
       console.log(`Deleted ${deletedRides?.length || 0} old expired rides`);
     }
 
-    // Also delete associated ride_conversations for deleted rides
-    // (This will happen automatically if cascade delete is set up, but let's be explicit)
+    // DATA RETENTION: Delete private ride requests older than 90 days
+    // This protects user location privacy by removing old GPS coordinate data
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgoDate = ninetyDaysAgo.toISOString();
+
+    const { data: deletedPrivateRequests, error: privateDeleteError } = await supabase
+      .from('private_ride_requests')
+      .delete()
+      .lt('created_at', ninetyDaysAgoDate)
+      .select('id');
+
+    if (privateDeleteError) {
+      console.error('Error deleting old private ride requests:', privateDeleteError);
+    } else {
+      console.log(`Deleted ${deletedPrivateRequests?.length || 0} old private ride requests (90+ days)`);
+    }
+
+    // Also delete old inactive rides (completed, cancelled, expired) older than 90 days
+    const { data: deletedOldRides, error: oldRidesDeleteError } = await supabase
+      .from('rides')
+      .delete()
+      .in('status', ['completed', 'cancelled', 'expired'])
+      .lt('created_at', ninetyDaysAgoDate)
+      .select('id');
+
+    if (oldRidesDeleteError) {
+      console.error('Error deleting old inactive rides:', oldRidesDeleteError);
+    } else {
+      console.log(`Deleted ${deletedOldRides?.length || 0} old inactive rides (90+ days)`);
+    }
 
     const totalExpired = (expiredByDate?.length || 0) + (expiredByTime?.length || 0);
-    const totalDeleted = deletedRides?.length || 0;
+    const totalDeleted = (deletedRides?.length || 0) + (deletedPrivateRequests?.length || 0) + (deletedOldRides?.length || 0);
 
     return new Response(
       JSON.stringify({ 
