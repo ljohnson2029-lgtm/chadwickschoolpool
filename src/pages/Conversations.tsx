@@ -262,16 +262,21 @@ const Conversations = () => {
     }
   };
 
+  // Filter out cancelled and declined conversations - they should disappear
+  const activeConversations = conversations.filter(conv => 
+    conv.status !== 'cancelled' && conv.status !== 'declined'
+  );
+
   // Filter conversations based on active tab
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = activeConversations.filter(conv => {
     if (activeTab === 'sent') return conv.sender_id === user?.id;
     if (activeTab === 'received') return conv.recipient_id === user?.id;
     return true;
   });
 
-  const sentCount = conversations.filter(c => c.sender_id === user?.id).length;
-  const receivedCount = conversations.filter(c => c.recipient_id === user?.id).length;
-  const unreadCount = conversations.filter(c => c.recipient_id === user?.id && !c.read_at).length;
+  const sentCount = activeConversations.filter(c => c.sender_id === user?.id).length;
+  const receivedCount = activeConversations.filter(c => c.recipient_id === user?.id).length;
+  const unreadCount = activeConversations.filter(c => c.recipient_id === user?.id && !c.read_at).length;
 
   if (loading || !user || !profile) {
     return (
