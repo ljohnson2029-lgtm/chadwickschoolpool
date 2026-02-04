@@ -62,6 +62,34 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase();
 
+    // Check if email is approved (must be in approved_emails OR be a @chadwickschool.org email)
+    const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
+    
+    if (!isChadwickEmail) {
+      // Check approved_emails table
+      const { data: approvedEmail, error: approvedCheckError } = await supabase
+        .from('approved_emails')
+        .select('email')
+        .ilike('email', normalizedEmail)
+        .maybeSingle();
+
+      if (approvedCheckError) {
+        console.error('Error checking approved emails:', approvedCheckError);
+      }
+
+      if (!approvedEmail) {
+        console.log(`Email not approved for registration: ${normalizedEmail}`);
+        return new Response(
+          JSON.stringify({ error: 'This email is not approved for registration. Please contact an administrator.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log(`Email approved via approved_emails table: ${normalizedEmail}`);
+    } else {
+      console.log(`Email approved via @chadwickschool.org domain: ${normalizedEmail}`);
+    }
+
     // Check if username already exists (case-insensitive)
     const { data: existingUsername, error: usernameCheckError } = await supabase
       .from('users')
