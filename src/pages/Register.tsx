@@ -53,6 +53,27 @@ const Register = () => {
       const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
       setIsStudentEmail(isChadwickEmail);
 
+      // Check if email is approved BEFORE sending verification code
+      const { data: checkData, error: checkError } = await supabase.functions.invoke("auth-check-email", {
+        body: { email: normalizedEmail },
+      });
+
+      if (checkError) {
+        console.error('Email check error:', checkError);
+        throw new Error('Failed to verify email eligibility');
+      }
+
+      if (!checkData?.approved) {
+        toast({
+          title: "Email not approved",
+          description: checkData?.message || "This email is not approved for registration. Please contact an administrator.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Email is approved, now send verification code
       const { error: sendError } = await supabase.functions.invoke("auth-send-2fa", {
         body: { email: normalizedEmail },
       });
