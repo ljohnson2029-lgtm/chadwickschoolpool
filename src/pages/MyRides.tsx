@@ -130,6 +130,89 @@ const MyRides = () => {
       }
     }
 
+    // 2b. Fetch ride conversations where someone joined the USER's ride (user is recipient/owner)
+    const { data: receivedConversations } = await supabase
+      .from('ride_conversations')
+      .select('*, rides(*)')
+      .eq('recipient_id', user.id)
+      .eq('status', 'accepted');
+
+    if (receivedConversations) {
+      const joinerIds = [...new Set(receivedConversations.map(c => c.sender_id).filter(Boolean))];
+      let joinerProfiles: Record<string, any> = {};
+      
+      if (joinerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
+          .in('id', joinerIds);
+        
+        const { data: users } = await supabase
+          .from('users')
+          .select('user_id, email')
+          .in('user_id', joinerIds);
+
+        if (profiles) {
+          joinerProfiles = profiles.reduce((acc, p) => {
+            const userEmail = users?.find(u => u.user_id === p.id)?.email;
+            acc[p.id] = { ...p, email: userEmail };
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      }
+
+      for (const conv of receivedConversations) {
+        if (!conv.rides) continue;
+        const ride = conv.rides;
+        
+        // Skip if this ride is already added as a "posted" ride
+        // We'll update the posted ride's status instead
+        const existingPostedIndex = allRides.findIndex(
+          r => r.source === 'posted' && r.id === ride.id
+        );
+        
+        const joiner = joinerProfiles[conv.sender_id];
+        
+        if (existingPostedIndex !== -1) {
+          // Update the existing posted ride to show it's confirmed with a helper/joiner
+          allRides[existingPostedIndex].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
+          allRides[existingPostedIndex].otherParent = joiner ? {
+            id: joiner.id,
+            firstName: joiner.first_name,
+            lastName: joiner.last_name,
+            username: joiner.username,
+            email: joiner.share_email ? joiner.email : null,
+            phone: joiner.share_phone ? joiner.phone_number : null,
+          } : null;
+          // Keep isDriver as-is since they posted the ride
+        } else {
+          // Add as a new entry if somehow the ride isn't in posted rides
+          allRides.push({
+            id: conv.id,
+            source: 'conversation',
+            rideType: ride.type as 'request' | 'offer',
+            status: ride.type === 'request' ? 'helping-out' : 'joined-ride',
+            pickupLocation: ride.pickup_location,
+            dropoffLocation: ride.dropoff_location,
+            rideDate: ride.ride_date,
+            rideTime: ride.ride_time,
+            seatsAvailable: ride.seats_available,
+            seatsNeeded: ride.seats_needed,
+            isDriver: ride.type === 'offer',
+            otherParent: joiner ? {
+              id: joiner.id,
+              firstName: joiner.first_name,
+              lastName: joiner.last_name,
+              username: joiner.username,
+              email: joiner.share_email ? joiner.email : null,
+              phone: joiner.share_phone ? joiner.phone_number : null,
+            } : null,
+            originalData: { conversation: conv, ride },
+          });
+        }
+      }
+    }
+
     // 3. Fetch private ride requests (both sent and received, accepted only)
     const { data: privateRequests } = await supabase
       .from('private_ride_requests')

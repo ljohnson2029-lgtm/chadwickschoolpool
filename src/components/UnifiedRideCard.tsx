@@ -10,7 +10,8 @@ import {
   Mail,
   X,
   Car,
-  HandHelping
+  HandHelping,
+  CheckCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -18,7 +19,7 @@ export interface UnifiedRide {
   id: string;
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
-  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out';
+  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed';
   pickupLocation: string;
   dropoffLocation: string;
   rideDate: string;
@@ -42,7 +43,16 @@ interface UnifiedRideCardProps {
   onCancel: () => void;
 }
 
-const getStatusConfig = (status: UnifiedRide['status']) => {
+const getStatusConfig = (status: UnifiedRide['status'], source: UnifiedRide['source'], hasOtherParent: boolean) => {
+  // Special case: if this is a posted ride with a connected parent, show as "Confirmed"
+  if (source === 'posted' && hasOtherParent) {
+    return {
+      label: 'Confirmed',
+      className: 'bg-green-500/15 text-green-600 border-green-500/30',
+      icon: CheckCircle,
+    };
+  }
+
   switch (status) {
     case 'posted-looking':
       return {
@@ -68,6 +78,18 @@ const getStatusConfig = (status: UnifiedRide['status']) => {
         className: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
         icon: HandHelping,
       };
+    case 'confirmed':
+      return {
+        label: 'Confirmed',
+        className: 'bg-green-500/15 text-green-600 border-green-500/30',
+        icon: CheckCircle,
+      };
+    default:
+      return {
+        label: 'Unknown',
+        className: 'bg-gray-500/15 text-gray-600 border-gray-500/30',
+        icon: null,
+      };
   }
 };
 
@@ -81,7 +103,7 @@ const getParentName = (parent: UnifiedRide['otherParent']) => {
 };
 
 export const UnifiedRideCard = ({ ride, onCancel }: UnifiedRideCardProps) => {
-  const statusConfig = getStatusConfig(ride.status);
+  const statusConfig = getStatusConfig(ride.status, ride.source, !!ride.otherParent);
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -144,7 +166,10 @@ export const UnifiedRideCard = ({ ride, onCancel }: UnifiedRideCardProps) => {
         {ride.otherParent && (
           <div className="pt-3 border-t space-y-2">
             <p className="text-sm font-medium">
-              Riding with: {getParentName(ride.otherParent)}
+              {ride.source === 'posted' 
+                ? `Connected with: ${getParentName(ride.otherParent)}`
+                : `Riding with: ${getParentName(ride.otherParent)}`
+              }
             </p>
             <div className="flex flex-wrap gap-3 text-sm">
               {ride.otherParent.email && (
