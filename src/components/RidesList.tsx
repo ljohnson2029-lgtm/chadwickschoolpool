@@ -40,6 +40,15 @@ interface RideResponse {
   status: string;
 }
 
+interface RideConnection {
+  ride_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_email: string | null;
+  sender_phone: string | null;
+  status: string;
+}
+
 interface OwnerContact {
   firstName: string;
   lastName: string;
@@ -64,6 +73,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   
   // Response tracking
   const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
+  const [rideConnections, setRideConnections] = useState<RideConnection[]>([]);
   const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
@@ -114,11 +124,56 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     }
   }, [user]);
 
+  // Fetch connections to user's own rides (where someone has joined/helped)
+  const fetchRideConnections = useCallback(async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('ride_conversations')
+      .select('ride_id, sender_id, status')
+      .eq('recipient_id', user.id)
+      .eq('status', 'accepted');
+    
+    if (!error && data && data.length > 0) {
+      // Fetch sender profiles
+      const senderIds = [...new Set(data.map(c => c.sender_id))];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
+        .in('id', senderIds);
+      
+      const { data: users } = await supabase
+        .from('users')
+        .select('user_id, email')
+        .in('user_id', senderIds);
+      
+      const connections: RideConnection[] = data.map(conv => {
+        const profile = profiles?.find(p => p.id === conv.sender_id);
+        const userEmail = users?.find(u => u.user_id === conv.sender_id)?.email;
+        
+        return {
+          ride_id: conv.ride_id,
+          sender_id: conv.sender_id,
+          sender_name: profile?.first_name 
+            ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+            : profile?.username || 'Someone',
+          sender_email: profile?.share_email !== false ? userEmail || null : null,
+          sender_phone: profile?.share_phone ? profile.phone_number : null,
+          status: conv.status,
+        };
+      });
+      
+      setRideConnections(connections);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchUserResponses();
+      fetchRideConnections();
     }
-  }, [user, fetchUserResponses]);
+  }, [user, fetchUserResponses, fetchRideConnections]);
 
   useEffect(() => {
     if (userRole !== null) {
@@ -228,6 +283,11 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     return response?.status || null;
   };
 
+  // Get connection info for user's own ride
+  const getRideConnection = (rideId: string): RideConnection | null => {
+    return rideConnections.find(c => c.ride_id === rideId) || null;
+  };
+
   // Initiate response flow
   const initiateRespondToRide = (ride: Ride) => {
     setRespondingToRide(ride);
@@ -335,14 +395,24 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const hasPendingResponse = responseStatus === 'pending';
     const hasAcceptedResponse = responseStatus === 'accepted';
     const hasDeclinedResponse = responseStatus === 'declined';
+    const connection = isOwnRide ? getRideConnection(ride.id) : null;
+    const hasConnection = !!connection;
 
     // Render action button based on state
     const renderActionButton = () => {
       if (isOwnRide) {
+        if (hasConnection) {
+          return (
+            <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled size="sm">
+              <CheckCircle className="h-4 w-4" />
+              Confirmed!
+            </Button>
+          );
+        }
         return (
           <Button className="w-full gap-2" disabled variant="secondary" size="sm">
             <CheckCircle className="h-4 w-4" />
-            Your ride
+            Your ride (waiting)
           </Button>
         );
       }
@@ -492,6 +562,36 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             <div className="text-sm pt-2 border-t">
               <span className="text-muted-foreground">Repeats: </span>
               {ride.recurring_days.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(", ")}
+            </div>
+          )}
+
+          {/* Show connection info for user's own confirmed rides */}
+          {isOwnRide && hasConnection && connection && (
+            <div className="pt-3 border-t bg-green-50 dark:bg-green-950/30 -mx-4 px-4 pb-3 rounded-b-lg">
+              <p className="text-sm font-medium text-green-700 dark:text-green-300 mb-2">
+                ✓ Connected with: {connection.sender_name}
+              </p>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {connection.sender_email && (
+                  <a 
+                    href={`mailto:${connection.sender_email}`}
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    📧 {connection.sender_email}
+                  </a>
+                )}
+                {connection.sender_phone && (
+                  <a 
+                    href={`tel:${connection.sender_phone}`}
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    📞 {connection.sender_phone}
+                  </a>
+                )}
+                {!connection.sender_email && !connection.sender_phone && (
+                  <span className="text-muted-foreground text-xs">Contact info not shared</span>
+                )}
+              </div>
             </div>
           )}
 
