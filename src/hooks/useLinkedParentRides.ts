@@ -29,6 +29,7 @@
    parent_id: string;
    parent_name: string;
    parent_email: string;
+  connected_parent_name: string | null;
  }
  
  interface UseLinkedParentRidesResult {
@@ -137,6 +138,9 @@
          parent_id: ride.parent_id,
          parent_name: `${ride.parent_first_name || ''} ${ride.parent_last_name || ''}`.trim() || 'Parent',
          parent_email: ride.parent_email || '',
+        connected_parent_name: ride.connected_parent_first_name 
+          ? `${ride.connected_parent_first_name} ${ride.connected_parent_last_name || ''}`.trim()
+          : null,
        }));
  
        // Sort by date/time
