@@ -438,25 +438,38 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
   // Update ride markers (clustered GeoJSON)
   useEffect(() => {
-    if (!map.current || !mapboxToken || !mapInitialized.current) return;
+    if (!map.current || !mapboxToken) return;
     
-    // Wait for map to be loaded
-    if (!map.current.isStyleLoaded()) {
-      map.current.once('load', () => {
-        updateRideMarkers();
-      });
-      return;
+    // If map is not yet initialized, wait for the load event
+    if (!mapInitialized.current || !map.current.isStyleLoaded()) {
+      const handleLoad = () => {
+        if (mapInitialized.current) {
+          updateRideMarkers();
+        }
+      };
+      map.current.once('load', handleLoad);
+      // Also try after a short delay in case load already fired
+      const timeout = setTimeout(() => {
+        if (mapInitialized.current && map.current?.isStyleLoaded()) {
+          updateRideMarkers();
+        }
+      }, 500);
+      return () => {
+        clearTimeout(timeout);
+      };
     }
     
     updateRideMarkers();
     
     function updateRideMarkers() {
-      if (!map.current) return;
+      if (!map.current || !map.current.getSource('rides')) return;
       
       // Filter rides based on current filter settings
       const filteredRides = rides.filter(r => 
         (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
       );
+      
+      console.log('[FindRidesMap] Updating ride markers, filtered count:', filteredRides.length);
       
       // Build GeoJSON features for rides
       const features: GeoJSON.Feature[] = [];
@@ -479,6 +492,8 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         }
       }
       
+      console.log('[FindRidesMap] GeoJSON features created:', features.length);
+      
       // Update the GeoJSON source
       const source = map.current.getSource('rides') as GeoJSONSource;
       if (source) {
@@ -486,6 +501,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           type: 'FeatureCollection',
           features
         });
+        console.log('[FindRidesMap] GeoJSON source updated');
+      } else {
+        console.log('[FindRidesMap] No rides source found yet');
       }
     }
   }, [rides, showRequests, showOffers, mapboxToken]);
