@@ -12,7 +12,8 @@ import {
   UserMinus,
   Car,
   BellOff,
-  Users
+  Users,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -149,7 +150,36 @@ export const NotificationDropdown = () => {
     toast.success('All notifications marked as read');
   };
 
-  const removeNotification = (notificationId: string) => {
+  const clearAllNotifications = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error clearing notifications:', error);
+      toast.error('Failed to clear notifications');
+      return;
+    }
+
+    setNotifications([]);
+    toast.success('All notifications cleared');
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    // Delete from database so it doesn't reappear
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+    }
+    
+    // Also remove from local state immediately
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   };
 
@@ -165,8 +195,8 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    // Remove from list immediately for better UX
-    removeNotification(notificationId);
+    // Delete the notification from database so it doesn't reappear
+    await deleteNotification(notificationId);
     toast.success('Link request approved!');
   };
 
@@ -182,8 +212,8 @@ export const NotificationDropdown = () => {
       return;
     }
 
-    // Remove from list immediately for better UX
-    removeNotification(notificationId);
+    // Delete the notification from database so it doesn't reappear
+    await deleteNotification(notificationId);
     toast.success('Link request denied');
   };
 
@@ -291,16 +321,29 @@ export const NotificationDropdown = () => {
     <>
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h3 className="font-semibold text-foreground">Notifications</h3>
-        {unreadCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={markAllAsRead}
-            className="h-auto py-1 text-xs text-primary hover:text-primary/80"
-          >
-            Mark all as read
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={markAllAsRead}
+              className="h-auto py-1 text-xs text-primary hover:text-primary/80"
+            >
+              Mark all read
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllNotifications}
+              className="h-auto py-1 text-xs text-destructive hover:text-destructive/80"
+            >
+              <Trash2 className="h-3 w-3 mr-1" />
+              Clear all
+            </Button>
+          )}
+        </div>
       </div>
       <ScrollArea className={isMobile ? "h-[calc(100vh-120px)]" : "max-h-[400px]"}>
         {notifications.length === 0 ? (
