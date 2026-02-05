@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import mapboxgl, { GeoJSONSource } from 'mapbox-gl';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,11 +93,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const mapInitialized = useRef(false);
-  const ridesRef = useRef<Ride[]>([]);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [rides, setRides] = useState<Ride[]>([]);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
+  const [clusterPopup, setClusterPopup] = useState<{ rides: Ride[]; position: { x: number; y: number } } | null>(null);
   const [userEmail, setUserEmail] = useState<string>('');
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);
@@ -234,7 +233,6 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
       console.log('[FindRidesMap] Final combined rides:', combinedData.length);
       setRides(combinedData as Ride[]);
-      ridesRef.current = combinedData as Ride[];
     };
 
     fetchRides();
@@ -279,253 +277,32 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.current.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
 
-    // Set up clustering layers when map loads
-    map.current.on('load', () => {
-      if (!map.current) return;
-      
-      // Add empty GeoJSON source for rides with clustering
-      map.current.addSource('rides', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: []
-        },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
-        clusterProperties: {
-          // Count requests and offers in each cluster
-          requestCount: ['+', ['case', ['==', ['get', 'rideType'], 'request'], 1, 0]],
-          offerCount: ['+', ['case', ['==', ['get', 'rideType'], 'offer'], 1, 0]]
-        }
-      });
-
-      // Cluster circles layer - color based on content
-      map.current.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'rides',
-        filter: ['has', 'point_count'],
-        paint: {
-          // Dynamic color: red (all requests), green (all offers), orange (mixed)
-          'circle-color': [
-            'case',
-            ['==', ['get', 'offerCount'], 0], '#ef4444',  // All requests - red
-            ['==', ['get', 'requestCount'], 0], '#22c55e', // All offers - green
-            '#f97316' // Mixed - orange
-          ],
-          // Dynamic size based on point count
-          'circle-radius': [
-            'step',
-            ['get', 'point_count'],
-            18,   // 18px for 2-4 points
-            5, 22,  // 22px for 5-9 points
-            10, 26, // 26px for 10-19 points
-            20, 30  // 30px for 20+ points
-          ],
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      // Cluster count label
-      map.current.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'rides',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': 14
-        },
-        paint: {
-          'text-color': '#ffffff'
-        }
-      });
-
-      // Individual ride request markers (unclustered)
-      map.current.addLayer({
-        id: 'unclustered-requests',
-        type: 'circle',
-        source: 'rides',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'rideType'], 'request']],
-        paint: {
-          'circle-color': '#ef4444',
-          'circle-radius': 12,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      // Individual ride offer markers (unclustered)
-      map.current.addLayer({
-        id: 'unclustered-offers',
-        type: 'circle',
-        source: 'rides',
-        filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'rideType'], 'offer']],
-        paint: {
-          'circle-color': '#22c55e',
-          'circle-radius': 12,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff'
-        }
-      });
-
-      // Click on cluster to zoom in (Option A)
-      map.current.on('click', 'clusters', (e) => {
-        if (!map.current || !e.features?.[0]) return;
-        
-        const clusterId = e.features[0].properties?.cluster_id;
-        const source = map.current.getSource('rides') as GeoJSONSource;
-        
-        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err || !map.current || !e.features?.[0].geometry) return;
-          
-          const geometry = e.features[0].geometry as GeoJSON.Point;
-          map.current.easeTo({
-            center: geometry.coordinates as [number, number],
-            zoom: zoom || 14
-          });
-        });
-      });
-
-      // Click on individual ride marker
-      map.current.on('click', 'unclustered-requests', (e) => {
-        if (!e.features?.[0]) return;
-        const rideId = e.features[0].properties?.rideId;
-        const ride = ridesRef.current.find(r => r.id === rideId);
-        if (ride) setSelectedRide(ride);
-      });
-
-      map.current.on('click', 'unclustered-offers', (e) => {
-        if (!e.features?.[0]) return;
-        const rideId = e.features[0].properties?.rideId;
-        const ride = ridesRef.current.find(r => r.id === rideId);
-        if (ride) setSelectedRide(ride);
-      });
-
-      // Change cursor on hover
-      map.current.on('mouseenter', 'clusters', () => {
-        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-      });
-      map.current.on('mouseleave', 'clusters', () => {
-        if (map.current) map.current.getCanvas().style.cursor = '';
-      });
-      map.current.on('mouseenter', 'unclustered-requests', () => {
-        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-      });
-      map.current.on('mouseleave', 'unclustered-requests', () => {
-        if (map.current) map.current.getCanvas().style.cursor = '';
-      });
-      map.current.on('mouseenter', 'unclustered-offers', () => {
-        if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-      });
-      map.current.on('mouseleave', 'unclustered-offers', () => {
-        if (map.current) map.current.getCanvas().style.cursor = '';
-      });
-
-      mapInitialized.current = true;
-    });
-
     return () => {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
-      mapInitialized.current = false;
       map.current?.remove();
     };
   }, [mapboxToken, profile]);
 
-  // Update ride markers (clustered GeoJSON)
+  // Add markers (HTML-based for original styling)
   useEffect(() => {
     if (!map.current || !mapboxToken) return;
     
-    // If map is not yet initialized, wait for the load event
-    if (!mapInitialized.current || !map.current.isStyleLoaded()) {
-      const handleLoad = () => {
-        if (mapInitialized.current) {
-          updateRideMarkers();
-        }
-      };
-      map.current.once('load', handleLoad);
-      // Also try after a short delay in case load already fired
-      const timeout = setTimeout(() => {
-        if (mapInitialized.current && map.current?.isStyleLoaded()) {
-          updateRideMarkers();
-        }
-      }, 500);
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-    
-    updateRideMarkers();
-    
-    function updateRideMarkers() {
-      if (!map.current || !map.current.getSource('rides')) return;
-      
-      // Filter rides based on current filter settings
-      const filteredRides = rides.filter(r => 
-        (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
-      );
-      
-      console.log('[FindRidesMap] Updating ride markers, filtered count:', filteredRides.length);
-      
-      // Build GeoJSON features for rides
-      const features: GeoJSON.Feature[] = [];
-      
-      for (const ride of filteredRides) {
-        if (ride.pickup_latitude && ride.pickup_longitude) {
-          features.push({
-            type: 'Feature',
-            properties: {
-              rideId: ride.id,
-              rideType: ride.type,
-              pickupLocation: ride.pickup_location,
-              dropoffLocation: ride.dropoff_location
-            },
-            geometry: {
-              type: 'Point',
-              coordinates: [ride.pickup_longitude, ride.pickup_latitude]
-            }
-          });
-        }
-      }
-      
-      console.log('[FindRidesMap] GeoJSON features created:', features.length);
-      
-      // Update the GeoJSON source
-      const source = map.current.getSource('rides') as GeoJSONSource;
-      if (source) {
-        source.setData({
-          type: 'FeatureCollection',
-          features
-        });
-        console.log('[FindRidesMap] GeoJSON source updated');
-      } else {
-        console.log('[FindRidesMap] No rides source found yet');
-      }
-    }
-  }, [rides, showRequests, showOffers, mapboxToken]);
-
-  // Add static markers (home, school) - these don't cluster
-  useEffect(() => {
-    if (!map.current || !mapboxToken) return;
-    
-    // Clear existing markers
+    // Clear existing markers and cluster popup
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
+    setClusterPopup(null);
     
     const bounds = new mapboxgl.LngLatBounds();
     let hasValidMarkers = false;
 
-    // Add user's home marker (blue) - static, doesn't cluster
+    // Add user's home marker (blue)
     if (showHome && profile?.home_address && profile?.home_latitude && profile?.home_longitude) {
       const userLat = profile.home_latitude;
       const userLng = profile.home_longitude;
       
       const el = document.createElement('div');
-      el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer z-10';
+      el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
       el.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
 
       const popupDiv = document.createElement('div');
@@ -555,10 +332,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       hasValidMarkers = true;
     }
 
-    // Add Chadwick School marker (orange) - static, doesn't cluster
+    // Add Chadwick School marker (orange)
     if (showSchool) {
       const schoolEl = document.createElement('div');
-      schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer z-10';
+      schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
       schoolEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
 
       const schoolPopupDiv = document.createElement('div');
@@ -588,15 +365,91 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       hasValidMarkers = true;
     }
 
-    // Add ride coordinates to bounds
+    // Group rides by location (for clustering same-location rides)
     const filteredRides = rides.filter(r => 
       (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
     );
     
+    // Group by approximate location (round to ~100m precision)
+    const locationGroups: Record<string, Ride[]> = {};
+    
     for (const ride of filteredRides) {
       if (ride.pickup_latitude && ride.pickup_longitude) {
+        // Round to 3 decimal places (~111m precision)
+        const key = `${ride.pickup_latitude.toFixed(3)},${ride.pickup_longitude.toFixed(3)}`;
+        if (!locationGroups[key]) {
+          locationGroups[key] = [];
+        }
+        locationGroups[key].push(ride);
         bounds.extend([ride.pickup_longitude, ride.pickup_latitude]);
         hasValidMarkers = true;
+      }
+    }
+    
+    // Create markers for each location group
+    for (const [key, groupRides] of Object.entries(locationGroups)) {
+      const [lat, lng] = key.split(',').map(Number);
+      const firstRide = groupRides[0];
+      
+      if (groupRides.length === 1) {
+        // Single ride - show normal marker
+        const ride = firstRide;
+        const isRequest = ride.type === 'request';
+        const color = isRequest ? '#ef4444' : '#22c55e';
+        
+        const el = document.createElement('div');
+        el.className = 'flex items-center justify-center w-7 h-7 rounded-full shadow-lg border-2 border-white cursor-pointer transition-transform hover:scale-110';
+        el.style.backgroundColor = color;
+        el.innerHTML = isRequest 
+          ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>'
+          : '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>';
+
+        el.addEventListener('click', () => {
+          setClusterPopup(null);
+          setSelectedRide(ride);
+        });
+
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([lng, lat])
+          .addTo(map.current!);
+        
+        markersRef.current.push(marker);
+      } else {
+        // Multiple rides at same location - show cluster marker
+        const hasRequests = groupRides.some(r => r.type === 'request');
+        const hasOffers = groupRides.some(r => r.type === 'offer');
+        
+        // Determine cluster color
+        let color = '#f97316'; // Orange for mixed
+        if (hasRequests && !hasOffers) color = '#ef4444'; // Red for all requests
+        if (hasOffers && !hasRequests) color = '#22c55e'; // Green for all offers
+        
+        const el = document.createElement('div');
+        el.className = 'flex items-center justify-center w-9 h-9 rounded-full shadow-lg border-2 border-white cursor-pointer transition-transform hover:scale-110';
+        el.style.backgroundColor = color;
+        el.innerHTML = `<span class="text-white font-bold text-sm">${groupRides.length}</span>`;
+
+        el.addEventListener('click', (e) => {
+          setSelectedRide(null);
+          // Get marker position for popup
+          const rect = el.getBoundingClientRect();
+          const mapRect = mapContainer.current?.getBoundingClientRect();
+          if (mapRect) {
+            setClusterPopup({
+              rides: groupRides,
+              position: {
+                x: rect.left - mapRect.left + rect.width / 2,
+                y: rect.top - mapRect.top
+              }
+            });
+          }
+        });
+
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([lng, lat])
+          .addTo(map.current!);
+        
+        markersRef.current.push(marker);
       }
     }
 
@@ -609,6 +462,17 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       });
     }
   }, [showHome, showSchool, rides, showRequests, showOffers, profile, mapboxToken]);
+
+  // Helper to get display name for a ride
+  const getRideDisplayName = (ride: Ride) => {
+    if (ride.profile?.first_name && ride.profile?.last_name) {
+      return `${ride.profile.first_name} ${ride.profile.last_name}`;
+    }
+    if (ride.profile?.first_name) return ride.profile.first_name;
+    if (ride.profile?.username) return ride.profile.username;
+    if (ride.userEmail) return ride.userEmail.split('@')[0];
+    return 'Parent';
+  };
 
   // Handle focus on a specific ride from list view
   useEffect(() => {
@@ -791,6 +655,67 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         />
       </div>
 
+      {/* Cluster Popup - shows list of rides at same location */}
+      {clusterPopup && (
+        <Card 
+          className="absolute bg-background/95 backdrop-blur-sm shadow-xl z-40 w-64 max-h-64 overflow-hidden"
+          style={{ 
+            left: Math.min(clusterPopup.position.x - 128, (mapContainer.current?.offsetWidth || 300) - 270),
+            top: clusterPopup.position.y + 10,
+          }}
+        >
+          <CardHeader className="py-2 px-3 border-b">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{clusterPopup.rides.length} rides here</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6"
+                onClick={() => setClusterPopup(null)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 max-h-48 overflow-y-auto">
+            {clusterPopup.rides.map((ride) => (
+              <button
+                key={ride.id}
+                className="w-full px-3 py-2 text-left hover:bg-muted/50 border-b last:border-b-0 transition-colors"
+                onClick={() => {
+                  setClusterPopup(null);
+                  setSelectedRide(ride);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: ride.type === 'request' ? '#ef4444' : '#22c55e' }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {getRideDisplayName(ride)}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {ride.pickup_location}
+                    </div>
+                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-[10px] px-1.5 py-0 flex-shrink-0 ${
+                      ride.type === 'request' 
+                        ? 'border-red-500/50 text-red-600' 
+                        : 'border-green-500/50 text-green-600'
+                    }`}
+                  >
+                    {ride.type === 'request' ? 'Request' : 'Offer'}
+                  </Badge>
+                </div>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Selected Ride Panel */}
       {selectedRide && (
