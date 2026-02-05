@@ -27,6 +27,7 @@ interface Ride {
   is_recurring: boolean;
   recurring_days: string[] | null;
   transaction_type?: string;
+  is_fulfilled?: boolean;
   profiles: {
     first_name: string | null;
     last_name: string | null;
@@ -397,6 +398,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const hasDeclinedResponse = responseStatus === 'declined';
     const connection = isOwnRide ? getRideConnection(ride.id) : null;
     const hasConnection = !!connection;
+    const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
 
     // Render action button based on state
     const renderActionButton = () => {
@@ -413,6 +415,16 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           <Button className="w-full gap-2" disabled variant="secondary" size="sm">
             <CheckCircle className="h-4 w-4" />
             Your ride (waiting)
+          </Button>
+        );
+      }
+
+      // If someone else already connected to this ride, show as full (even for students)
+      if (rideIsFull) {
+        return (
+          <Button className="w-full gap-2" disabled variant="secondary" size="sm">
+            <Users className="h-4 w-4" />
+            Ride Full
           </Button>
         );
       }
@@ -547,9 +559,11 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
           <div className="flex items-center gap-2 text-sm">
             <Users className="w-4 h-4 text-muted-foreground" />
-            {ride.type === "offer"
-              ? `${ride.seats_available} seats available`
-              : `${ride.seats_needed} seats needed`}
+            {rideIsFull
+              ? 'Ride Full'
+              : ride.type === "offer"
+                ? `${ride.seats_available} seats available`
+                : `${ride.seats_needed} seats needed`}
           </div>
 
           {ride.route_details && (
