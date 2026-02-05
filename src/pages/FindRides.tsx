@@ -166,27 +166,17 @@ const FindRides = () => {
     }));
 
    // Fetch accepted conversations to mark rides as "full"
-   const rideIds = combinedData.map(r => r.id);
-   let acceptedIds: Set<string> = new Set();
-   
-   if (rideIds.length > 0) {
-     const { data: acceptedConvs } = await supabase
-       .from('ride_conversations')
-       .select('ride_id')
-       .in('ride_id', rideIds)
-       .eq('status', 'accepted');
-     
-     if (acceptedConvs) {
-       acceptedIds = new Set(acceptedConvs.map(c => c.ride_id));
-     }
-   }
-   
-   setAcceptedRideIds(acceptedIds);
-   
+   // Use is_fulfilled column from rides table for "Ride Full" status
    const ridesWithConnectionStatus = combinedData.map(ride => ({
      ...ride,
-     hasAcceptedConnection: acceptedIds.has(ride.id)
+     hasAcceptedConnection: (ride as any).is_fulfilled === true
    }));
+   
+   // Keep this for backwards compatibility but it's now derived from is_fulfilled
+   const acceptedIds = new Set(
+     ridesWithConnectionStatus.filter(r => r.hasAcceptedConnection).map(r => r.id)
+   );
+   setAcceptedRideIds(acceptedIds);
    
    setBroadcasts(ridesWithConnectionStatus as any);
     setLoadingRides(false);
