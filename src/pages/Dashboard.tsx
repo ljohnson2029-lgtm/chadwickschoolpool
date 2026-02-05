@@ -33,6 +33,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
+import StudentDashboard from "@/components/StudentDashboard";
 
 interface BroadcastRide {
   id: string;
@@ -114,10 +115,19 @@ const Dashboard = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [isUserStudent, setIsUserStudent] = useState(false);
 
+  const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
+
   // Fetch user email to determine if student
   useEffect(() => {
     const fetchUserEmail = async () => {
       if (!user) return;
+
+      // If profile already says student, avoid extra query.
+      if (profile?.account_type === 'student') {
+        setIsUserStudent(true);
+        return;
+      }
+
       const { data } = await supabase
         .from('users')
         .select('email')
@@ -129,10 +139,16 @@ const Dashboard = () => {
       }
     };
     fetchUserEmail();
-  }, [user]);
+  }, [user, profile?.account_type]);
 
   useEffect(() => {
     if (!user) return;
+
+    // Students use the student dashboard; skip parent dashboard data fetching.
+    if (shouldUseStudentDashboard) {
+      setLoading(false);
+      return;
+    }
     
     const fetchDashboardData = async () => {
       setLoading(true);
@@ -348,7 +364,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, shouldUseStudentDashboard]);
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) {
@@ -405,6 +421,10 @@ const Dashboard = () => {
         </div>
       </DashboardLayout>
     );
+  }
+
+  if (shouldUseStudentDashboard) {
+    return <StudentDashboard />;
   }
 
   return (

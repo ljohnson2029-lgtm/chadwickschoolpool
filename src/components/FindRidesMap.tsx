@@ -791,9 +791,11 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
               <div className="flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4 text-muted-foreground" />
-               {selectedRide.hasAcceptedConnection ? (
-                 <span className="text-amber-600 font-medium">Ride Connected</span>
-               ) : selectedRide.type === 'offer'
+                {selectedRide.hasAcceptedConnection ? (
+                  <span className="text-amber-600 font-medium">
+                    {selectedRide.user_id === user?.id ? 'Ride Connected' : 'Ride Full'}
+                  </span>
+                ) : selectedRide.type === 'offer'
                   ? `${selectedRide.seats_available} seats available`
                   : `${selectedRide.seats_needed} seats needed`}
               </div>
