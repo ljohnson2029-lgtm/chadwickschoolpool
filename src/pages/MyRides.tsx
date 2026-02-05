@@ -4,106 +4,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  Radio,
-  Trash2,
-  Send,
-  Inbox,
-  MessageSquare,
-  Check,
-  X
-} from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
-import { format } from "date-fns";
+import { Car } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DeleteRideDialog,
-  CancelRequestDialog,
-  DeclineRequestDialog,
-} from "@/components/ConfirmDialogs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import RideUserBadge from "@/components/RideUserBadge";
-
-interface BroadcastRide {
-  id: string;
-  type: string;
-  pickup_location: string;
-  dropoff_location: string;
-  ride_date: string;
-  ride_time: string;
-  seats_needed: number | null;
-  seats_available: number | null;
-  route_details: string | null;
-  is_recurring: boolean;
-  recurring_days: string[] | null;
-  transaction_type: string;
-  status: string;
-}
-
-interface PrivateRequest {
-  id: string;
-  request_type: 'request' | 'offer';
-  sender_id: string;
-  recipient_id: string;
-  status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';
-  ride_date: string;
-  pickup_time: string;
-  is_round_trip: boolean;
-  return_time: string | null;
-  pickup_address: string;
-  dropoff_address: string;
-  seats_needed: number | null;
-  seats_offered: number | null;
-  message: string | null;
-  distance_from_route: number | null;
-  created_at: string;
-  responded_at: string | null;
-  sender_profile?: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    username: string;
-  };
-  recipient_profile?: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    username: string;
-  };
-}
+import { DeleteRideDialog } from "@/components/ConfirmDialogs";
+import { UnifiedRideCard, type UnifiedRide } from "@/components/UnifiedRideCard";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [broadcastRides, setBroadcastRides] = useState<BroadcastRide[]>([]);
-  const [sentRequests, setSentRequests] = useState<PrivateRequest[]>([]);
-  const [receivedRequests, setReceivedRequests] = useState<PrivateRequest[]>([]);
+  const [unifiedRides, setUnifiedRides] = useState<UnifiedRide[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [rideToDelete, setRideToDelete] = useState<string | null>(null);
+  const [rideToDelete, setRideToDelete] = useState<UnifiedRide | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
-  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<PrivateRequest | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -113,241 +28,258 @@ const MyRides = () => {
 
   useEffect(() => {
     if (user) {
-      fetchAllData();
+      fetchAllRides();
     }
   }, [user]);
 
-  const fetchAllData = async () => {
+  const fetchAllRides = async () => {
     if (!user) return;
     setLoadingData(true);
-    await Promise.all([
-      fetchBroadcastRides(),
-      fetchPrivateRequests()
-    ]);
-    setLoadingData(false);
-  };
 
-  const fetchBroadcastRides = async () => {
-    if (!user) return;
+    const allRides: UnifiedRide[] = [];
 
-    const { data, error } = await supabase
+    // 1. Fetch user's own broadcast rides (Posted)
+    const { data: myRides } = await supabase
       .from('rides')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')
-      .order('ride_date', { ascending: true })
-      .order('ride_time', { ascending: true });
+      .gte('ride_date', new Date().toISOString().split('T')[0]);
 
-    if (error) {
-      console.error('Error fetching broadcast rides:', error);
-    } else {
-      setBroadcastRides(data || []);
+    if (myRides) {
+      for (const ride of myRides) {
+        allRides.push({
+          id: ride.id,
+          source: 'posted',
+          rideType: ride.type as 'request' | 'offer',
+          status: ride.type === 'request' ? 'posted-looking' : 'posted-offering',
+          pickupLocation: ride.pickup_location,
+          dropoffLocation: ride.dropoff_location,
+          rideDate: ride.ride_date,
+          rideTime: ride.ride_time,
+          seatsAvailable: ride.seats_available,
+          seatsNeeded: ride.seats_needed,
+          isDriver: ride.type === 'offer',
+          otherParent: null,
+          originalData: ride,
+        });
+      }
     }
-  };
 
-  const fetchPrivateRequests = async () => {
-    if (!user) return;
-
-    // Fetch sent requests
-    const { data: sent, error: sentError } = await supabase
-      .from('private_ride_requests')
-      .select('*')
+    // 2. Fetch ride conversations where user joined someone else's ride
+    const { data: joinedConversations } = await supabase
+      .from('ride_conversations')
+      .select('*, rides(*)')
       .eq('sender_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('status', 'accepted');
 
-    if (sentError) {
-      console.error('Error fetching sent requests:', sentError);
-    } else {
-      // Get recipient profiles separately
-      const recipientIds = [...new Set(sent?.map(r => r.recipient_id) || [])];
-      let recipientProfiles: Record<string, any> = {};
-      if (recipientIds.length > 0) {
+    if (joinedConversations) {
+      const rideOwnerIds = [...new Set(joinedConversations.map(c => c.rides?.user_id).filter(Boolean))];
+      let ownerProfiles: Record<string, any> = {};
+      
+      if (rideOwnerIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, username')
-          .in('id', recipientIds);
+          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
+          .in('id', rideOwnerIds);
+        
+        const { data: users } = await supabase
+          .from('users')
+          .select('user_id, email')
+          .in('user_id', rideOwnerIds);
+
         if (profiles) {
-          recipientProfiles = profiles.reduce((acc, p) => {
-            acc[p.id] = p;
+          ownerProfiles = profiles.reduce((acc, p) => {
+            const userEmail = users?.find(u => u.user_id === p.id)?.email;
+            acc[p.id] = { ...p, email: userEmail };
             return acc;
           }, {} as Record<string, any>);
         }
       }
-      setSentRequests((sent || []).map(r => ({
-        ...r,
-        recipient_profile: recipientProfiles[r.recipient_id] || null
-      })) as any);
+
+      for (const conv of joinedConversations) {
+        if (!conv.rides) continue;
+        const ride = conv.rides;
+        const owner = ownerProfiles[ride.user_id];
+        
+        // Determine if user is joining a ride offer or helping with a request
+        const isHelpingWithRequest = ride.type === 'request';
+        
+        allRides.push({
+          id: conv.id,
+          source: 'conversation',
+          rideType: ride.type as 'request' | 'offer',
+          status: isHelpingWithRequest ? 'helping-out' : 'joined-ride',
+          pickupLocation: ride.pickup_location,
+          dropoffLocation: ride.dropoff_location,
+          rideDate: ride.ride_date,
+          rideTime: ride.ride_time,
+          seatsAvailable: ride.seats_available,
+          seatsNeeded: ride.seats_needed,
+          isDriver: isHelpingWithRequest,
+          otherParent: owner ? {
+            id: owner.id,
+            firstName: owner.first_name,
+            lastName: owner.last_name,
+            username: owner.username,
+            email: owner.share_email ? owner.email : null,
+            phone: owner.share_phone ? owner.phone_number : null,
+          } : null,
+          originalData: { conversation: conv, ride },
+        });
+      }
     }
 
-    // Fetch received requests
-    const { data: received, error: receivedError } = await supabase
+    // 3. Fetch private ride requests (both sent and received, accepted only)
+    const { data: privateRequests } = await supabase
       .from('private_ride_requests')
       .select('*')
-      .eq('recipient_id', user.id)
-      .order('created_at', { ascending: false });
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .eq('status', 'accepted')
+      .gte('ride_date', new Date().toISOString().split('T')[0]);
 
-    if (receivedError) {
-      console.error('Error fetching received requests:', receivedError);
-    } else {
-      // Get sender profiles separately
-      const senderIds = [...new Set(received?.map(r => r.sender_id) || [])];
-      let senderProfiles: Record<string, any> = {};
-      if (senderIds.length > 0) {
+    if (privateRequests) {
+      const otherUserIds = [...new Set(privateRequests.map(r => 
+        r.sender_id === user.id ? r.recipient_id : r.sender_id
+      ))];
+      
+      let otherProfiles: Record<string, any> = {};
+      
+      if (otherUserIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, username')
-          .in('id', senderIds);
+          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
+          .in('id', otherUserIds);
+        
+        const { data: users } = await supabase
+          .from('users')
+          .select('user_id, email')
+          .in('user_id', otherUserIds);
+
         if (profiles) {
-          senderProfiles = profiles.reduce((acc, p) => {
-            acc[p.id] = p;
+          otherProfiles = profiles.reduce((acc, p) => {
+            const userEmail = users?.find(u => u.user_id === p.id)?.email;
+            acc[p.id] = { ...p, email: userEmail };
             return acc;
           }, {} as Record<string, any>);
         }
       }
-      setReceivedRequests((received || []).map(r => ({
-        ...r,
-        sender_profile: senderProfiles[r.sender_id] || null
-      })) as any);
+
+      for (const req of privateRequests) {
+        const isSender = req.sender_id === user.id;
+        const otherId = isSender ? req.recipient_id : req.sender_id;
+        const other = otherProfiles[otherId];
+        
+        // Determine user's role based on who sent and what type
+        let status: UnifiedRide['status'];
+        let isDriver: boolean;
+        
+        if (isSender) {
+          // User sent the request
+          if (req.request_type === 'request') {
+            status = 'joined-ride'; // User requested a ride, other is driving
+            isDriver = false;
+          } else {
+            status = 'helping-out'; // User offered to drive
+            isDriver = true;
+          }
+        } else {
+          // User received the request
+          if (req.request_type === 'request') {
+            status = 'helping-out'; // Other requested, user is driving
+            isDriver = true;
+          } else {
+            status = 'joined-ride'; // Other offered, user is passenger
+            isDriver = false;
+          }
+        }
+
+        allRides.push({
+          id: req.id,
+          source: 'private',
+          rideType: req.request_type,
+          status,
+          pickupLocation: req.pickup_address,
+          dropoffLocation: req.dropoff_address,
+          rideDate: req.ride_date,
+          rideTime: req.pickup_time,
+          seatsAvailable: req.seats_offered,
+          seatsNeeded: req.seats_needed,
+          isDriver,
+          otherParent: other ? {
+            id: other.id,
+            firstName: other.first_name,
+            lastName: other.last_name,
+            username: other.username,
+            email: other.share_email ? other.email : null,
+            phone: other.share_phone ? other.phone_number : null,
+          } : null,
+          originalData: req,
+        });
+      }
     }
+
+    // Sort by date (soonest first)
+    allRides.sort((a, b) => {
+      const dateA = new Date(`${a.rideDate}T${a.rideTime}`);
+      const dateB = new Date(`${b.rideDate}T${b.rideTime}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    setUnifiedRides(allRides);
+    setLoadingData(false);
   };
 
-  const handleDeleteRide = async () => {
+  const handleCancelRide = async (ride: UnifiedRide) => {
+    setRideToDelete(ride);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmCancelRide = async () => {
     if (!rideToDelete || !user) return;
 
     setDeleteLoading(true);
-    console.log('Deleting ride:', rideToDelete, 'for user:', user.id);
-    
-    // Actually delete the ride from the database
-    const { error } = await supabase
-      .from('rides')
-      .delete()
-      .eq('id', rideToDelete)
-      .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete ride: ' + error.message);
-    } else {
-      toast.success('Ride deleted successfully');
-      fetchBroadcastRides();
+    try {
+      if (rideToDelete.source === 'posted') {
+        // Delete the broadcast ride
+        const { error } = await supabase
+          .from('rides')
+          .delete()
+          .eq('id', rideToDelete.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        toast.success('Ride post deleted');
+      } else if (rideToDelete.source === 'conversation') {
+        // Delete the conversation (leaving the ride)
+        const { error } = await supabase
+          .from('ride_conversations')
+          .delete()
+          .eq('id', rideToDelete.id)
+          .eq('sender_id', user.id);
+
+        if (error) throw error;
+        toast.success('Left the ride');
+      } else if (rideToDelete.source === 'private') {
+        // Delete the private request
+        const { error } = await supabase
+          .from('private_ride_requests')
+          .delete()
+          .eq('id', rideToDelete.id);
+
+        if (error) throw error;
+        toast.success('Ride cancelled');
+      }
+
+      fetchAllRides();
+    } catch (error: any) {
+      toast.error('Failed to cancel: ' + error.message);
     }
+
     setDeleteLoading(false);
     setDeleteDialogOpen(false);
     setRideToDelete(null);
-  };
-
-  const handleCancelRequest = async () => {
-    if (!selectedRequest) return;
-
-    setActionLoading(true);
-    
-    // Notify the recipient before deleting
-    await supabase.from('notifications').insert({
-      user_id: selectedRequest.recipient_id,
-      type: 'private_request_cancelled',
-      message: `${profile?.first_name} ${profile?.last_name} cancelled their ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}`,
-      is_read: false
-    });
-
-    // Actually delete the request from the database
-    const { error } = await supabase
-      .from('private_ride_requests')
-      .delete()
-      .eq('id', selectedRequest.id);
-
-    if (error) {
-      toast.error('Failed to cancel request');
-    } else {
-      toast.success('Request cancelled and removed');
-      fetchPrivateRequests();
-    }
-    setActionLoading(false);
-    setCancelDialogOpen(false);
-    setSelectedRequest(null);
-  };
-
-  const handleAcceptRequest = async () => {
-    if (!selectedRequest) return;
-
-    setActionLoading(true);
-    const { error } = await supabase
-      .from('private_ride_requests')
-      .update({
-        status: 'accepted',
-        responded_at: new Date().toISOString()
-      })
-      .eq('id', selectedRequest.id);
-
-    if (error) {
-      toast.error('Failed to accept request');
-      setActionLoading(false);
-      return;
-    }
-
-    // Create notification
-    await supabase.from('notifications').insert({
-      user_id: selectedRequest.sender_id,
-      type: 'private_request_accepted',
-      message: `${profile?.first_name} ${profile?.last_name} accepted your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}!`,
-      is_read: false
-    });
-
-    toast.success('Request accepted!');
-    fetchPrivateRequests();
-    setActionLoading(false);
-    setAcceptDialogOpen(false);
-    setSelectedRequest(null);
-  };
-
-  const handleDeclineRequest = async (reason?: string) => {
-    if (!selectedRequest) return;
-
-    setActionLoading(true);
-    const { error } = await supabase
-      .from('private_ride_requests')
-      .update({
-        status: 'declined',
-        responded_at: new Date().toISOString()
-      })
-      .eq('id', selectedRequest.id);
-
-    if (error) {
-      toast.error('Failed to decline request');
-      setActionLoading(false);
-      return;
-    }
-
-    // Create notification with optional reason
-    const reasonText = reason ? ` Reason: "${reason}"` : "";
-    await supabase.from('notifications').insert({
-      user_id: selectedRequest.sender_id,
-      type: 'private_request_declined',
-      message: `${profile?.first_name} ${profile?.last_name} declined your ${selectedRequest.request_type === 'request' ? 'ride request' : 'ride offer'}.${reasonText}`,
-      is_read: false
-    });
-
-    toast.success('Request declined');
-    fetchPrivateRequests();
-    setActionLoading(false);
-    setDeclineDialogOpen(false);
-    setSelectedRequest(null);
-  };
-
-  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    return username.substring(0, 2).toUpperCase();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-green-500/10 text-green-600';
-      case 'accepted': return 'bg-green-500/10 text-green-600';
-      case 'declined': return 'bg-red-500/10 text-red-600';
-      case 'cancelled': return 'bg-gray-500/10 text-gray-600';
-      default: return 'bg-green-500/10 text-green-600';
-    }
   };
 
   if (loading || !user || !profile) {
@@ -362,269 +294,49 @@ const MyRides = () => {
     );
   }
 
-  const BroadcastRideCard = ({ ride }: { ride: BroadcastRide }) => (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            {ride.type === 'request' ? '🙏 Ride Request' : '🚗 Ride Offer'}
-          </CardTitle>
-          <Badge className="gap-1">
-            <Radio className="h-3 w-3" />
-            Public
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-          <div className="text-sm">
-            <div className="font-medium">{ride.pickup_location}</div>
-            <div className="text-muted-foreground">to {ride.dropoff_location}</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            {format(new Date(ride.ride_date), 'MMM d, yyyy')}
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {ride.ride_time}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          {ride.type === 'offer'
-            ? `${ride.seats_available} seats available`
-            : `${ride.seats_needed} seats needed`}
-        </div>
-
-        <Button 
-          variant="destructive" 
-          size="sm"
-          className="w-full gap-2"
-          onClick={() => {
-            setRideToDelete(ride.id);
-            setDeleteDialogOpen(true);
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
-  const PrivateRequestCard = ({ request, isSent }: { request: PrivateRequest; isSent: boolean }) => {
-    const otherProfile = isSent ? request.recipient_profile : request.sender_profile;
-    const otherUserId = isSent ? request.recipient_id : request.sender_id;
-    
-    return (
-      <Card className="hover:shadow-lg transition-shadow">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <RideUserBadge
-                userId={otherUserId}
-                firstName={otherProfile?.first_name || null}
-                lastName={otherProfile?.last_name || null}
-                username={otherProfile?.username || 'Unknown'}
-                accountType="parent"
-                variant="compact"
-                showViewButton={true}
-              />
-            </div>
-            <Badge className={getStatusColor(request.status)}>
-              {request.status}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Badge variant="outline" className="gap-1">
-            {request.request_type === 'request' ? '🙏 Request' : '🚗 Offer'}
-          </Badge>
-
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-            <div className="text-sm">
-              <div className="font-medium">{request.pickup_address}</div>
-              <div className="text-muted-foreground">to {request.dropoff_address}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              {format(new Date(request.ride_date), 'MMM d, yyyy')}
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              {request.pickup_time}
-            </div>
-          </div>
-
-          {request.message && (
-            <p className="text-sm text-muted-foreground pt-2 border-t italic">
-              "{request.message}"
-            </p>
-          )}
-
-          {/* Actions for received pending requests */}
-          {!isSent && request.status === 'pending' && (
-            <Badge className="bg-green-500/10 text-green-600 gap-1">
-              <Check className="h-3 w-3" />
-              Connected
-            </Badge>
-          )}
-
-          {/* Cancel button for sent pending requests */}
-          {isSent && request.status === 'pending' && (
-            <Badge className="bg-green-500/10 text-green-600 gap-1">
-              <Check className="h-3 w-3" />
-              Connected
-            </Badge>
-          )}
-
-          <p className="text-xs text-muted-foreground">
-            Connected {format(new Date(request.created_at), 'MMM d, h:mm a')}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  };
-
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 max-w-7xl">
+      <div className="container mx-auto px-4 max-w-4xl">
         <Breadcrumbs items={[{ label: "My Rides" }]} />
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">My Rides</h1>
           <p className="text-muted-foreground">
-            Manage your posted rides and private requests
+            All your rides in one place
           </p>
         </div>
 
-        <Tabs defaultValue="posted" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="posted" className="gap-2">
-              <Radio className="h-4 w-4" />
-              Posted Rides ({broadcastRides.length})
-            </TabsTrigger>
-            <TabsTrigger value="sent" className="gap-2">
-              <Send className="h-4 w-4" />
-              Sent ({sentRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="received" className="gap-2">
-              <Inbox className="h-4 w-4" />
-              Received ({receivedRequests.length})
-            </TabsTrigger>
-          </TabsList>
+        {loadingData ? (
+          <div className="text-center py-12">Loading...</div>
+        ) : unifiedRides.length === 0 ? (
+          <EmptyState
+            icon={Car}
+            title="No Rides Yet"
+            description="Post a ride or join someone else's to get started"
+            action={{
+              label: "Find Rides",
+              onClick: () => navigate('/find-rides')
+            }}
+          />
+        ) : (
+          <ScrollArea className="h-[calc(100vh-250px)]">
+            <div className="space-y-4 pr-4">
+              {unifiedRides.map((ride) => (
+                <UnifiedRideCard
+                  key={`${ride.source}-${ride.id}`}
+                  ride={ride}
+                  onCancel={() => handleCancelRide(ride)}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
 
-          <TabsContent value="posted">
-            {loadingData ? (
-              <div className="text-center py-12">Loading...</div>
-            ) : broadcastRides.length === 0 ? (
-              <EmptyState
-                icon={Radio}
-                title="No Posted Rides"
-                description="You haven't posted any public rides yet"
-                action={{
-                  label: "Post a Ride",
-                  onClick: () => navigate('/find-rides?tab=post')
-                }}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {broadcastRides.map((ride) => (
-                  <BroadcastRideCard key={ride.id} ride={ride} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="sent">
-            {loadingData ? (
-              <div className="text-center py-12">Loading...</div>
-            ) : sentRequests.length === 0 ? (
-              <EmptyState
-                icon={Send}
-                title="No Sent Requests"
-                description="You haven't sent any private ride requests yet"
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sentRequests.map((request) => (
-                  <PrivateRequestCard key={request.id} request={request} isSent={true} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="received">
-            {loadingData ? (
-              <div className="text-center py-12">Loading...</div>
-            ) : receivedRequests.length === 0 ? (
-              <EmptyState
-                icon={Inbox}
-                title="No Received Requests"
-                description="No one has sent you private ride requests yet"
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {receivedRequests.map((request) => (
-                  <PrivateRequestCard key={request.id} request={request} isSent={false} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Delete Dialog */}
         <DeleteRideDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          onConfirm={handleDeleteRide}
+          onConfirm={confirmCancelRide}
           loading={deleteLoading}
-        />
-
-        {/* Accept Dialog */}
-        <AlertDialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Accept this request?</AlertDialogTitle>
-              <AlertDialogDescription>
-                By accepting, {selectedRequest?.sender_profile?.first_name} will be notified and receive your contact information.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={actionLoading}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleAcceptRequest} disabled={actionLoading}>
-                {actionLoading ? "Accepting..." : "Accept Request"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Decline Dialog */}
-        <DeclineRequestDialog
-          open={declineDialogOpen}
-          onOpenChange={setDeclineDialogOpen}
-          onConfirm={handleDeclineRequest}
-          senderName={`${selectedRequest?.sender_profile?.first_name || ''} ${selectedRequest?.sender_profile?.last_name || ''}`.trim() || 'This parent'}
-          loading={actionLoading}
-        />
-
-        {/* Cancel Request Dialog */}
-        <CancelRequestDialog
-          open={cancelDialogOpen}
-          onOpenChange={setCancelDialogOpen}
-          onConfirm={handleCancelRequest}
-          recipientName={`${selectedRequest?.recipient_profile?.first_name || ''} ${selectedRequest?.recipient_profile?.last_name || ''}`.trim() || 'The recipient'}
-          loading={actionLoading}
         />
       </div>
     </DashboardLayout>
