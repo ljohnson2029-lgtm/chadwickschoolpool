@@ -24,6 +24,8 @@ const FamilyCarpools = () => {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
+  const [showHome, setShowHome] = useState(true);
+  const [showSchool, setShowSchool] = useState(true);
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
@@ -214,6 +216,10 @@ const FamilyCarpools = () => {
               showOffers={showOffers}
               onToggleRequests={setShowRequests}
               onToggleOffers={setShowOffers}
+              showHome={showHome}
+              showSchool={showSchool}
+              onToggleHome={setShowHome}
+              onToggleSchool={setShowSchool}
               focusRide={focusRide}
               onFocusRideHandled={() => setFocusRide(null)}
             />

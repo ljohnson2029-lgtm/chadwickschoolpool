@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
 import { JoinRideDialog, OfferRideDialog } from './ConfirmDialogs';
+import MapFilterPanel from './MapFilterPanel';
 
 interface Ride {
   id: string;
@@ -60,6 +61,10 @@ interface FindRidesMapProps {
   showOffers: boolean;
   onToggleRequests: (value: boolean) => void;
   onToggleOffers: (value: boolean) => void;
+  showHome?: boolean;
+  showSchool?: boolean;
+  onToggleHome?: (value: boolean) => void;
+  onToggleSchool?: (value: boolean) => void;
   focusRide?: {
     id: string;
     pickup_latitude: number | null;
@@ -76,6 +81,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   showOffers,
   onToggleRequests,
   onToggleOffers,
+  showHome = true,
+  showSchool = true,
+  onToggleHome,
+  onToggleSchool,
   focusRide,
   onFocusRideHandled
 }) => {
@@ -287,10 +296,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       let hasValidMarkers = false;
 
       // Add user's home marker (blue)
-      const userLat = profile?.home_latitude;
-      const userLng = profile?.home_longitude;
-
-      if (profile?.home_address && userLat && userLng) {
+      if (showHome && profile?.home_address && profile?.home_latitude && profile?.home_longitude) {
+        const userLat = profile.home_latitude;
+        const userLng = profile.home_longitude;
+        
         const el = document.createElement('div');
         el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
         el.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
@@ -324,35 +333,37 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       }
 
       // Add Chadwick School marker (orange)
-      const schoolEl = document.createElement('div');
-      schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
-      schoolEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
+      if (showSchool) {
+        const schoolEl = document.createElement('div');
+        schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
+        schoolEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
 
-      const schoolPopupDiv = document.createElement('div');
-      schoolPopupDiv.className = 'p-2';
-      
-      const schoolTitle = document.createElement('p');
-      schoolTitle.className = 'font-semibold text-orange-600';
-      schoolTitle.textContent = CHADWICK_SCHOOL.name;
-      
-      const schoolAddress = document.createElement('p');
-      schoolAddress.className = 'text-sm text-gray-600';
-      schoolAddress.textContent = CHADWICK_SCHOOL.address;
-      
-      schoolPopupDiv.appendChild(schoolTitle);
-      schoolPopupDiv.appendChild(schoolAddress);
-      
-      const schoolPopup = new mapboxgl.Popup({ offset: 25 });
-      schoolPopup.setDOMContent(schoolPopupDiv);
+        const schoolPopupDiv = document.createElement('div');
+        schoolPopupDiv.className = 'p-2';
+        
+        const schoolTitle = document.createElement('p');
+        schoolTitle.className = 'font-semibold text-orange-600';
+        schoolTitle.textContent = CHADWICK_SCHOOL.name;
+        
+        const schoolAddress = document.createElement('p');
+        schoolAddress.className = 'text-sm text-gray-600';
+        schoolAddress.textContent = CHADWICK_SCHOOL.address;
+        
+        schoolPopupDiv.appendChild(schoolTitle);
+        schoolPopupDiv.appendChild(schoolAddress);
+        
+        const schoolPopup = new mapboxgl.Popup({ offset: 25 });
+        schoolPopup.setDOMContent(schoolPopupDiv);
 
-      const schoolMarker = new mapboxgl.Marker(schoolEl)
-        .setLngLat([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat])
-        .setPopup(schoolPopup)
-        .addTo(map.current!);
-      
-      markersRef.current.push(schoolMarker);
-      bounds.extend([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat]);
-      hasValidMarkers = true;
+        const schoolMarker = new mapboxgl.Marker(schoolEl)
+          .setLngLat([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat])
+          .setPopup(schoolPopup)
+          .addTo(map.current!);
+        
+        markersRef.current.push(schoolMarker);
+        bounds.extend([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat]);
+        hasValidMarkers = true;
+      }
 
       // Add ride markers
       const filteredRides = rides.filter(r => 
@@ -448,7 +459,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     };
 
     addMarkers();
-  }, [rides, showRequests, showOffers, profile, mapboxToken]);
+  }, [rides, showRequests, showOffers, showHome, showSchool, profile, mapboxToken]);
 
   // Handle focus on a specific ride from list view
   useEffect(() => {
@@ -615,27 +626,21 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       {/* Map Container */}
       <div ref={mapContainer} className="w-full h-full rounded-lg" />
       
-      {/* Legend */}
-      <Card className="absolute top-4 left-4 p-3 bg-background/95 backdrop-blur-sm">
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
-            <span>Your Home</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-white shadow" />
-            <span>Chadwick School</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow" />
-            <span>Ride Requests</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-white shadow" />
-            <span>Ride Offers</span>
-          </div>
-        </div>
-      </Card>
+      {/* Filter Panel */}
+      <div className="absolute top-4 left-4 z-10">
+        <MapFilterPanel
+          showRequests={showRequests}
+          showOffers={showOffers}
+          showHome={showHome}
+          showSchool={showSchool}
+          onToggleRequests={onToggleRequests}
+          onToggleOffers={onToggleOffers}
+          onToggleHome={onToggleHome || (() => {})}
+          onToggleSchool={onToggleSchool || (() => {})}
+          requestCount={rides.filter(r => r.type === 'request').length}
+          offerCount={rides.filter(r => r.type === 'offer').length}
+        />
+      </div>
 
 
       {/* Selected Ride Panel */}
