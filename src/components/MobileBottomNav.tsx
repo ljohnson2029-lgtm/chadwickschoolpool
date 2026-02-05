@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Radio, MapPin, Car, Calendar, Link2, User, Menu } from "lucide-react";
+import { Home, Radio, MapPin, Car, Calendar, Link2, User, Menu, MessageSquarePlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -44,6 +44,7 @@ const MobileBottomNav = () => {
     { label: "Profile", path: "/profile", icon: User },
     { label: "Conversations", path: "/conversations" },
     { label: "Family Links", path: "/family-links" },
+    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
     { label: "Settings", path: "/settings" },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },
@@ -51,6 +52,7 @@ const MobileBottomNav = () => {
   ];
 
   const studentMenuItems = [
+    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
     { label: "Settings", path: "/settings" },
     { label: "About", path: "/about" },
     { label: "Safety", path: "/safety" },

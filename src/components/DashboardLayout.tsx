@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import TabNavigation from "./TabNavigation";
 import MobileBottomNav from "./MobileBottomNav";
+import FloatingFeedbackButton from "./FloatingFeedbackButton";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -15,6 +16,7 @@ export const DashboardLayout = ({ children, hideBottomNav = false }: DashboardLa
         {children}
       </main>
       {!hideBottomNav && <MobileBottomNav />}
+      <FloatingFeedbackButton />
     </div>
   );
 };
