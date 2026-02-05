@@ -1,6 +1,6 @@
  import { Card, CardContent } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
- import { Calendar, Clock, MapPin, Car, Hand } from "lucide-react";
+import { Calendar, Clock, MapPin, Car, Hand, Users } from "lucide-react";
  import { format } from "date-fns";
  import type { FamilyRide } from "@/hooks/useLinkedParentRides";
  
@@ -46,6 +46,12 @@
                <Badge variant="outline" className="text-xs">
                  By {ride.parent_name}
                </Badge>
+              {ride.connected_parent_name && (
+                <Badge variant="secondary" className="text-xs gap-1 bg-green-500/10 text-green-600 border-green-500/30">
+                  <Users className="h-3 w-3" />
+                  With {ride.connected_parent_name}
+                </Badge>
+              )}
              </div>
              
              {/* Date and time */}
