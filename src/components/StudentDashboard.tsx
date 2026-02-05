@@ -101,12 +101,12 @@
            <LinkedParentsList parents={linkedParents} loading={loading} />
          </div>
  
-         {/* Section B: Family Carpools */}
+          {/* Section B: Scheduled Rides (from linked parents) */}
          <div className="mb-8">
            <div className="flex items-center justify-between mb-4">
              <h2 className="text-xl font-semibold flex items-center gap-2">
                <Car className="h-5 w-5" />
-               Family Carpools
+                Scheduled Rides
              </h2>
              {linkedParents.length > 0 && familyRides.length > 0 && (
                <Button variant="ghost" onClick={() => navigate('/family-carpools')} className="gap-2">
@@ -136,7 +136,7 @@
                <CardContent className="py-8 text-center">
                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                  <p className="text-muted-foreground">
-                   Your parents haven't created any carpools yet
+                    No scheduled rides yet
                  </p>
                </CardContent>
              </Card>
@@ -162,11 +162,11 @@
                </CardContent>
              </Card>
  
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-carpools')}>
+              <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-carpools')}>
                <CardContent className="py-6 text-center">
                  <Calendar className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">View Family Schedule</p>
-                 <p className="text-sm text-muted-foreground">Calendar view</p>
+                  <p className="font-medium">View Scheduled Rides</p>
+                  <p className="text-sm text-muted-foreground">All linked-parent rides</p>
                </CardContent>
              </Card>
              
