@@ -294,9 +294,11 @@ const FindRides = () => {
 
         <div className="flex items-center gap-2 text-sm">
           <Users className="h-4 w-4 text-muted-foreground" />
-         {ride.hasAcceptedConnection ? (
-           <span className="text-amber-600 font-medium">Ride Connected</span>
-         ) : ride.type === 'offer'
+          {ride.hasAcceptedConnection ? (
+            <span className="text-amber-600 font-medium">
+              {ride.user_id === user?.id ? 'Ride Connected' : 'Ride Full'}
+            </span>
+          ) : ride.type === 'offer'
             ? `${ride.seats_available} seats available`
             : `${ride.seats_needed} seats needed`}
         </div>
