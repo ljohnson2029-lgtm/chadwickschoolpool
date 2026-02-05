@@ -12,7 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Trash2, X, Unlink, LogOut, Loader2, Hand, Car } from "lucide-react";
+import { AlertTriangle, Trash2, X, Unlink, LogOut, Loader2, Hand, Car, CheckCircle, Mail, Phone, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -399,3 +401,329 @@ export const OfferRideDialog = ({
     icon={<Car className="w-5 h-5 text-primary" />}
   />
 );
+
+// Instant Join Ride Dialog (no approval needed)
+interface InstantJoinRideDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void | Promise<void>;
+  ownerName: string;
+  rideDate: string;
+  rideTime: string;
+  loading?: boolean;
+  showSuccess?: boolean;
+  ownerContact?: {
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+  onClose?: () => void;
+}
+
+export const InstantJoinRideDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+  ownerName,
+  rideDate,
+  rideTime,
+  loading = false,
+  showSuccess = false,
+  ownerContact,
+  onClose,
+}: InstantJoinRideDialogProps) => {
+  const handleClose = () => {
+    onClose?.();
+    onOpenChange(false);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      return format(new Date(dateStr), 'EEEE, MMMM d');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatDisplayTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    try {
+      return format(new Date(`2000-01-01T${timeStr}`), 'h:mm a');
+    } catch {
+      return timeStr;
+    }
+  };
+
+  if (showSuccess && ownerContact) {
+    return (
+      <AlertDialog open={open} onOpenChange={handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              You've joined the ride!
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You're now connected with <strong>{ownerContact.firstName} {ownerContact.lastName}</strong>.
+                  Contact them to coordinate pickup details.
+                </p>
+                <div className="bg-muted rounded-lg p-4 space-y-3">
+                  <p className="font-medium text-foreground">Contact Information:</p>
+                  {ownerContact.email && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{ownerContact.email}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(ownerContact.email!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {ownerContact.phone && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{ownerContact.phone}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(ownerContact.phone!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {!ownerContact.email && !ownerContact.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      Contact info not shared. Check the My Rides page for updates.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleClose}>
+              Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Hand className="w-5 h-5 text-primary" />
+            Join this ride?
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              <p>
+                Join <strong>{ownerName}</strong>'s ride on <strong>{formatDisplayDate(rideDate)}</strong> at <strong>{formatDisplayTime(rideTime)}</strong>?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You'll be connected immediately and can coordinate pickup details.
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Joining...
+              </>
+            ) : (
+              "Join Ride"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+// Instant Offer Ride Dialog (no approval needed)
+interface InstantOfferRideDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void | Promise<void>;
+  requesterName: string;
+  rideDate: string;
+  rideTime: string;
+  loading?: boolean;
+  showSuccess?: boolean;
+  requesterContact?: {
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+  onClose?: () => void;
+}
+
+export const InstantOfferRideDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+  requesterName,
+  rideDate,
+  rideTime,
+  loading = false,
+  showSuccess = false,
+  requesterContact,
+  onClose,
+}: InstantOfferRideDialogProps) => {
+  const handleClose = () => {
+    onClose?.();
+    onOpenChange(false);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      return format(new Date(dateStr), 'EEEE, MMMM d');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatDisplayTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    try {
+      return format(new Date(`2000-01-01T${timeStr}`), 'h:mm a');
+    } catch {
+      return timeStr;
+    }
+  };
+
+  if (showSuccess && requesterContact) {
+    return (
+      <AlertDialog open={open} onOpenChange={handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              Ride confirmed!
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You're now connected with <strong>{requesterContact.firstName} {requesterContact.lastName}</strong>.
+                  Contact them to coordinate pickup details.
+                </p>
+                <div className="bg-muted rounded-lg p-4 space-y-3">
+                  <p className="font-medium text-foreground">Contact Information:</p>
+                  {requesterContact.email && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{requesterContact.email}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(requesterContact.email!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {requesterContact.phone && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{requesterContact.phone}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(requesterContact.phone!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {!requesterContact.email && !requesterContact.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      Contact info not shared. Check the My Rides page for updates.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleClose}>
+              Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Car className="w-5 h-5 text-primary" />
+            Fulfill this ride request?
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              <p>
+                Fulfill <strong>{requesterName}</strong>'s ride request on <strong>{formatDisplayDate(rideDate)}</strong> at <strong>{formatDisplayTime(rideTime)}</strong>?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You'll be connected immediately and can coordinate pickup details.
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Confirming...
+              </>
+            ) : (
+              "Confirm Ride"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};

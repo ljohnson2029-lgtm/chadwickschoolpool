@@ -837,14 +837,9 @@ const Dashboard = () => {
         {/* SECTION 5: Active Conversations */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Active Conversations</h2>
+            <h2 className="text-2xl font-semibold">Your Ride Connections</h2>
             <Button variant="ghost" onClick={() => navigate('/conversations')} className="gap-2">
               View All
-              {pendingConversationsCount > 0 && (
-                <Badge variant="default" className="ml-2">
-                  {pendingConversationsCount}
-                </Badge>
-              )}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -852,20 +847,20 @@ const Dashboard = () => {
           {loading ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Loading conversations...
+                Loading connections...
               </CardContent>
             </Card>
           ) : activeConversations.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-12 text-center">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Conversations</h3>
+                <h3 className="text-lg font-semibold mb-2">No Ride Connections</h3>
                 <p className="text-muted-foreground mb-4">
-                  Send a direct request from the map to start a conversation
+                  Join a ride or fulfill a request to connect with other parents
                 </p>
-                <Button variant="outline" onClick={() => navigate('/map')} className="gap-2">
-                  <MapIcon className="h-4 w-4" />
-                  Find Parents on Map
+                <Button variant="outline" onClick={() => navigate('/find-rides')} className="gap-2">
+                  <Radio className="h-4 w-4" />
+                  Browse Rides
                 </Button>
               </CardContent>
             </Card>
@@ -874,13 +869,6 @@ const Dashboard = () => {
               {activeConversations.map((conv) => {
                 const isRecipient = conv.recipient_id === user.id;
                 const otherParty = isRecipient ? conv.sender_profile : conv.recipient_profile;
-                const statusIcon = conv.status === 'accepted' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                ) : conv.status === 'pending' ? (
-                  <Clock className="h-4 w-4 text-yellow-600" />
-                ) : (
-                  <Send className="h-4 w-4 text-blue-600" />
-                );
 
                 return (
                   <Card key={conv.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/conversations')}>
@@ -894,12 +882,10 @@ const Dashboard = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium">{otherParty?.first_name} {otherParty?.last_name}</p>
-                            <div className="flex items-center gap-1">
-                              {statusIcon}
-                              <span className="text-xs text-muted-foreground capitalize">
-                                {conv.status}
-                              </span>
-                            </div>
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Connected
+                            </Badge>
                           </div>
                           {conv.rides && (
                             <>
@@ -916,9 +902,6 @@ const Dashboard = () => {
                             </>
                           )}
                         </div>
-                        {isRecipient && conv.status === 'pending' && (
-                          <Badge variant="default">Action Required</Badge>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

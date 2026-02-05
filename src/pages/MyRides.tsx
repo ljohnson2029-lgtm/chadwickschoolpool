@@ -342,11 +342,11 @@ const MyRides = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500/10 text-yellow-600';
+      case 'pending': return 'bg-green-500/10 text-green-600';
       case 'accepted': return 'bg-green-500/10 text-green-600';
       case 'declined': return 'bg-red-500/10 text-red-600';
       case 'cancelled': return 'bg-gray-500/10 text-gray-600';
-      default: return 'bg-gray-500/10 text-gray-600';
+      default: return 'bg-green-500/10 text-green-600';
     }
   };
 
@@ -474,51 +474,22 @@ const MyRides = () => {
 
           {/* Actions for received pending requests */}
           {!isSent && request.status === 'pending' && (
-            <div className="flex gap-2 pt-2">
-              <Button 
-                size="sm" 
-                className="flex-1 gap-2"
-                onClick={() => {
-                  setSelectedRequest(request);
-                  setAcceptDialogOpen(true);
-                }}
-              >
-                <Check className="h-4 w-4" />
-                Accept
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex-1 gap-2"
-                onClick={() => {
-                  setSelectedRequest(request);
-                  setDeclineDialogOpen(true);
-                }}
-              >
-                <X className="h-4 w-4" />
-                Decline
-              </Button>
-            </div>
+            <Badge className="bg-green-500/10 text-green-600 gap-1">
+              <Check className="h-3 w-3" />
+              Connected
+            </Badge>
           )}
 
           {/* Cancel button for sent pending requests */}
           {isSent && request.status === 'pending' && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="w-full gap-2 mt-2"
-              onClick={() => {
-                setSelectedRequest(request);
-                setCancelDialogOpen(true);
-              }}
-            >
-              <X className="h-4 w-4" />
-              Cancel Request
-            </Button>
+            <Badge className="bg-green-500/10 text-green-600 gap-1">
+              <Check className="h-3 w-3" />
+              Connected
+            </Badge>
           )}
 
           <p className="text-xs text-muted-foreground">
-            {isSent ? 'Sent' : 'Received'} {format(new Date(request.created_at), 'MMM d, h:mm a')}
+            Connected {format(new Date(request.created_at), 'MMM d, h:mm a')}
           </p>
         </CardContent>
       </Card>

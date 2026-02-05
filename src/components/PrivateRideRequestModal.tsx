@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, MapPin, Users, Home as HomeIcon, School, Lock, Send, X } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, Users, Home as HomeIcon, School, Lock, Send, X, CheckCircle, Mail, Phone, Copy } from "lucide-react";
 import { HelpTooltip } from "./HelpTooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,13 @@ const PrivateRideRequestModal = ({
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [recipientProfile, setRecipientProfile] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [recipientContact, setRecipientContact] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+  } | null>(null);
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestFormSchema),
@@ -125,7 +132,7 @@ const PrivateRideRequestModal = ({
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, first_name, last_name')
+        .select('id, username, first_name, last_name, phone_number, share_email, share_phone')
         .eq('id', recipientId)
         .single();
 
@@ -186,7 +193,14 @@ const PrivateRideRequestModal = ({
         return;
       }
 
-      // Insert private ride request
+      // Fetch recipient's email for contact info
+      const { data: recipientUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', recipientId)
+        .single();
+
+      // Insert private ride request with ACCEPTED status (instant connection)
       const { data: requestData, error: insertError } = await supabase
         .from('private_ride_requests')
         .insert({
@@ -207,35 +221,41 @@ const PrivateRideRequestModal = ({
           seats_offered: null,
           message: values.message || null,
           distance_from_route: distance,
-          status: 'pending',
+          status: 'accepted',
+          responded_at: new Date().toISOString(),
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      // Create notification for recipient (don't use link_id as it references account_links, not private_ride_requests)
+      // Create notification for recipient about the instant connection
       const { error: notifError } = await supabase
         .from('notifications')
         .insert({
           user_id: recipientId,
-          type: 'private_ride_request_received',
-          message: `${userProfile.first_name || userProfile.username} sent you a ride request for ${format(values.ride_date, 'MMM d, yyyy')} at ${values.pickup_time}`,
+          type: 'ride_connected',
+          message: `${userProfile.first_name || userProfile.username} needs a ride on ${format(values.ride_date, 'MMM d, yyyy')} at ${values.pickup_time}! Contact them to coordinate.`,
           is_read: false,
         });
 
       if (notifError) console.error('Notification error:', notifError);
 
-      // Success!
+      // Set contact info for success display
+      setRecipientContact({
+        firstName: recipientProfile?.first_name || recipientName,
+        lastName: recipientProfile?.last_name || '',
+        email: recipientProfile?.share_email !== false ? recipientUser?.email || null : null,
+        phone: recipientProfile?.share_phone ? recipientProfile?.phone_number : null,
+      });
+      setShowSuccessModal(true);
+
       toast({
-        title: "Request Sent!",
-        description: `Ride request sent to ${recipientName}!`,
+        title: "You're connected! 🎉",
+        description: `Contact ${recipientName} to coordinate pickup details.`,
       });
 
       form.reset();
-      onClose();
-      onSuccess?.();
-      navigate('/my-rides');
     } catch (err: any) {
       console.error('Error sending request:', err);
       toast({
@@ -246,6 +266,19 @@ const PrivateRideRequestModal = ({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    setRecipientContact(null);
+    onClose();
+    onSuccess?.();
+    navigate('/my-rides');
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied!", description: "Contact info copied to clipboard" });
   };
 
   const messageLength = form.watch('message')?.length || 0;
@@ -535,6 +568,71 @@ const PrivateRideRequestModal = ({
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Success Modal with Contact Info */}
+      <AlertDialog open={showSuccessModal} onOpenChange={handleSuccessClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-5 h-5" />
+              Ride Confirmed!
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You're now connected with <strong>{recipientContact?.firstName} {recipientContact?.lastName}</strong>.
+                  Contact them to coordinate pickup details.
+                </p>
+                <div className="bg-muted rounded-lg p-4 space-y-3">
+                  <p className="font-medium text-foreground">Contact Information:</p>
+                  {recipientContact?.email && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{recipientContact.email}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(recipientContact.email!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {recipientContact?.phone && (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{recipientContact.phone}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => copyToClipboard(recipientContact.phone!)}
+                        className="h-8 px-2"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {!recipientContact?.email && !recipientContact?.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      Contact info not shared. Check the My Rides page for updates.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleSuccessClose}>
+              Done
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Discard Confirmation Dialog */}
       <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>

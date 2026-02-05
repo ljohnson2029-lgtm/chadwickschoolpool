@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MapPin, Calendar, Clock, Users, User, Map, Radio, Car, Hand, CheckCircle, Loader2, X } from "lucide-react";
 import RideUserBadge from "./RideUserBadge";
-import { JoinRideDialog, OfferRideDialog } from "./ConfirmDialogs";
+import { InstantJoinRideDialog, InstantOfferRideDialog } from "./ConfirmDialogs";
 import { useToast } from "@/hooks/use-toast";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
@@ -40,6 +40,13 @@ interface RideResponse {
   status: string;
 }
 
+interface OwnerContact {
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+}
+
 interface RidesListProps {
   onViewOnMap?: (ride: Ride) => void;
 }
@@ -61,6 +68,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [rideOwnerContact, setRideOwnerContact] = useState<OwnerContact | null>(null);
+  const [showSuccessInfo, setShowSuccessInfo] = useState(false);
 
   // Fetch user role and email
   useEffect(() => {
@@ -239,13 +248,27 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       : respondingToRide.profiles?.username || 'the ride owner';
 
     try {
+      // First, fetch the owner's contact info
+      const { data: ownerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone_number, share_email, share_phone')
+        .eq('id', respondingToRide.user_id)
+        .single();
+
+      const { data: ownerUser } = await supabase
+        .from('users')
+        .select('email')
+        .eq('user_id', respondingToRide.user_id)
+        .single();
+
+      // Create the conversation with ACCEPTED status immediately (no pending)
       const { error } = await supabase
         .from('ride_conversations')
         .insert({
           ride_id: respondingToRide.id,
           sender_id: user.id,
           recipient_id: respondingToRide.user_id,
-          status: 'pending',
+          status: 'accepted',
           message: respondingToRide.type === 'request' 
             ? `I can help with your ride request!`
             : `I'd like to join your offered ride!`
@@ -261,26 +284,33 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         return;
       }
 
-      // Send notification to ride owner
+      // Send notification to ride owner about the connection
       try {
         await supabase.functions.invoke('create-notification', {
           body: {
             userId: respondingToRide.user_id,
-            type: respondingToRide.type === 'request' ? 'ride_offer_received' : 'ride_join_request',
+            type: 'ride_connected',
             message: respondingToRide.type === 'request'
-              ? `${profile?.first_name || 'Someone'} offered to help with your ride request`
-              : `${profile?.first_name || 'Someone'} wants to join your ride`
+              ? `${profile?.first_name || 'Someone'} is helping with your ride on ${respondingToRide.ride_date}! Contact them to coordinate.`
+              : `${profile?.first_name || 'Someone'} joined your ride on ${respondingToRide.ride_date}! Contact them to coordinate.`
           }
         });
       } catch (notifError) {
         console.error('Error sending notification:', notifError);
       }
-      
+
+      // Set contact info for success display
+      setRideOwnerContact({
+        firstName: ownerProfile?.first_name || ownerName,
+        lastName: ownerProfile?.last_name || '',
+        email: ownerProfile?.share_email !== false ? ownerUser?.email || null : null,
+        phone: ownerProfile?.share_phone ? ownerProfile.phone_number : null,
+      });
+      setShowSuccessInfo(true);
+
       toast({
-        title: respondingToRide.type === 'request' ? "Offer Sent!" : "Request Sent!",
-        description: respondingToRide.type === 'request'
-          ? `Your ride offer was sent to ${ownerName}! They'll be notified and can accept or decline.`
-          : `Your join request was sent to ${ownerName}! They'll be notified and can approve or decline.`,
+        title: "You're connected! 🎉",
+        description: `Contact ${ownerName} to coordinate pickup details.`,
       });
 
       // Refresh user responses to update button state
@@ -295,7 +325,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       setActionLoading(false);
       setShowJoinDialog(false);
       setShowOfferDialog(false);
-      setRespondingToRide(null);
+      // Keep respondingToRide for success info display
     }
   };
 
@@ -344,9 +374,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (hasPendingResponse) {
         return (
-          <Button className="w-full gap-2" disabled variant="outline" size="sm">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {ride.type === 'request' ? 'Offer Pending' : 'Request Pending'}
+          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled size="sm">
+            <CheckCircle className="h-4 w-4" />
+            Connected!
           </Button>
         );
       }
@@ -554,7 +584,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       </Tabs>
 
       {/* Join Ride Confirmation Dialog */}
-      <JoinRideDialog
+      <InstantJoinRideDialog
         open={showJoinDialog}
         onOpenChange={setShowJoinDialog}
         onConfirm={handleConfirmResponse}
@@ -563,11 +593,20 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             ? `${respondingToRide.profiles.first_name} ${respondingToRide.profiles.last_name || ''}`.trim()
             : respondingToRide?.profiles?.username || 'the ride owner'
         }
+        rideDate={respondingToRide?.ride_date || ''}
+        rideTime={respondingToRide?.ride_time || ''}
         loading={actionLoading}
+        showSuccess={showSuccessInfo}
+        ownerContact={rideOwnerContact}
+        onClose={() => {
+          setShowSuccessInfo(false);
+          setRideOwnerContact(null);
+          setRespondingToRide(null);
+        }}
       />
 
       {/* Offer Ride Confirmation Dialog */}
-      <OfferRideDialog
+      <InstantOfferRideDialog
         open={showOfferDialog}
         onOpenChange={setShowOfferDialog}
         onConfirm={handleConfirmResponse}
@@ -576,7 +615,16 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             ? `${respondingToRide.profiles.first_name} ${respondingToRide.profiles.last_name || ''}`.trim()
             : respondingToRide?.profiles?.username || 'the requester'
         }
+        rideDate={respondingToRide?.ride_date || ''}
+        rideTime={respondingToRide?.ride_time || ''}
         loading={actionLoading}
+        showSuccess={showSuccessInfo}
+        requesterContact={rideOwnerContact}
+        onClose={() => {
+          setShowSuccessInfo(false);
+          setRideOwnerContact(null);
+          setRespondingToRide(null);
+        }}
       />
     </>
   );
