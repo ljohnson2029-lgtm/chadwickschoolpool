@@ -451,6 +451,7 @@ export type Database = {
           dropoff_location: string
           dropoff_longitude: number | null
           id: string
+          is_fulfilled: boolean
           is_recurring: boolean | null
           pickup_latitude: number | null
           pickup_location: string
@@ -475,6 +476,7 @@ export type Database = {
           dropoff_location: string
           dropoff_longitude?: number | null
           id?: string
+          is_fulfilled?: boolean
           is_recurring?: boolean | null
           pickup_latitude?: number | null
           pickup_location: string
@@ -499,6 +501,7 @@ export type Database = {
           dropoff_location?: string
           dropoff_longitude?: number | null
           id?: string
+          is_fulfilled?: boolean
           is_recurring?: boolean | null
           pickup_latitude?: number | null
           pickup_location?: string
