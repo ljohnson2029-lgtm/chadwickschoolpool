@@ -54,17 +54,26 @@
      setLoading(true);
  
      try {
-       // Check if user is a student
-       const { data: userData } = await supabase
+       // Check if user is a student by querying their email
+       const { data: userData, error: userError } = await supabase
          .from('users')
          .select('email')
          .eq('user_id', user.id)
          .single();
  
-       const userIsStudent = userData?.email ? checkIsStudent(userData.email) : false;
+       if (userError) {
+         console.error('Error fetching user email:', userError);
+         // Fallback: try to get email from auth metadata
+       }
+ 
+       const userEmail = userData?.email;
+       const userIsStudent = userEmail ? checkIsStudent(userEmail) : false;
        setIsStudent(userIsStudent);
  
+       console.log('[useLinkedParentRides] User email:', userEmail, 'isStudent:', userIsStudent);
+ 
        if (!userIsStudent) {
+         // Not a student, no family rides to show
          setLinkedParents([]);
          setFamilyRides([]);
          setLoading(false);
@@ -75,6 +84,8 @@
        const { data: parents, error: parentsError } = await supabase.rpc('get_linked_parents', {
          student_user_id: user.id
        });
+       
+       console.log('[useLinkedParentRides] Linked parents:', parents, 'Error:', parentsError);
  
        if (parentsError) {
          console.error('Error fetching linked parents:', parentsError);
@@ -105,6 +116,8 @@
          .gte('ride_date', today)
          .order('ride_date', { ascending: true })
          .order('ride_time', { ascending: true });
+       
+       console.log('[useLinkedParentRides] Family rides:', rides, 'Error:', ridesError);
  
        if (ridesError) {
          console.error('Error fetching family rides:', ridesError);
