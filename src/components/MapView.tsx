@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
+import type { GeoJSON } from 'geojson';
 
 interface School {
   id: string;
@@ -64,6 +65,7 @@ const MapView: React.FC<MapViewProps> = ({
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'hybrid'>('streets');
   const [terrainEnabled, setTerrainEnabled] = useState<boolean>(true);
   const [controlsExpanded, setControlsExpanded] = useState<boolean>(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     // Fetch Mapbox token from edge function
@@ -146,6 +148,8 @@ const MapView: React.FC<MapViewProps> = ({
     // Enable 3D terrain and buildings
     map.current.on('load', () => {
       if (!map.current) return;
+      
+      setMapLoaded(true);
 
       // Add terrain source (3D elevation data)
       map.current.addSource('mapbox-dem', {
@@ -259,10 +263,24 @@ const MapView: React.FC<MapViewProps> = ({
     };
 
     fetchSchools();
+    
+    // Cleanup
+    return () => {
+      setMapLoaded(false);
+      map.current?.remove();
+    };
+  }, [mapboxToken, mapStyle, initialZoom, terrainEnabled]);
 
-    // Add user location marker (Your Home)
+  // Add markers and layers after map is loaded
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Store references to markers for cleanup
+    const markers: mapboxgl.Marker[] = [];
+
+    // Add user location marker (Your Home) - this one is fine as HTML marker
     if (userLocation) {
-      new mapboxgl.Marker({ color: '#3b82f6' })
+      const userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
         .setLngLat([userLocation.longitude, userLocation.latitude])
         .setPopup(
           new mapboxgl.Popup().setHTML(
@@ -272,156 +290,193 @@ const MapView: React.FC<MapViewProps> = ({
           )
         )
         .addTo(map.current);
+      markers.push(userMarker);
     }
 
-    // Add parent location markers (green) with click handlers
-    if (parentLocations.length > 0 && onParentClick) {
-      parentLocations.forEach(parent => {
-        const markerEl = document.createElement('div');
-        markerEl.className = 'parent-marker-container relative cursor-pointer transition-transform hover:scale-110';
-        markerEl.style.position = 'relative';
-        
-        // Apply opacity if contacted
-        if (parent.isContacted) {
-          markerEl.style.opacity = '0.5';
-        }
-        
-        // Main marker circle
-        const circle = document.createElement('div');
-        circle.style.width = '30px';
-        circle.style.height = '30px';
-        circle.style.borderRadius = '50%';
-        circle.style.backgroundColor = parent.isContacted ? '#94a3b8' : '#22c55e';
-        circle.style.border = '3px solid white';
-        circle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        circle.style.cursor = 'pointer';
-        markerEl.appendChild(circle);
-
-        // Checkmark badge if contacted
-        if (parent.isContacted) {
-          const checkmark = document.createElement('div');
-          checkmark.style.position = 'absolute';
-          checkmark.style.top = '-4px';
-          checkmark.style.right = '-4px';
-          checkmark.style.width = '16px';
-          checkmark.style.height = '16px';
-          checkmark.style.borderRadius = '50%';
-          checkmark.style.backgroundColor = '#22c55e';
-          checkmark.style.border = '2px solid white';
-          checkmark.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
-          checkmark.style.display = 'flex';
-          checkmark.style.alignItems = 'center';
-          checkmark.style.justifyContent = 'center';
-          checkmark.style.fontSize = '10px';
-          checkmark.style.color = 'white';
-          checkmark.innerHTML = '✓';
-          checkmark.title = 'Request Sent';
-          markerEl.appendChild(checkmark);
-        } 
-        // Badge indicator if parent has active rides (and not contacted)
-        else if (parent.hasActiveRides) {
-          const badge = document.createElement('div');
-          badge.style.position = 'absolute';
-          badge.style.top = '-4px';
-          badge.style.right = '-4px';
-          badge.style.width = '12px';
-          badge.style.height = '12px';
-          badge.style.borderRadius = '50%';
-          badge.style.backgroundColor = '#ef4444';
-          badge.style.border = '2px solid white';
-          badge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
-          badge.title = 'Has active rides';
-          markerEl.appendChild(badge);
-        }
-
-        const marker = new mapboxgl.Marker({ element: markerEl })
-          .setLngLat([parent.longitude, parent.latitude])
-          .addTo(map.current!);
-
-        // Add click handler
-        markerEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Convert ParentLocation to ParentProfile format
-          const parentProfile: ParentProfile = {
+    // Add parent location markers using GeoJSON circle layers (prevents drifting)
+    if (parentLocations.length > 0) {
+      // Create GeoJSON for parent locations
+      const parentGeoJSON: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: parentLocations.map(parent => ({
+          type: 'Feature' as const,
+          properties: {
             id: parent.id,
-            username: '', // Will be fetched in profile card
-            first_name: parent.name.split(' ')[0] || null,
-            last_name: parent.name.split(' ').slice(1).join(' ') || null,
-            phone_number: parent.phone,
-            home_address: parent.address,
-            home_latitude: parent.latitude,
-            home_longitude: parent.longitude,
+            name: parent.name,
+            address: parent.address,
+            phone: parent.phone,
+            isContacted: parent.isContacted || false,
+            hasActiveRides: parent.hasActiveRides || false
+          },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [parent.longitude, parent.latitude]
+          }
+        }))
+      };
+
+      // Remove existing layers/sources if they exist
+      if (map.current.getLayer('parents-active')) {
+        map.current.removeLayer('parents-active');
+      }
+      if (map.current.getLayer('parents-contacted')) {
+        map.current.removeLayer('parents-contacted');
+      }
+      if (map.current.getLayer('parents-border')) {
+        map.current.removeLayer('parents-border');
+      }
+      if (map.current.getSource('parents')) {
+        map.current.removeSource('parents');
+      }
+
+      // Add the GeoJSON source
+      map.current.addSource('parents', {
+        type: 'geojson',
+        data: parentGeoJSON
+      });
+
+      // Add border/stroke layer first (renders below the fill)
+      map.current.addLayer({
+        id: 'parents-border',
+        type: 'circle',
+        source: 'parents',
+        paint: {
+          'circle-radius': 12,
+          'circle-color': '#ffffff',
+          'circle-opacity': 1
+        }
+      });
+
+      // Add layer for active (non-contacted) parents - green
+      map.current.addLayer({
+        id: 'parents-active',
+        type: 'circle',
+        source: 'parents',
+        filter: ['!=', ['get', 'isContacted'], true],
+        paint: {
+          'circle-radius': 10,
+          'circle-color': '#22c55e',
+          'circle-opacity': 1,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+
+      // Add layer for contacted parents - gray
+      map.current.addLayer({
+        id: 'parents-contacted',
+        type: 'circle',
+        source: 'parents',
+        filter: ['==', ['get', 'isContacted'], true],
+        paint: {
+          'circle-radius': 10,
+          'circle-color': '#94a3b8',
+          'circle-opacity': 0.7,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+
+      // Add click handler for parent circles
+      if (onParentClick) {
+        const handleParentClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+          if (!e.features || e.features.length === 0) return;
+          
+          const feature = e.features[0];
+          const props = feature.properties;
+          if (!props) return;
+
+          const coords = (feature.geometry as GeoJSON.Point).coordinates;
+          
+          // Convert to ParentProfile format
+          const parentProfile: ParentProfile = {
+            id: props.id,
+            username: '',
+            first_name: props.name?.split(' ')[0] || null,
+            last_name: props.name?.split(' ').slice(1).join(' ') || null,
+            phone_number: props.phone || null,
+            home_address: props.address || null,
+            home_latitude: coords[1],
+            home_longitude: coords[0],
             account_type: 'parent'
           };
           onParentClick(parentProfile);
+        };
+
+        map.current.on('click', 'parents-active', handleParentClick);
+        map.current.on('click', 'parents-contacted', handleParentClick);
+
+        // Change cursor on hover
+        map.current.on('mouseenter', 'parents-active', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
         });
-      });
-    } else if (parentLocations.length > 0) {
-      // Fallback to basic markers without click handlers
-      parentLocations.forEach(parent => {
-        new mapboxgl.Marker({ color: '#22c55e' })
-          .setLngLat([parent.longitude, parent.latitude])
-          .setPopup(
-            new mapboxgl.Popup().setHTML(
-              `<div class="p-2 space-y-1">
-                <strong class="text-green-600">${parent.name}</strong>
-                ${parent.phone ? `<p class="text-xs">📞 ${parent.phone}</p>` : ''}
-                <p class="text-xs text-gray-600">${parent.address}</p>
-              </div>`
-            )
-          )
-          .addTo(map.current!);
-      });
+        map.current.on('mouseleave', 'parents-active', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+        map.current.on('mouseenter', 'parents-contacted', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
+        map.current.on('mouseleave', 'parents-contacted', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+      }
     }
 
-    // Add pickup location marker (legacy support or school marker)
+    // Add pickup location marker
     if (pickupLocation && !parentLocations.length) {
-      new mapboxgl.Marker({ color: '#22c55e' })
+      const pickupMarker = new mapboxgl.Marker({ color: '#22c55e' })
         .setLngLat([pickupLocation.longitude, pickupLocation.latitude])
         .setPopup(new mapboxgl.Popup().setHTML('<div>Pickup Location</div>'))
         .addTo(map.current);
+      markers.push(pickupMarker);
     }
 
     // Add dropoff location marker
     if (dropoffLocation) {
-      new mapboxgl.Marker({ color: '#ef4444' })
+      const dropoffMarker = new mapboxgl.Marker({ color: '#ef4444' })
         .setLngLat([dropoffLocation.longitude, dropoffLocation.latitude])
         .setPopup(new mapboxgl.Popup().setHTML('<div>Dropoff Location</div>'))
         .addTo(map.current);
+      markers.push(dropoffMarker);
     }
 
     // Add route line
     if (routeGeometry && map.current) {
-      map.current.on('load', () => {
-        if (!map.current) return;
-        
-        map.current.addSource('route', {
-          type: 'geojson',
-          data: routeGeometry
-        });
+      // Remove existing route if present
+      if (map.current.getLayer('route')) {
+        map.current.removeLayer('route');
+      }
+      if (map.current.getSource('route')) {
+        map.current.removeSource('route');
+      }
 
-        map.current.addLayer({
-          id: 'route',
-          type: 'line',
-          source: 'route',
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
-          paint: {
-            'line-color': '#3b82f6', // Blue color for the route
-            'line-width': 5,
-            'line-opacity': 0.8
-          }
-        });
+      map.current.addSource('route', {
+        type: 'geojson',
+        data: routeGeometry
+      });
+
+      map.current.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 5,
+          'line-opacity': 0.8
+        }
       });
     }
 
     // Cleanup
     return () => {
-      map.current?.remove();
+      markers.forEach(marker => marker.remove());
+      // Layer cleanup happens automatically when map is destroyed
     };
-  }, [userLocation, pickupLocation, dropoffLocation, parentLocations, onParentClick, routeGeometry, mapboxToken, mapStyle, initialZoom, terrainEnabled]);
+  }, [mapLoaded, userLocation, pickupLocation, dropoffLocation, parentLocations, onParentClick, routeGeometry]);
 
   const changeMapStyle = (newStyle: 'streets' | 'satellite' | 'hybrid') => {
     setMapStyle(newStyle);
