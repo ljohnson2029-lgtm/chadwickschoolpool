@@ -40,6 +40,7 @@ interface Ride {
     share_email?: boolean | null;
   };
   userEmail?: string;
+   hasAcceptedConnection?: boolean;
 }
 
 interface RideResponse {
@@ -232,7 +233,29 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       }));
 
       console.log('[FindRidesMap] Final combined rides:', combinedData.length);
-      setRides(combinedData as Ride[]);
+     // Fetch accepted conversations to mark rides as "full"
+     const rideIds = combinedData.map(r => r.id);
+     let acceptedRideIds: Set<string> = new Set();
+     
+     if (rideIds.length > 0) {
+       const { data: acceptedConvs } = await supabase
+         .from('ride_conversations')
+         .select('ride_id')
+         .in('ride_id', rideIds)
+         .eq('status', 'accepted');
+       
+       if (acceptedConvs) {
+         acceptedRideIds = new Set(acceptedConvs.map(c => c.ride_id));
+       }
+     }
+     
+     const ridesWithConnectionStatus = combinedData.map(ride => ({
+       ...ride,
+       hasAcceptedConnection: acceptedRideIds.has(ride.id)
+     }));
+     
+     console.log('[FindRidesMap] Rides with connection status:', ridesWithConnectionStatus.length);
+     setRides(ridesWithConnectionStatus as Ride[]);
     };
 
     fetchRides();
@@ -783,7 +806,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
               <div className="flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                {selectedRide.type === 'offer'
+               {selectedRide.hasAcceptedConnection ? (
+                 <span className="text-amber-600 font-medium">Ride Connected</span>
+               ) : selectedRide.type === 'offer'
                   ? `${selectedRide.seats_available} seats available`
                   : `${selectedRide.seats_needed} seats needed`}
               </div>
@@ -802,15 +827,31 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
               const hasPendingResponse = responseStatus === 'pending';
               const hasAcceptedResponse = responseStatus === 'accepted';
               const hasDeclinedResponse = responseStatus === 'declined';
+             const rideIsFull = selectedRide.hasAcceptedConnection && !isOwnRide && !hasAcceptedResponse;
 
               if (isOwnRide) {
-                return (
+               return selectedRide.hasAcceptedConnection ? (
+                 <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" disabled>
+                   <CheckCircle className="h-4 w-4" />
+                   Connected with another parent
+                 </Button>
+               ) : (
                   <Button className="w-full gap-2" disabled variant="secondary">
                     <CheckCircle className="h-4 w-4" />
                     This is your ride
                   </Button>
                 );
               }
+
+             // Show "Ride Full" if someone else already connected
+             if (rideIsFull) {
+               return (
+                 <Button className="w-full gap-2" disabled variant="secondary">
+                   <Users className="h-4 w-4" />
+                   Ride Full
+                 </Button>
+               );
+             }
 
               if (!isUserParent) {
                 return (

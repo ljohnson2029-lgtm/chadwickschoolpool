@@ -750,6 +750,29 @@ export type Database = {
       }
       cleanup_expired_codes: { Args: never; Returns: undefined }
       cleanup_old_ride_data: { Args: never; Returns: undefined }
+      get_family_schedule: {
+        Args: { student_user_id: string }
+        Returns: {
+          dropoff_latitude: number
+          dropoff_location: string
+          dropoff_longitude: number
+          id: string
+          parent_email: string
+          parent_first_name: string
+          parent_id: string
+          parent_last_name: string
+          pickup_latitude: number
+          pickup_location: string
+          pickup_longitude: number
+          ride_date: string
+          ride_time: string
+          seats_available: number
+          seats_needed: number
+          status: string
+          type: string
+          user_id: string
+        }[]
+      }
       get_linked_parents: {
         Args: { student_user_id: string }
         Returns: {

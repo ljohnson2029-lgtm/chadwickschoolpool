@@ -26,7 +26,8 @@ import {
   List,
   AlertCircle,
   Phone,
-  Mail
+  Mail,
+  CheckCircle
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
@@ -60,6 +61,7 @@ interface BroadcastRide {
     share_email?: boolean | null;
   } | null;
   userEmail?: string;
+  hasAcceptedConnection?: boolean;
 }
 
 const FindRides = () => {
@@ -74,6 +76,7 @@ const FindRides = () => {
   const [userEmail, setUserEmail] = useState<string>("");
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);
+  const [acceptedRideIds, setAcceptedRideIds] = useState<Set<string>>(new Set());
   
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -162,7 +165,30 @@ const FindRides = () => {
       userEmail: emailsMap[ride.user_id] || null
     }));
 
-    setBroadcasts(combinedData as any);
+   // Fetch accepted conversations to mark rides as "full"
+   const rideIds = combinedData.map(r => r.id);
+   let acceptedIds: Set<string> = new Set();
+   
+   if (rideIds.length > 0) {
+     const { data: acceptedConvs } = await supabase
+       .from('ride_conversations')
+       .select('ride_id')
+       .in('ride_id', rideIds)
+       .eq('status', 'accepted');
+     
+     if (acceptedConvs) {
+       acceptedIds = new Set(acceptedConvs.map(c => c.ride_id));
+     }
+   }
+   
+   setAcceptedRideIds(acceptedIds);
+   
+   const ridesWithConnectionStatus = combinedData.map(ride => ({
+     ...ride,
+     hasAcceptedConnection: acceptedIds.has(ride.id)
+   }));
+   
+   setBroadcasts(ridesWithConnectionStatus as any);
     setLoadingRides(false);
   };
 
@@ -278,7 +304,9 @@ const FindRides = () => {
 
         <div className="flex items-center gap-2 text-sm">
           <Users className="h-4 w-4 text-muted-foreground" />
-          {ride.type === 'offer'
+         {ride.hasAcceptedConnection ? (
+           <span className="text-amber-600 font-medium">Ride Connected</span>
+         ) : ride.type === 'offer'
             ? `${ride.seats_available} seats available`
             : `${ride.seats_needed} seats needed`}
         </div>
@@ -290,13 +318,27 @@ const FindRides = () => {
         )}
 
         {/* Action Button - Different for Parents vs Students */}
-        {isUserParent ? (
+       {ride.hasAcceptedConnection && ride.user_id !== user?.id ? (
+         <Button 
+           className="w-full gap-2"
+           disabled
+           variant="secondary"
+         >
+           <Users className="h-4 w-4" />
+           Ride Full
+         </Button>
+       ) : isUserParent ? (
           <Button 
             className="w-full gap-2"
             onClick={() => handleRespondToRide(ride)}
-            disabled={ride.user_id === user?.id}
+           disabled={ride.user_id === user?.id || ride.hasAcceptedConnection}
           >
-            {ride.type === 'request' ? (
+           {ride.user_id === user?.id && ride.hasAcceptedConnection ? (
+             <>
+               <CheckCircle className="h-4 w-4" />
+               Connected
+             </>
+           ) : ride.type === 'request' ? (
               <>
                 <Car className="h-4 w-4" />
                 I Can Help!
