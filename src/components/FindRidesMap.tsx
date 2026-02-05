@@ -233,25 +233,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       }));
 
       console.log('[FindRidesMap] Final combined rides:', combinedData.length);
-     // Fetch accepted conversations to mark rides as "full"
-     const rideIds = combinedData.map(r => r.id);
-     let acceptedRideIds: Set<string> = new Set();
-     
-     if (rideIds.length > 0) {
-       const { data: acceptedConvs } = await supabase
-         .from('ride_conversations')
-         .select('ride_id')
-         .in('ride_id', rideIds)
-         .eq('status', 'accepted');
-       
-       if (acceptedConvs) {
-         acceptedRideIds = new Set(acceptedConvs.map(c => c.ride_id));
-       }
-     }
-     
+     // Use is_fulfilled column from rides table for "Ride Full" status
      const ridesWithConnectionStatus = combinedData.map(ride => ({
        ...ride,
-       hasAcceptedConnection: acceptedRideIds.has(ride.id)
+       hasAcceptedConnection: (ride as any).is_fulfilled === true
      }));
      
      console.log('[FindRidesMap] Rides with connection status:', ridesWithConnectionStatus.length);
