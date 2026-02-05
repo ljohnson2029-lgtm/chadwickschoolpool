@@ -135,10 +135,12 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       }
 
       // Build the query
+      const today = new Date().toISOString().split('T')[0];
       let query = supabase
         .from("rides")
         .select("*")
-        .eq("status", "active");
+        .eq("status", "active")
+        .gte("ride_date", today);
 
       // If student with linked parents, only show parent's rides
       if (userRole === 'student') {
