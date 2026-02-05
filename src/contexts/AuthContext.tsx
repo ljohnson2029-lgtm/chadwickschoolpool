@@ -98,7 +98,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    // IMPORTANT: In some cases the backend may respond with `session_not_found`
+    // (e.g. expired/revoked sessions). We still must clear the local persisted
+    // session to prevent the app from “re-logging in” on refresh.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.warn('Local sign out failed; attempting manual cleanup:', error);
+    }
+
+    // Best-effort cleanup of any persisted auth tokens.
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        // Supabase auth tokens are stored under keys like: sb-<project-ref>-auth-token
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (error) {
+      console.warn('Manual auth storage cleanup failed:', error);
+    }
+
     setUser(null);
     setSession(null);
     setProfile(null);
