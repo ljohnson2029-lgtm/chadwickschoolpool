@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, useCallback } from "react";
+import React, { useState, useEffect, ReactNode, useCallback } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
@@ -23,19 +22,25 @@ import {
   Loader2,
   Hand,
   Car,
-  CheckCircle,
+  CheckCircle2,
   Mail,
   Phone,
   Copy,
   Check,
   Info,
+  ShieldAlert,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-/* ─── Utilities ───────────────────────────────────────────────────────── */
+// --- 1. Internal Utilities (No external dependencies needed for these) ---
 
-const safeFormat = (dateStr: string, fmt: string) => {
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+const safeFormatDate = (dateStr: string, fmt: string = "EEEE, MMMM d") => {
   if (!dateStr) return "N/A";
   try {
     const date = new Date(dateStr);
@@ -45,9 +50,10 @@ const safeFormat = (dateStr: string, fmt: string) => {
   }
 };
 
-const safeTimeFormat = (timeStr: string) => {
+const safeFormatTime = (timeStr: string) => {
   if (!timeStr) return "N/A";
   try {
+    // Handle 'HH:mm:ss' (Postgres Time) or ISO strings
     const date = timeStr.includes("T") ? new Date(timeStr) : parseISO(`2000-01-01T${timeStr}`);
     return isValid(date) ? format(date, "h:mm a") : timeStr;
   } catch {
@@ -55,12 +61,14 @@ const safeTimeFormat = (timeStr: string) => {
   }
 };
 
-/* ─── Shared Components ───────────────────────────────────────────────── */
+// --- 2. Micro-Components ---
 
 const CopyButton = ({ text, label }: { text: string; label: string }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -69,22 +77,23 @@ const CopyButton = ({ text, label }: { text: string; label: string }) => {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={handleCopy}
-      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+      className="h-6 w-6 text-muted-foreground hover:text-foreground hover:bg-background/80"
       aria-label={`Copy ${label}`}
+      title={`Copy ${label}`}
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-500 animate-in zoom-in" />
+        <Check className="h-3 w-3 text-emerald-500 animate-in zoom-in spin-in-90 duration-300" />
       ) : (
-        <Copy className="h-3.5 w-3.5" />
+        <Copy className="h-3 w-3" />
       )}
     </Button>
   );
 };
 
-interface ContactCardProps {
-  contact:
+interface ContactInfoProps {
+  data:
     | {
         firstName: string;
         lastName: string;
@@ -95,45 +104,52 @@ interface ContactCardProps {
     | undefined;
 }
 
-const ContactCard = ({ contact }: ContactCardProps) => {
-  if (!contact) return null;
+const ContactCard = ({ data }: ContactInfoProps) => {
+  if (!data) return null;
+
+  const hasEmail = !!data.email;
+  const hasPhone = !!data.phone;
 
   return (
-    <div className="bg-muted/30 border rounded-lg p-4 space-y-3 animate-in fade-in zoom-in-95 duration-300">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground pb-1 border-b">
-        <CheckCircle className="w-4 h-4 text-emerald-600" />
-        <span>Contact Information</span>
+    <div className="mt-4 rounded-lg border bg-card text-card-foreground shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex items-center gap-2 border-b bg-muted/40 p-3">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <span className="text-sm font-semibold">Contact Information</span>
       </div>
 
-      <div className="space-y-2 pt-1">
-        {contact.email ? (
-          <div className="flex items-center justify-between gap-3 p-2 bg-background/50 rounded-md border border-transparent hover:border-border transition-colors group">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="p-1.5 bg-primary/10 rounded-md">
-                <Mail className="h-3.5 w-3.5 text-primary shrink-0" />
+      <div className="p-3 space-y-2">
+        {hasEmail && (
+          <div className="group flex items-center justify-between rounded-md border border-transparent px-2 py-1.5 hover:border-border hover:bg-muted/50 transition-all">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">Email</span>
+                <span className="text-sm font-medium truncate max-w-[200px]">{data.email}</span>
               </div>
-              <span className="text-sm truncate text-foreground/90">{contact.email}</span>
             </div>
-            <CopyButton text={contact.email} label="email" />
+            <CopyButton text={data.email!} label="email" />
           </div>
-        ) : null}
+        )}
 
-        {contact.phone ? (
-          <div className="flex items-center justify-between gap-3 p-2 bg-background/50 rounded-md border border-transparent hover:border-border transition-colors group">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="p-1.5 bg-primary/10 rounded-md">
-                <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
+        {hasPhone && (
+          <div className="group flex items-center justify-between rounded-md border border-transparent px-2 py-1.5 hover:border-border hover:bg-muted/50 transition-all">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground">Phone</span>
+                <span className="text-sm font-medium">{data.phone}</span>
               </div>
-              <span className="text-sm text-foreground/90">{contact.phone}</span>
             </div>
-            <CopyButton text={contact.phone} label="phone" />
+            <CopyButton text={data.phone!} label="phone" />
           </div>
-        ) : null}
+        )}
 
-        {!contact.email && !contact.phone && (
-          <div className="flex items-center gap-2 p-3 bg-background/50 rounded border border-dashed text-muted-foreground text-sm">
-            <Info className="w-4 h-4 shrink-0" />
-            <p>Contact info hidden. Check "My Rides" for updates.</p>
+        {!hasEmail && !hasPhone && (
+          <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground bg-muted/20 rounded">
+            <Info className="h-4 w-4" />
+            <span>Details hidden. Check "My Rides" later.</span>
           </div>
         )}
       </div>
@@ -141,22 +157,20 @@ const ContactCard = ({ contact }: ContactCardProps) => {
   );
 };
 
-/* ─── Core: ConfirmDialog ─────────────────────────────────────────────── */
+// --- 3. The "Master" Primitive Dialog ---
 
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void | Promise<void>;
   title: string;
-  description: string | ReactNode;
+  description: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: "default" | "destructive";
+  variant?: "default" | "destructive" | "warning";
   loading?: boolean;
   icon?: ReactNode;
-  /** If provided, user must type this string to enable the confirm button. */
   verificationText?: string;
-  /** If true, the dialog will stay open if onConfirm throws an error. */
   keepOpenOnError?: boolean;
 }
 
@@ -189,11 +203,17 @@ export const ConfirmDialog = ({
 
   const isDestructive = variant === "destructive";
   const isVerificationRequired = !!verificationText;
-  const isVerificationMatched = inputVal === verificationText;
+  // Case-insensitive check for better UX
+  const isVerificationMatched = isVerificationRequired
+    ? inputVal.toLowerCase() === verificationText?.toLowerCase()
+    : true;
+
   const isLoading = loading || internalLoading;
 
   const handleConfirm = async (e: React.MouseEvent) => {
+    // Prevent default to stop the dialog from closing immediately
     e.preventDefault();
+
     if (isVerificationRequired && !isVerificationMatched) return;
 
     setError(null);
@@ -201,7 +221,8 @@ export const ConfirmDialog = ({
 
     try {
       await onConfirm();
-      // Parent handles closing via props usually
+      // If success, the parent usually closes the dialog via props.
+      // We don't manually close here to allow the parent to control flow.
     } catch (err) {
       console.error("Dialog Action Failed:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
@@ -215,61 +236,78 @@ export const ConfirmDialog = ({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-[400px] md:max-w-[480px] gap-6">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-start gap-3 text-xl">
-            {icon && <div className="mt-0.5 shrink-0">{icon}</div>}
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-4 pt-1 text-base">
-              <div className="text-muted-foreground leading-relaxed">{description}</div>
-
-              {/* Internal Error Display */}
-              {error && (
-                <Alert variant="destructive" className="animate-in fade-in zoom-in-95">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Safety Verification Input */}
-              {isVerificationRequired && (
-                <div className="space-y-3 pt-2">
-                  <Label className="text-xs font-semibold uppercase text-muted-foreground tracking-wide">
-                    Type <span className="text-destructive font-bold select-all mx-0.5">"{verificationText}"</span> to
-                    confirm
-                  </Label>
-                  <Input
-                    value={inputVal}
-                    onChange={(e) => setInputVal(e.target.value)}
-                    placeholder={verificationText}
-                    className="font-mono text-sm bg-muted/50"
-                    autoComplete="off"
-                    disabled={isLoading}
-                  />
+      <AlertDialogContent className="max-w-[400px] md:max-w-[480px] overflow-hidden gap-0 p-0 shadow-xl border-none">
+        {/* Header Area */}
+        <div className="p-6 pb-4">
+          <AlertDialogHeader>
+            <div className="flex items-start gap-4">
+              {icon && (
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border",
+                    isDestructive
+                      ? "bg-red-50 border-red-100 text-red-600"
+                      : "bg-blue-50 border-blue-100 text-blue-600",
+                  )}
+                >
+                  {icon}
                 </div>
               )}
+              <div className="grid gap-1">
+                <AlertDialogTitle className="text-xl font-bold tracking-tight">{title}</AlertDialogTitle>
+                <div className="text-sm text-muted-foreground leading-relaxed">{description}</div>
+              </div>
             </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="gap-2 sm:gap-0">
-          <AlertDialogCancel disabled={isLoading} className="mt-0">
+          </AlertDialogHeader>
+
+          {/* Error Boundary Display */}
+          {error && (
+            <div className="mt-4 flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span className="font-medium">{error}</span>
+            </div>
+          )}
+
+          {/* Verification Input Area */}
+          {isVerificationRequired && (
+            <div className="mt-4 space-y-2 rounded-lg border bg-muted/30 p-3">
+              <Label className="text-xs font-bold uppercase text-muted-foreground">
+                To confirm, type <span className="select-all text-destructive">"{verificationText}"</span>
+              </Label>
+              <Input
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                placeholder={verificationText}
+                className="font-mono text-sm border-muted-foreground/20 focus-visible:ring-destructive/30"
+                autoComplete="off"
+                disabled={isLoading}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer Area */}
+        <AlertDialogFooter className="bg-muted/50 p-4 sm:justify-end sm:gap-2">
+          <AlertDialogCancel
+            disabled={isLoading}
+            className="mt-0 h-10 border-transparent bg-transparent hover:bg-muted-foreground/10"
+          >
             {cancelLabel}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isLoading || (isVerificationRequired && !isVerificationMatched)}
             className={cn(
-              isDestructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "",
-              "w-full sm:w-auto min-w-[100px]",
+              "h-10 px-6 transition-all duration-200 min-w-[100px]",
+              isDestructive
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm shadow-destructive/20"
+                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm shadow-primary/20",
             )}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Processing...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Working...</span>
               </>
             ) : (
               confirmLabel
@@ -281,48 +319,43 @@ export const ConfirmDialog = ({
   );
 };
 
-/* ─── Specific Implementations ────────────────────────────────────────── */
+// --- 4. Specialized Exports (Use these in your app) ---
 
-// 1. Delete Carpool (High Risk)
+// A. DELETE CARPOOL (Destructive, Requires Type Verification)
 export const DeleteRideDialog = (props: Omit<ConfirmDialogProps, "title" | "description" | "verificationText">) => (
   <ConfirmDialog
     {...props}
     title="Delete Carpool"
-    description={
-      <span className="block">
-        Are you sure? This will <span className="font-semibold text-destructive">permanently remove</span> the ride and
-        notify all participants. This action cannot be undone.
-      </span>
-    }
+    description="This will permanently delete the carpool and notify all active participants. This action cannot be undone."
     confirmLabel="Delete Forever"
     variant="destructive"
-    icon={<Trash2 className="w-6 h-6 text-destructive" />}
+    icon={<Trash2 className="h-5 w-5" />}
     verificationText="delete"
   />
 );
 
-// 2. Cancel Request
+// B. CANCEL REQUEST (Destructive, Standard)
 export const CancelRequestDialog = ({
   recipientName,
   ...props
 }: { recipientName: string } & Omit<ConfirmDialogProps, "title" | "description">) => (
   <ConfirmDialog
     {...props}
-    title="Cancel Ride Request?"
+    title="Cancel Request?"
     description={
       <span>
-        <strong className="text-foreground">{recipientName}</strong> will be notified that you've cancelled this
-        request.
+        Are you sure you want to cancel your request to <strong className="text-foreground">{recipientName}</strong>?
+        They will be notified immediately.
       </span>
     }
-    confirmLabel="Cancel Request"
+    confirmLabel="Yes, Cancel"
     cancelLabel="Keep Request"
     variant="destructive"
-    icon={<X className="w-6 h-6 text-destructive" />}
+    icon={<X className="h-5 w-5" />}
   />
 );
 
-// 3. Decline Request (With Reason Input)
+// C. DECLINE REQUEST (Complex: With Reason Textarea)
 interface DeclineRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -346,40 +379,52 @@ export const DeclineRequestDialog = ({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-[480px]">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-3 text-destructive">
-            <X className="w-6 h-6" />
-            Decline Request from {senderName}?
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-4 pt-2">
-              <p>They will be notified. You can optionally explain why.</p>
-              <div className="space-y-2">
-                <Label htmlFor="decline-reason">Reason (Optional)</Label>
-                <Textarea
-                  id="decline-reason"
-                  placeholder="e.g., Schedule conflict, car is full..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={3}
-                  maxLength={200}
-                  className="resize-none bg-muted/30"
-                />
-                <p className="text-xs text-muted-foreground text-right tabular-nums">{reason.length}/200</p>
+      <AlertDialogContent className="max-w-[480px] p-0 overflow-hidden border-none shadow-xl">
+        <div className="p-6 pb-4">
+          <AlertDialogHeader>
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <X className="h-5 w-5" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-xl">Decline Request</AlertDialogTitle>
+                <AlertDialogDescription className="mt-2">
+                  You are declining the request from <strong className="text-foreground">{senderName}</strong>.
+                </AlertDialogDescription>
               </div>
             </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Go Back</AlertDialogCancel>
+          </AlertDialogHeader>
+
+          <div className="mt-4 space-y-2">
+            <Label htmlFor="reason" className="text-xs font-semibold uppercase text-muted-foreground">
+              Reason (Optional)
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder="e.g. My car is full, Schedule conflict..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={200}
+              className="resize-none bg-muted/20"
+            />
+            <div className="flex justify-end">
+              <span className="text-[10px] text-muted-foreground">{reason.length}/200</span>
+            </div>
+          </div>
+        </div>
+
+        <AlertDialogFooter className="bg-muted/50 p-4">
+          <AlertDialogCancel disabled={loading} className="mt-0 bg-transparent border-transparent">
+            Back
+          </AlertDialogCancel>
           <Button
             variant="destructive"
             onClick={() => onConfirm(reason.trim() || undefined)}
             disabled={loading}
-            className="min-w-[140px]"
+            className="min-w-[120px]"
           >
-            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Decline Request"}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Decline Request"}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -387,7 +432,7 @@ export const DeclineRequestDialog = ({
   );
 };
 
-// 4. Unified Instant Connection (Join/Offer)
+// D. UNIFIED CONNECTION DIALOG (Join / Offer)
 interface InstantConnectionProps {
   mode: "join" | "offer";
   open: boolean;
@@ -420,45 +465,37 @@ const InstantConnectionDialog = ({
     onOpenChange(false);
   };
 
+  // SUCCESS STATE
   if (showSuccess && contactInfo) {
     return (
       <AlertDialog open={open} onOpenChange={handleClose}>
-        <AlertDialogContent className="max-w-[480px]">
-          <AlertDialogHeader>
-            <div className="mx-auto w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-2">
-              <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+        <AlertDialogContent className="max-w-[480px] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-emerald-600 p-6 text-center text-white">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+              <Check className="h-6 w-6 text-white" />
             </div>
-            <AlertDialogTitle className="text-center text-emerald-700 dark:text-emerald-400">
-              {mode === "join" ? "Ride Joined!" : "Ride Confirmed!"}
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-6 pt-2 text-center">
-                <p>
-                  You are now connected with{" "}
-                  <strong>
-                    {contactInfo.firstName} {contactInfo.lastName}
-                  </strong>
-                  .
-                </p>
-                <div className="text-left">
-                  <ContactCard contact={contactInfo} />
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={handleClose} className="w-full sm:w-auto min-w-[120px]">
+            <h2 className="text-2xl font-bold">{mode === "join" ? "Ride Joined!" : "Offer Sent!"}</h2>
+            <p className="mt-2 text-emerald-100">You are now connected with {contactInfo.firstName}.</p>
+          </div>
+
+          <div className="p-6">
+            <ContactCard data={contactInfo} />
+          </div>
+
+          <AlertDialogFooter className="p-6 pt-0 sm:justify-center">
+            <Button onClick={handleClose} size="lg" className="w-full sm:w-auto min-w-[150px]">
               Done
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     );
   }
 
+  // CONFIRMATION STATE
   const isJoin = mode === "join";
-  const title = isJoin ? "Join this ride?" : "Fulfill this request?";
-  const actionLabel = isJoin ? "Join Ride" : "Confirm Ride";
+  const title = isJoin ? "Join this Ride?" : "Fulfill Request?";
+  const actionLabel = isJoin ? "Confirm Join" : "Confirm Offer";
   const Icon = isJoin ? Hand : Car;
 
   return (
@@ -469,21 +506,26 @@ const InstantConnectionDialog = ({
       loading={loading}
       title={title}
       confirmLabel={actionLabel}
-      icon={<Icon className="w-6 h-6 text-primary" />}
+      icon={<Icon className="h-5 w-5" />}
       description={
         <div className="space-y-4">
-          <p className="leading-relaxed">
-            {isJoin ? "Join" : "Fulfill"} <strong>{targetName}</strong>'s {isJoin ? "ride" : "request"} on{" "}
-            <span className="font-semibold text-foreground whitespace-nowrap">
-              {safeFormat(rideDate, "EEEE, MMMM d")}
-            </span>{" "}
-            at <span className="font-semibold text-foreground whitespace-nowrap">{safeTimeFormat(rideTime)}</span>?
+          <p>
+            You are about to {isJoin ? "join" : "offer a ride to"} <strong>{targetName}</strong> on:
           </p>
-          <div className="flex items-start gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-lg text-sm">
-            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-            <p className="text-blue-700 dark:text-blue-300">
-              You will be connected immediately and can coordinate pickup details directly.
-            </p>
+          <div className="flex items-center gap-3 rounded-md bg-muted p-3 text-sm">
+            <div className="grid gap-0.5">
+              <span className="text-xs font-bold uppercase text-muted-foreground">Date</span>
+              <span className="font-semibold text-foreground">{safeFormatDate(rideDate)}</span>
+            </div>
+            <div className="h-8 w-px bg-border mx-2" />
+            <div className="grid gap-0.5">
+              <span className="text-xs font-bold uppercase text-muted-foreground">Time</span>
+              <span className="font-semibold text-foreground">{safeFormatTime(rideTime)}</span>
+            </div>
+          </div>
+          <div className="flex gap-2 rounded-md bg-blue-50/50 p-2 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+            <p>Contact details will be shared immediately upon confirmation.</p>
           </div>
         </div>
       }
@@ -499,7 +541,7 @@ export const InstantOfferRideDialog = (
   props: Omit<InstantConnectionProps, "mode" | "targetName"> & { requesterName: string },
 ) => <InstantConnectionDialog {...props} mode="offer" targetName={props.requesterName} />;
 
-// 5. Unlink Account
+// E. UNLINK / SIGN OUT / UNSAVED
 export const UnlinkDialog = ({
   personName,
   isParent,
@@ -507,30 +549,28 @@ export const UnlinkDialog = ({
 }: { personName: string; isParent?: boolean } & Omit<ConfirmDialogProps, "title" | "description">) => (
   <ConfirmDialog
     {...props}
-    title={`Unlink from ${personName}?`}
+    title={`Unlink ${personName}?`}
     description={
       isParent
-        ? "This student will no longer be linked to your account. They won't be able to see your carpools."
+        ? "They will no longer be linked to your account and cannot see your carpools."
         : "You will no longer see their carpools. You can request to link again later."
     }
-    confirmLabel="Unlink Account"
+    confirmLabel="Unlink"
     variant="destructive"
-    icon={<Unlink className="w-6 h-6 text-destructive" />}
+    icon={<Unlink className="h-5 w-5" />}
   />
 );
 
-// 6. Sign Out
 export const SignOutDialog = (props: Omit<ConfirmDialogProps, "title" | "description">) => (
   <ConfirmDialog
     {...props}
-    title="Sign Out?"
-    description="You'll need to log in again to access your account."
+    title="Sign Out"
+    description="Are you sure? You will need to sign in again to access your schedule."
     confirmLabel="Sign Out"
-    icon={<LogOut className="w-6 h-6" />}
+    icon={<LogOut className="h-5 w-5" />}
   />
 );
 
-// 7. Unsaved Changes
 export const UnsavedChangesDialog = ({
   open,
   onOpenChange,
@@ -548,66 +588,16 @@ export const UnsavedChangesDialog = ({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-3 text-amber-600">
-            <AlertTriangle className="w-6 h-6" />
-            Unsaved Changes
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            You have unsaved changes. Are you sure you want to leave? Your progress will be lost.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleStay}>Stay on Page</AlertDialogCancel>
-          <AlertDialogAction onClick={onLeave} className="bg-amber-600 hover:bg-amber-700 text-white">
-            Leave without saving
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={async () => onLeave()}
+      title="Unsaved Changes"
+      description="You have unsaved changes. Leaving now will discard them."
+      confirmLabel="Discard & Leave"
+      cancelLabel="Stay"
+      variant="warning"
+      icon={<ShieldAlert className="h-5 w-5 text-amber-500" />}
+    />
   );
 };
-
-// 8. Join Ride (Request-based)
-export const JoinRideDialog = ({
-  ownerName,
-  ...props
-}: { ownerName: string } & Omit<ConfirmDialogProps, "title" | "description">) => (
-  <ConfirmDialog
-    {...props}
-    title="Send request to join?"
-    icon={<Hand className="w-6 h-6 text-primary" />}
-    confirmLabel="Send Request"
-    description={
-      <div className="space-y-2">
-        <p>
-          Your request will be sent to <strong>{ownerName}</strong>.
-        </p>
-        <p className="text-sm text-muted-foreground">They must approve your request before you're added.</p>
-      </div>
-    }
-  />
-);
-
-// 9. Offer Ride (Request-based)
-export const OfferRideDialog = ({
-  requesterName,
-  ...props
-}: { requesterName: string } & Omit<ConfirmDialogProps, "title" | "description">) => (
-  <ConfirmDialog
-    {...props}
-    title="Offer your ride?"
-    icon={<Car className="w-6 h-6 text-primary" />}
-    confirmLabel="Send Offer"
-    description={
-      <div className="space-y-2">
-        <p>
-          <strong>{requesterName}</strong> will receive your offer.
-        </p>
-        <p className="text-sm text-muted-foreground">They must accept it before the ride is confirmed.</p>
-      </div>
-    }
-  />
-);
