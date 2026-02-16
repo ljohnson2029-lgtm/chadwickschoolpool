@@ -2,14 +2,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Car, Users } from "lucide-react";
+import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 
 interface Child {
   id?: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   age: string;
-  school: string;
+  grade_level: string;
 }
 
 interface ParentProfileFormProps {
@@ -51,28 +54,7 @@ const ParentProfileForm = ({
 }: ParentProfileFormProps) => {
   return (
     <>
-      {/* Home Address */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Home Address</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div>
-            <Label htmlFor="homeAddress">Home Address</Label>
-            <AddressAutocompleteInput
-              value={homeAddress}
-              onAddressSelect={onAddressSelect}
-              placeholder="Start typing your address..."
-              required
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Select from suggestions to enable map features
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Car Information */}
+      {/* Vehicle Information */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -142,7 +124,7 @@ const ParentProfileForm = ({
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Children
+              Your Children
             </span>
             <Button type="button" onClick={onAddChild} size="sm">
               <Plus className="w-4 h-4 mr-2" />
@@ -166,14 +148,42 @@ const ParentProfileForm = ({
                   </Button>
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Name</Label>
+                  <Label>First Name</Label>
                   <Input
-                    value={child.name}
-                    onChange={(e) => onUpdateChild(index, "name", e.target.value)}
-                    placeholder="Child's name"
+                    value={child.first_name}
+                    onChange={(e) => onUpdateChild(index, "first_name", e.target.value)}
+                    placeholder="First name"
                   />
+                </div>
+                <div>
+                  <Label>Last Name</Label>
+                  <Input
+                    value={child.last_name}
+                    onChange={(e) => onUpdateChild(index, "last_name", e.target.value)}
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Grade Level</Label>
+                  <Select
+                    value={child.grade_level}
+                    onValueChange={(value) => onUpdateChild(index, "grade_level", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADE_LEVELS.map((grade) => (
+                        <SelectItem key={grade} value={grade}>
+                          {grade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Age</Label>
@@ -186,17 +196,32 @@ const ParentProfileForm = ({
                     placeholder="Age"
                   />
                 </div>
-                <div>
-                  <Label>School</Label>
-                  <Input
-                    value={child.school}
-                    onChange={(e) => onUpdateChild(index, "school", e.target.value)}
-                    placeholder="School name"
-                  />
-                </div>
               </div>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Home Address */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Home Address</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <Label htmlFor="homeAddress">
+              Home Address <span className="text-destructive">*</span>
+            </Label>
+            <AddressAutocompleteInput
+              value={homeAddress}
+              onAddressSelect={onAddressSelect}
+              placeholder="Start typing your address..."
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Select from suggestions to enable map features
+            </p>
+          </div>
         </CardContent>
       </Card>
     </>

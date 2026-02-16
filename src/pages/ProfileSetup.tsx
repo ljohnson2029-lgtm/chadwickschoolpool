@@ -3,18 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import ParentProfileForm from "@/components/profile/ParentProfileForm";
 import StudentProfileForm from "@/components/profile/StudentProfileForm";
 import { PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
-import { User, GraduationCap } from "lucide-react";
+import { User, GraduationCap, Mail, Phone } from "lucide-react";
 
 interface Child {
   id?: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   age: string;
-  school: string;
+  grade_level: string;
 }
 
 const ProfileSetup = () => {
@@ -23,6 +27,9 @@ const ProfileSetup = () => {
   const { toast } = useToast();
 
   // Common fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [homeAddress, setHomeAddress] = useState("");
   const [homeLatitude, setHomeLatitude] = useState<number | null>(null);
   const [homeLongitude, setHomeLongitude] = useState<number | null>(null);
@@ -33,7 +40,7 @@ const ProfileSetup = () => {
   const [carColor, setCarColor] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [carSeats, setCarSeats] = useState("");
-  const [children, setChildren] = useState<Child[]>([{ name: "", age: "", school: "" }]);
+  const [children, setChildren] = useState<Child[]>([{ first_name: "", last_name: "", age: "", grade_level: "" }]);
 
   // Student-specific fields
   const [gradeLevel, setGradeLevel] = useState("");
@@ -55,6 +62,9 @@ const ProfileSetup = () => {
 
   useEffect(() => {
     if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setPhoneNumber(profile.phone_number || "");
       setHomeAddress(profile.home_address || "");
       setHomeLatitude(profile.home_latitude || null);
       setHomeLongitude(profile.home_longitude || null);
@@ -93,15 +103,16 @@ const ProfileSetup = () => {
     if (data && data.length > 0) {
       setChildren(data.map(child => ({
         id: child.id,
-        name: child.name,
+        first_name: (child as any).first_name || child.name || "",
+        last_name: (child as any).last_name || "",
         age: child.age.toString(),
-        school: child.school
+        grade_level: (child as any).grade_level || child.school || "",
       })));
     }
   };
 
   const addChild = () => {
-    setChildren([...children, { name: "", age: "", school: "" }]);
+    setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }]);
   };
 
   const removeChild = (index: number) => {
@@ -124,7 +135,25 @@ const ProfileSetup = () => {
     e.preventDefault();
     if (!user || !profile) return;
 
-    // Validate that address has been geocoded
+    // Validate required fields
+    if (!firstName.trim() || !lastName.trim()) {
+      toast({
+        title: "Name Required",
+        description: "Please enter your full name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isParent && !phoneNumber.trim()) {
+      toast({
+        title: "Phone Required",
+        description: "Parents must provide a phone number",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (homeAddress && !homeLatitude && !homeLongitude) {
       toast({
         title: "Invalid Address",
@@ -134,7 +163,6 @@ const ProfileSetup = () => {
       return;
     }
 
-    // Validate grade level for students
     if (!isParent && !gradeLevel) {
       toast({
         title: "Grade Level Required",
@@ -147,8 +175,10 @@ const ProfileSetup = () => {
     setSaving(true);
 
     try {
-      // Build update object based on account type
       const updateData: Record<string, any> = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone_number: phoneNumber.trim() || null,
         home_address: homeAddress,
         home_latitude: homeLatitude,
         home_longitude: homeLongitude,
@@ -171,12 +201,25 @@ const ProfileSetup = () => {
         updateData.emergency_contact_phone = emergencyContactPhone;
       }
 
+      // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update(updateData)
         .eq("id", user.id);
 
       if (profileError) throw profileError;
+
+      // Also update first/last name in users table
+      const { error: userError } = await supabase
+        .from("users")
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone_number: phoneNumber.trim() || null,
+        })
+        .eq("user_id", user.id);
+
+      if (userError) console.error("Error updating users table:", userError);
 
       // Handle children for parent accounts
       if (isParent) {
@@ -187,8 +230,8 @@ const ProfileSetup = () => {
 
         if (deleteError) throw deleteError;
 
-        const validChildren = children.filter(child => 
-          child.name && child.age && child.school
+        const validChildren = children.filter(child =>
+          child.first_name && child.age
         );
 
         if (validChildren.length > 0) {
@@ -197,9 +240,12 @@ const ProfileSetup = () => {
             .insert(
               validChildren.map(child => ({
                 user_id: user.id,
-                name: child.name,
+                name: `${child.first_name} ${child.last_name}`.trim(),
+                first_name: child.first_name,
+                last_name: child.last_name,
                 age: parseInt(child.age),
-                school: child.school,
+                school: child.grade_level || "",
+                grade_level: child.grade_level || null,
               }))
             );
 
@@ -247,6 +293,76 @@ const ProfileSetup = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Common Fields - Personal Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">
+                    First Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">
+                    Last Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="email" className="flex items-center gap-1">
+                  <Mail className="h-3.5 w-3.5" />
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  value={user.email || ""}
+                  disabled
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Email cannot be changed
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="phoneNumber" className="flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5" />
+                  Phone Number {isParent && <span className="text-destructive">*</span>}
+                </Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  required={isParent}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Role-specific fields */}
           {isParent ? (
             <ParentProfileForm
               homeAddress={homeAddress}
