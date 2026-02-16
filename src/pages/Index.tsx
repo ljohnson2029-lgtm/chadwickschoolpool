@@ -5,6 +5,7 @@ import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
 import LandingHowItWorks from "@/components/LandingHowItWorks";
 import LandingFeatures from "@/components/LandingFeatures";
+import LandingTrust from "@/components/LandingTrust";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/PageTransition";
 
@@ -37,6 +38,7 @@ const Index = () => {
         <HeroSection />
         <LandingHowItWorks />
         <LandingFeatures />
+        <LandingTrust />
         <Footer />
       </div>
     </PageTransition>

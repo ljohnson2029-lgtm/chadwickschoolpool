@@ -1,56 +1,59 @@
-import { MapPin, Calendar, Users, MessageSquare, Shield } from "lucide-react";
+import { MapPin, MessageSquare, Users, Heart } from "lucide-react";
 
 const features = [
   {
     icon: MapPin,
-    text: "Find parents along your route to school",
-  },
-  {
-    icon: Calendar,
-    text: "Schedule one-time or recurring carpools",
-  },
-  {
-    icon: Users,
-    text: "Link student and parent accounts",
+    title: "Interactive Map",
+    description: "See nearby families on a real-time map and find the best carpool matches along your route.",
   },
   {
     icon: MessageSquare,
-    text: "Direct messaging between families",
+    title: "Built-in Messaging",
+    description: "Coordinate rides securely with direct messaging between verified families.",
   },
   {
-    icon: Shield,
-    text: "Chadwick School verified accounts only",
+    icon: Users,
+    title: "Family Profiles",
+    description: "Create detailed profiles linking parents and students for safe, transparent carpooling.",
+  },
+  {
+    icon: Heart,
+    title: "100% Free",
+    description: "SchoolPool is completely free for all Chadwick families. No fees, no subscriptions.",
   },
 ];
 
 const LandingFeatures = () => {
   return (
-    <section className="py-20 lg:py-28 bg-background">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="features" className="py-20 lg:py-28 bg-background">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
             Everything You Need
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Powerful features for safe and easy carpooling
+            Powerful features designed for school families
           </p>
         </div>
 
-        {/* Features List */}
-        <div className="space-y-4">
+        {/* Feature Cards */}
+        <div className="grid sm:grid-cols-2 gap-6">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
               <div
                 key={index}
-                className="flex items-center gap-4 bg-card rounded-xl p-5 border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300"
+                className="bg-card rounded-2xl p-8 border border-border hover:border-secondary/50 hover:shadow-lg transition-all duration-300"
               >
-                <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 mb-5 bg-secondary/10 rounded-xl flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-secondary" />
                 </div>
-                <p className="text-lg text-foreground font-medium">
-                  {feature.text}
+                <h3 className="text-lg font-bold text-foreground mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
                 </p>
               </div>
             );
