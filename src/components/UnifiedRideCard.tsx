@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Calendar, 
   Clock, 
@@ -11,7 +13,9 @@ import {
   X,
   Car,
   HandHelping,
-  CheckCircle
+  Hand,
+  CheckCircle,
+  ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -46,50 +50,48 @@ interface UnifiedRideCardProps {
 }
 
 const getStatusConfig = (status: UnifiedRide['status'], source: UnifiedRide['source'], hasOtherParent: boolean) => {
-  // Special case: if this is a posted ride with a connected parent, show as "Confirmed"
   if (source === 'posted' && hasOtherParent) {
     return {
       label: 'Confirmed',
-      className: 'bg-green-500/15 text-green-600 border-green-500/30',
+      className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
       icon: CheckCircle,
     };
   }
-
   switch (status) {
     case 'posted-looking':
       return {
-        label: 'Posted - Looking for Help',
-        className: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-        icon: null,
+        label: 'Looking for Help',
+        className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+        icon: Hand,
       };
     case 'posted-offering':
       return {
-        label: 'Posted - Offering Ride',
-        className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-        icon: null,
+        label: 'Offering Ride',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+        icon: Car,
       };
     case 'joined-ride':
       return {
         label: 'Joined Ride',
-        className: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
+        className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
         icon: Car,
       };
     case 'helping-out':
       return {
         label: 'Helping Out',
-        className: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
+        className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
         icon: HandHelping,
       };
     case 'confirmed':
       return {
         label: 'Confirmed',
-        className: 'bg-green-500/15 text-green-600 border-green-500/30',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
         icon: CheckCircle,
       };
     default:
       return {
         label: 'Unknown',
-        className: 'bg-gray-500/15 text-gray-600 border-gray-500/30',
+        className: 'bg-muted text-muted-foreground',
         icon: null,
       };
   }
@@ -97,102 +99,147 @@ const getStatusConfig = (status: UnifiedRide['status'], source: UnifiedRide['sou
 
 const getParentName = (parent: UnifiedRide['otherParent']) => {
   if (!parent) return 'Unknown';
-  if (parent.firstName && parent.lastName) {
-    return `${parent.firstName} ${parent.lastName}`;
-  }
+  if (parent.firstName && parent.lastName) return `${parent.firstName} ${parent.lastName}`;
   if (parent.firstName) return parent.firstName;
   return parent.username;
 };
+
+const getInitials = (parent: UnifiedRide['otherParent']) => {
+  if (!parent) return '?';
+  if (parent.firstName && parent.lastName) return `${parent.firstName[0]}${parent.lastName[0]}`.toUpperCase();
+  return parent.username.substring(0, 2).toUpperCase();
+};
+
+export const UnifiedRideCardSkeleton = () => (
+  <Card className="rounded-lg shadow-sm">
+    <CardContent className="p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-3/4 mb-4" />
+      <div className="flex gap-4">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast }: UnifiedRideCardProps) => {
   const statusConfig = getStatusConfig(ride.status, ride.source, !!ride.otherParent);
   const StatusIcon = statusConfig.icon;
 
   const rideStatusBadge = isPast && ride.rideStatus && ride.rideStatus !== 'active' ? (
-    <Badge className={
-      ride.rideStatus === 'completed' ? 'bg-green-500/15 text-green-600 border-green-500/30' :
-      ride.rideStatus === 'cancelled' ? 'bg-red-500/15 text-red-600 border-red-500/30' :
-      'bg-gray-500/15 text-gray-600 border-gray-500/30'
+    <Badge variant="outline" className={
+      ride.rideStatus === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300' :
+      ride.rideStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300' :
+      'bg-muted text-muted-foreground'
     }>
       {ride.rideStatus === 'completed' ? 'Completed' : ride.rideStatus === 'cancelled' ? 'Cancelled' : 'Expired'}
     </Badge>
   ) : null;
 
+  const typeBadge = (
+    <Badge variant="outline" className={
+      ride.rideType === 'offer'
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+        : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300'
+    }>
+      {ride.rideType === 'offer' ? <Car className="h-3 w-3 mr-1" /> : <Hand className="h-3 w-3 mr-1" />}
+      {ride.rideType === 'offer' ? 'Offer' : 'Request'}
+    </Badge>
+  );
+
   return (
-    <Card className={`hover:shadow-lg transition-shadow ${isPast ? 'opacity-75' : ''}`}>
-      <CardContent className="p-4 space-y-4">
-        {/* Header with status badge and role */}
-        <div className="flex items-start justify-between gap-3">
+    <Card className={`rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border ${isPast ? 'opacity-70' : ''}`}>
+      <CardContent className="p-5 space-y-4">
+        {/* Header: Avatar + Name + Badges */}
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <Avatar className="h-10 w-10 border border-border flex-shrink-0">
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+              {ride.otherParent ? getInitials(ride.otherParent) : 'You'}
+            </AvatarFallback>
+          </Avatar>
+
+          {/* Name + Role */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge className={`${statusConfig.className} gap-1.5`}>
-                {StatusIcon && <StatusIcon className="h-3 w-3" />}
-                {statusConfig.label}
-              </Badge>
-              {rideStatusBadge}
-            </div>
-            {ride.isDriver !== null && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {ride.isDriver ? "You're the driver" : "You're the passenger"}
-              </p>
-            )}
+            <p className="font-semibold text-foreground text-sm truncate">
+              {ride.otherParent ? getParentName(ride.otherParent) : 'You'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {ride.isDriver ? "Driver" : "Passenger"} · {ride.source === 'posted' ? 'Broadcast' : ride.source === 'private' ? 'Private' : 'Connected'}
+            </p>
           </div>
-          {!isPast && onCancel && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={onCancel}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Cancel
-            </Button>
-          )}
+
+          {/* Badges */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {typeBadge}
+            {rideStatusBadge}
+          </div>
         </div>
 
         {/* Route */}
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-          <div className="text-sm min-w-0">
-            <div className="font-medium truncate">{ride.pickupLocation}</div>
-            <div className="text-muted-foreground truncate">→ {ride.dropoffLocation}</div>
+        <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-primary-foreground shadow-sm" />
+            <div className="w-px h-6 bg-border" />
+            <div className="w-2.5 h-2.5 rounded-full bg-secondary border-2 border-background shadow-sm" />
+          </div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <p className="text-sm font-medium text-foreground truncate">{ride.pickupLocation}</p>
+            <p className="text-sm text-muted-foreground truncate">{ride.dropoffLocation}</p>
           </div>
         </div>
 
         {/* Date, Time, Seats */}
-        <div className="flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            {format(new Date(ride.rideDate), 'EEE, MMM d')}
+            <Calendar className="h-3.5 w-3.5" />
+            <span>{format(new Date(ride.rideDate), 'EEE, MMM d')}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {ride.rideTime}
+            <Clock className="h-3.5 w-3.5" />
+            <span>{ride.rideTime}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            {ride.seatsAvailable 
-              ? `${ride.seatsAvailable} seats available`
-              : ride.seatsNeeded 
-                ? `${ride.seatsNeeded} seats needed`
-                : '—'}
+            <Users className="h-3.5 w-3.5" />
+            <span>
+              {ride.seatsAvailable 
+                ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
+                : ride.seatsNeeded 
+                  ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
+                  : '—'}
+            </span>
           </div>
         </div>
 
-        {/* Other Parent Contact Info */}
+        {/* Status Badge */}
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className={`${statusConfig.className} gap-1`}>
+            {StatusIcon && <StatusIcon className="h-3 w-3" />}
+            {statusConfig.label}
+          </Badge>
+        </div>
+
+        {/* Connected Parent Contact */}
         {ride.otherParent && (
-          <div className="pt-3 border-t space-y-2">
-            <p className="text-sm font-medium">
-              {ride.source === 'posted' 
-                ? `Connected with: ${getParentName(ride.otherParent)}`
-                : `Riding with: ${getParentName(ride.otherParent)}`
-              }
+          <div className="pt-3 border-t border-border space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {ride.source === 'posted' ? 'Connected with' : 'Riding with'}
             </p>
-            <div className="flex flex-wrap gap-3 text-sm">
+            <div className="flex flex-wrap gap-2">
               {ride.otherParent.email && (
                 <a 
                   href={`mailto:${ride.otherParent.email}`}
-                  className="flex items-center gap-1.5 text-primary hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                 >
                   <Mail className="h-3.5 w-3.5" />
                   {ride.otherParent.email}
@@ -201,29 +248,40 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast }: UnifiedRideCardProps
               {ride.otherParent.phone && (
                 <a 
                   href={`tel:${ride.otherParent.phone}`}
-                  className="flex items-center gap-1.5 text-primary hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {ride.otherParent.phone}
                 </a>
               )}
               {!ride.otherParent.email && !ride.otherParent.phone && (
-                <span className="text-muted-foreground text-xs">
-                  Contact info not shared
-                </span>
+                <span className="text-xs text-muted-foreground">Contact info not shared</span>
               )}
             </div>
           </div>
         )}
 
-        {/* Posted rides - no other parent */}
-        {!ride.otherParent && (ride.status === 'posted-looking' || ride.status === 'posted-offering') && (
-          <div className="pt-3 border-t">
-            <p className="text-sm text-muted-foreground">
-              {ride.status === 'posted-looking' 
-                ? 'Waiting for someone to offer help...'
-                : 'Available for others to join'}
-            </p>
+        {/* Waiting state for posted rides */}
+        {!ride.otherParent && (ride.status === 'posted-looking' || ride.status === 'posted-offering') && !isPast && (
+          <p className="text-xs text-muted-foreground italic">
+            {ride.status === 'posted-looking' 
+              ? 'Waiting for someone to offer help…'
+              : 'Available for others to join'}
+          </p>
+        )}
+
+        {/* Cancel button */}
+        {!isPast && onCancel && (
+          <div className="pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-full"
+              onClick={onCancel}
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              Cancel Ride
+            </Button>
           </div>
         )}
       </CardContent>

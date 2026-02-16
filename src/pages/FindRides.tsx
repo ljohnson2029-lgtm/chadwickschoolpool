@@ -245,132 +245,133 @@ const FindRides = () => {
     );
   }
 
-  const RideCard = ({ ride }: { ride: BroadcastRide }) => (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <RideUserBadge
-              userId={ride.user_id}
-              firstName={ride.profiles?.first_name || null}
-              lastName={ride.profiles?.last_name || null}
-              username={ride.profiles?.username || 'Unknown'}
-              accountType="parent"
-              email={ride.userEmail}
-              phoneNumber={ride.profiles?.phone_number}
-              shareEmail={ride.profiles?.share_email ?? false}
-              sharePhone={ride.profiles?.share_phone ?? false}
-              isCurrentUser={ride.user_id === user?.id}
-              viewerIsStudent={isUserStudent}
-              variant="full"
-              showViewButton={true}
-            />
-          </div>
-          <Badge className={`gap-1 ml-2 ${ride.type === 'request' ? 'bg-red-500' : 'bg-green-500'}`}>
-            {ride.type === 'request' ? <Hand className="h-3 w-3" /> : <Car className="h-3 w-3" />}
-            {ride.type === 'request' ? 'Request' : 'Offer'}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-start gap-2">
-          <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-          <div className="text-sm">
-            <div className="font-medium">{ride.pickup_location}</div>
-            <div className="text-muted-foreground">to {ride.dropoff_location}</div>
-          </div>
-        </div>
+  const RideCard = ({ ride }: { ride: BroadcastRide }) => {
+    const initials = ride.profiles?.first_name && ride.profiles?.last_name
+      ? `${ride.profiles.first_name[0]}${ride.profiles.last_name[0]}`.toUpperCase()
+      : ride.profiles?.username?.substring(0, 2).toUpperCase() || '??';
+    
+    const displayName = ride.profiles?.first_name && ride.profiles?.last_name
+      ? `${ride.profiles.first_name} ${ride.profiles.last_name}`
+      : ride.profiles?.username || 'Unknown';
 
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            {format(new Date(ride.ride_date), 'MMM d, yyyy')}
+    return (
+      <Card className="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border">
+        <CardContent className="p-5 space-y-4">
+          {/* Header: Avatar + Name + Type Badge */}
+          <div className="flex items-start gap-3">
+            <Avatar className="h-10 w-10 border border-border flex-shrink-0">
+              <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <RideUserBadge
+                userId={ride.user_id}
+                firstName={ride.profiles?.first_name || null}
+                lastName={ride.profiles?.last_name || null}
+                username={ride.profiles?.username || 'Unknown'}
+                accountType="parent"
+                email={ride.userEmail}
+                phoneNumber={ride.profiles?.phone_number}
+                shareEmail={ride.profiles?.share_email ?? false}
+                sharePhone={ride.profiles?.share_phone ?? false}
+                isCurrentUser={ride.user_id === user?.id}
+                viewerIsStudent={isUserStudent}
+                variant="full"
+                showViewButton={true}
+              />
+            </div>
+            <Badge variant="outline" className={`gap-1 flex-shrink-0 ${
+              ride.type === 'request' 
+                ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800' 
+                : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+            }`}>
+              {ride.type === 'request' ? <Hand className="h-3 w-3" /> : <Car className="h-3 w-3" />}
+              {ride.type === 'request' ? 'Request' : 'Offer'}
+            </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {ride.ride_time}
+
+          {/* Route with visual connector */}
+          <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-background shadow-sm" />
+              <div className="w-px h-6 bg-border" />
+              <div className="w-2.5 h-2.5 rounded-full bg-secondary border-2 border-background shadow-sm" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-2">
+              <p className="text-sm font-medium text-foreground truncate">{ride.pickup_location}</p>
+              <p className="text-sm text-muted-foreground truncate">{ride.dropoff_location}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 text-sm">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          {ride.hasAcceptedConnection ? (
-            <span className="text-amber-600 font-medium">
-              {ride.user_id === user?.id ? 'Ride Connected' : 'Ride Full'}
-            </span>
-          ) : ride.type === 'offer'
-            ? `${ride.seats_available} seats available`
-            : `${ride.seats_needed} seats needed`}
-        </div>
+          {/* Date, Time, Seats */}
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{format(new Date(ride.ride_date), 'EEE, MMM d')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{ride.ride_time}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              {ride.hasAcceptedConnection ? (
+                <span className="text-secondary font-medium">
+                  {ride.user_id === user?.id ? 'Connected' : 'Ride Full'}
+                </span>
+              ) : ride.type === 'offer'
+                ? <span>{ride.seats_available} seat{(ride.seats_available || 0) > 1 ? 's' : ''} available</span>
+                : <span>{ride.seats_needed} seat{(ride.seats_needed || 0) > 1 ? 's' : ''} needed</span>}
+            </div>
+          </div>
 
-        {ride.route_details && (
-          <p className="text-sm text-muted-foreground pt-2 border-t">
-            {ride.route_details}
-          </p>
-        )}
+          {ride.route_details && (
+            <p className="text-sm text-muted-foreground pt-2 border-t border-border">
+              {ride.route_details}
+            </p>
+          )}
 
-        {/* Action Button - Different for Parents vs Students */}
-       {ride.hasAcceptedConnection && ride.user_id !== user?.id ? (
-         <Button 
-           className="w-full gap-2"
-           disabled
-           variant="secondary"
-         >
-           <Users className="h-4 w-4" />
-           Ride Full
-         </Button>
-       ) : isUserParent ? (
-          <Button 
-            className="w-full gap-2"
-            onClick={() => handleRespondToRide(ride)}
-           disabled={ride.user_id === user?.id || ride.hasAcceptedConnection}
-          >
-           {ride.user_id === user?.id && ride.hasAcceptedConnection ? (
-             <>
-               <CheckCircle className="h-4 w-4" />
-               Connected
-             </>
-           ) : ride.type === 'request' ? (
-              <>
-                <Car className="h-4 w-4" />
-                I Can Help!
-              </>
-            ) : (
-              <>
-                <Hand className="h-4 w-4" />
-                I Need This!
-              </>
-            )}
-          </Button>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="w-full gap-2"
-                disabled
-                variant="secondary"
-              >
-                {ride.type === 'request' ? (
-                  <>
-                    <Car className="h-4 w-4" />
-                    I Can Help!
-                  </>
-                ) : (
-                  <>
-                    <Hand className="h-4 w-4" />
-                    I Need This!
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Only parents can manage rides. Ask your parent for help.</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </CardContent>
-    </Card>
-  );
+          {/* Action Button */}
+          {ride.hasAcceptedConnection && ride.user_id !== user?.id ? (
+            <Button className="w-full gap-2" disabled variant="secondary">
+              <Users className="h-4 w-4" />
+              Ride Full
+            </Button>
+          ) : isUserParent ? (
+            <Button 
+              className="w-full gap-2"
+              onClick={() => handleRespondToRide(ride)}
+              disabled={ride.user_id === user?.id || ride.hasAcceptedConnection}
+            >
+              {ride.user_id === user?.id && ride.hasAcceptedConnection ? (
+                <><CheckCircle className="h-4 w-4" /> Connected</>
+              ) : ride.type === 'request' ? (
+                <><Car className="h-4 w-4" /> I Can Help!</>
+              ) : (
+                <><Hand className="h-4 w-4" /> I Need This!</>
+              )}
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button className="w-full gap-2" disabled variant="secondary">
+                  {ride.type === 'request' ? (
+                    <><Car className="h-4 w-4" /> I Can Help!</>
+                  ) : (
+                    <><Hand className="h-4 w-4" /> I Need This!</>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Only parents can manage rides. Ask your parent for help.</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <DashboardLayout>
