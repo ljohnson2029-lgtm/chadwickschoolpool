@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
+import { TopConnections } from "@/components/TopConnections";
 
 interface BroadcastRide {
   id: string;
@@ -710,6 +711,12 @@ const Dashboard = () => {
           </Card>
 
         </div>
+
+        {/* ── TOP CONNECTIONS ── */}
+        <div className="mt-6">
+          <TopConnections limit={5} variant="dashboard" />
+        </div>
+
       </div>
     </DashboardLayout>
   );

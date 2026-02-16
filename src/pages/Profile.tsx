@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Link, Shield } from 'lucide-react';
+import { TopConnections } from '@/components/TopConnections';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -295,6 +296,9 @@ const Profile = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Frequent Carpool Partners — only visible to the user themselves */}
+          <TopConnections limit={3} variant="profile" />
 
           {!profile.home_address && (
             <Card className="border-dashed">

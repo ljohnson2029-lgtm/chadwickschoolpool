@@ -15,7 +15,8 @@ import {
   HandHelping,
   Hand,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Star
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -47,6 +48,8 @@ interface UnifiedRideCardProps {
   ride: UnifiedRide;
   onCancel?: () => void;
   isPast?: boolean;
+  /** IDs of user's top connections — shows "Frequent partner" badge */
+  topConnectionIds?: string[];
 }
 
 const getStatusConfig = (status: UnifiedRide['status'], source: UnifiedRide['source'], hasOtherParent: boolean) => {
@@ -132,8 +135,9 @@ export const UnifiedRideCardSkeleton = () => (
   </Card>
 );
 
-export const UnifiedRideCard = ({ ride, onCancel, isPast }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: UnifiedRideCardProps) => {
   const statusConfig = getStatusConfig(ride.status, ride.source, !!ride.otherParent);
+  const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
 
   const rideStatusBadge = isPast && ride.rideStatus && ride.rideStatus !== 'active' ? (
@@ -180,7 +184,13 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast }: UnifiedRideCardProps
           </div>
 
           {/* Badges */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
+            {isFrequentPartner && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 gap-0.5">
+                <Star className="h-3 w-3 fill-current" />
+                Frequent
+              </Badge>
+            )}
             {typeBadge}
             {rideStatusBadge}
           </div>

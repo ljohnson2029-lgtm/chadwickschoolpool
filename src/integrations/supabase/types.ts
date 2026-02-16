@@ -812,6 +812,18 @@ export type Database = {
         Args: { user_user_id: string }
         Returns: number
       }
+      get_top_connections: {
+        Args: { current_user_id: string; result_limit?: number }
+        Returns: {
+          account_type: string
+          avatar_url: string
+          connected_user_id: string
+          connection_score: number
+          full_name: string
+          message_count: number
+          shared_rides: number
+        }[]
+      }
       get_user_email: { Args: { user_user_id: string }; Returns: string }
       has_role: {
         Args: {
