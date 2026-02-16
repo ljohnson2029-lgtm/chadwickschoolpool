@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { MapPin, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { MapPin, Loader2, X, CheckCircle2 } from "lucide-react";
+
+/* ─── Types ─────────────────────────────────────────────────────── */
 
 interface AddressSuggestion {
   place_name: string;
@@ -15,41 +17,68 @@ interface AddressAutocompleteInputProps {
   required?: boolean;
 }
 
-const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
+/* ─── Constants ─────────────────────────────────────────────────── */
+
+const MIN_QUERY_LENGTH = 3;
+const DEBOUNCE_MS = 500;
+const MAX_RESULTS = 5;
+
+/* ─── Component ─────────────────────────────────────────────────── */
+
+export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
   value,
   onAddressSelect,
   placeholder = "Enter your home address",
-  required = false
+  required = false,
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const listboxRef = useRef<HTMLUListElement>(null);
   const { toast } = useToast();
 
-  // Update input value when prop changes
+  /* ── Sync prop → state ──────────────────────────────────── */
+
   useEffect(() => {
     setInputValue(value);
   }, [value]);
 
-  // Handle clicks outside to close suggestions
+  /* ── Click outside to close ─────────────────────────────── */
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        setActiveIndex(-1);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchSuggestions = async (query: string) => {
-    if (!query.trim() || query.length < 3) {
+  /* ── Cleanup debounce on unmount ────────────────────────── */
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  /* ── Fetch suggestions ──────────────────────────────────── */
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < MIN_QUERY_LENGTH) {
       setSuggestions([]);
       setFetchError(null);
       return;
@@ -57,138 +86,255 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
 
     setIsLoading(true);
     setFetchError(null);
-    
+
     try {
-      // Use Nominatim (OpenStreetMap) for geocoding - no auth required
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query,
+        )}&limit=${MAX_RESULTS}&addressdetails=1`,
         {
           headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'ChadwickCarpools/1.0'
-          }
-        }
+            Accept: "application/json",
+            "User-Agent": "ChadwickCarpools/1.0",
+          },
+        },
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch address suggestions');
+        throw new Error("Failed to fetch address suggestions");
       }
 
       const data = await response.json();
-      console.log('Nominatim response:', data);
-      
-      // Transform Nominatim format to our format
-      const formattedSuggestions: AddressSuggestion[] = data.map((item: any) => ({
+
+      const formatted: AddressSuggestion[] = data.map((item: any) => ({
         place_name: item.display_name,
-        center: [parseFloat(item.lon), parseFloat(item.lat)] as [number, number]
+        center: [parseFloat(item.lon), parseFloat(item.lat)] as [number, number],
       }));
-      
-      setSuggestions(formattedSuggestions);
+
+      setSuggestions(formatted);
       setShowSuggestions(true);
-      
-      if (formattedSuggestions.length === 0) {
-        setFetchError('No addresses found. Try a different search.');
+      setActiveIndex(-1);
+
+      if (formatted.length === 0) {
+        setFetchError("No addresses found. Try a different search.");
       }
     } catch (error) {
-      console.error('Error fetching address suggestions:', error);
-      setFetchError('Unable to find address suggestions. Please try again.');
+      console.error("Error fetching address suggestions:", error);
+      setFetchError("Unable to find address suggestions. Please try again.");
       setSuggestions([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    setSelectedAddress(null); // Clear selected address when typing
+  /* ── Select a suggestion ────────────────────────────────── */
 
-    // Clear previous timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  const selectSuggestion = useCallback(
+    (suggestion: AddressSuggestion) => {
+      const [longitude, latitude] = suggestion.center;
 
-    // Debounce API call
-    timeoutRef.current = setTimeout(() => {
-      fetchSuggestions(newValue);
-    }, 500);
-  };
+      setInputValue(suggestion.place_name);
+      setSelectedAddress({ lat: latitude, lng: longitude });
+      setShowSuggestions(false);
+      setSuggestions([]);
+      setActiveIndex(-1);
 
-  const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    const [longitude, latitude] = suggestion.center;
-    setInputValue(suggestion.place_name);
-    setSelectedAddress({ lat: latitude, lng: longitude });
-    setShowSuggestions(false);
+      onAddressSelect(suggestion.place_name, latitude, longitude);
+
+      toast({
+        title: "Address Selected",
+        description: "Address successfully geocoded",
+      });
+    },
+    [onAddressSelect, toast],
+  );
+
+  /* ── Input change handler ───────────────────────────────── */
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setInputValue(newValue);
+      setSelectedAddress(null);
+
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+      timeoutRef.current = setTimeout(() => {
+        fetchSuggestions(newValue);
+      }, DEBOUNCE_MS);
+    },
+    [fetchSuggestions],
+  );
+
+  /* ── Keyboard navigation ────────────────────────────────── */
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!showSuggestions || suggestions.length === 0) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setActiveIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+          break;
+
+        case "ArrowUp":
+          e.preventDefault();
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+          break;
+
+        case "Enter":
+          e.preventDefault();
+          if (activeIndex >= 0 && activeIndex < suggestions.length) {
+            selectSuggestion(suggestions[activeIndex]);
+          }
+          break;
+
+        case "Escape":
+          e.preventDefault();
+          setShowSuggestions(false);
+          setActiveIndex(-1);
+          break;
+      }
+    },
+    [showSuggestions, suggestions, activeIndex, selectSuggestion],
+  );
+
+  /* ── Scroll active option into view ─────────────────────── */
+
+  useEffect(() => {
+    if (activeIndex < 0 || !listboxRef.current) return;
+    const options = listboxRef.current.querySelectorAll('[role="option"]');
+    options[activeIndex]?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  /* ── Clear handler ──────────────────────────────────────── */
+
+  const handleClear = useCallback(() => {
+    setInputValue("");
+    setSelectedAddress(null);
     setSuggestions([]);
-    
-    // Call the callback with the selected address
-    onAddressSelect(suggestion.place_name, latitude, longitude);
+    setShowSuggestions(false);
+    setFetchError(null);
+    setActiveIndex(-1);
+  }, []);
 
-    toast({
-      title: "Address Selected",
-      description: "Address successfully geocoded",
-    });
-  };
+  /* ── Focus handler ──────────────────────────────────────── */
 
-  const handleInputFocus = () => {
+  const handleInputFocus = useCallback(() => {
     if (suggestions.length > 0) {
       setShowSuggestions(true);
     }
-  };
+  }, [suggestions.length]);
+
+  /* ── Derived state ──────────────────────────────────────── */
+
+  const isSelected = selectedAddress !== null;
+  const showMinCharHint =
+    !isLoading && !fetchError && !isSelected && inputValue.length > 0 && inputValue.length < MIN_QUERY_LENGTH;
+
+  const inputBorderClass = isSelected
+    ? "border-emerald-500 focus-visible:ring-emerald-500/30"
+    : fetchError
+      ? "border-red-500 focus-visible:ring-red-500/30"
+      : "";
+
+  const listboxId = "address-suggestions-listbox";
+  const activeOptionId = activeIndex >= 0 ? `address-option-${activeIndex}` : undefined;
 
   return (
     <div ref={wrapperRef} className="relative">
+      {/* ── Input row ─────────────────────────────────────── */}
       <div className="relative">
         <Input
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           required={required}
-          className="pr-10"
+          className={`pr-16 ${inputBorderClass}`}
+          role="combobox"
+          aria-expanded={showSuggestions && suggestions.length > 0}
+          aria-controls={listboxId}
+          aria-activedescendant={activeOptionId}
+          aria-autocomplete="list"
+          aria-describedby="address-helper"
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+
+        {/* Right-side icons */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {/* Clear button */}
+          {inputValue.trim() && !isLoading && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+              aria-label="Clear address"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+
+          {/* Status icon */}
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : selectedAddress ? (
-            <MapPin className="h-4 w-4 text-primary" />
+          ) : isSelected ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           ) : (
             <MapPin className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </div>
 
-      {/* Suggestions dropdown */}
+      {/* ── Suggestions dropdown ──────────────────────────── */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+        <ul
+          id={listboxId}
+          ref={listboxRef}
+          role="listbox"
+          aria-label="Address suggestions"
+          className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto"
+        >
           {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              type="button"
-              className="w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-2 border-b border-border last:border-b-0"
-              onClick={() => handleSuggestionClick(suggestion)}
+            <li
+              key={`${suggestion.center[0]}-${suggestion.center[1]}`}
+              id={`address-option-${index}`}
+              role="option"
+              aria-selected={index === activeIndex}
+              className={`w-full px-4 py-3 text-left cursor-pointer transition-colors flex items-start gap-2 border-b border-border last:border-b-0 ${
+                index === activeIndex ? "bg-accent" : "hover:bg-accent/50"
+              }`}
+              onClick={() => selectSuggestion(suggestion)}
+              onMouseEnter={() => setActiveIndex(index)}
             >
               <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">{suggestion.place_name}</span>
-            </button>
+            </li>
           ))}
-        </div>
+
+          {/* Attribution */}
+          <li className="px-4 py-1.5 text-[10px] text-muted-foreground/60 text-right" aria-hidden="true">
+            Powered by OpenStreetMap
+          </li>
+        </ul>
       )}
 
-      {/* Error message */}
-      {fetchError && !isLoading && (
-        <p className="text-xs text-destructive mt-1">
-          {fetchError}
-        </p>
-      )}
+      {/* ── Helper text area ──────────────────────────────── */}
+      <div id="address-helper">
+        {fetchError && !isLoading && <p className="text-xs text-destructive mt-1">{fetchError}</p>}
 
-      {/* Validation message */}
-      {required && inputValue && !selectedAddress && !fetchError && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Please select an address from the suggestions
-        </p>
-      )}
+        {showMinCharHint && (
+          <p className="text-xs text-muted-foreground mt-1">Type at least {MIN_QUERY_LENGTH} characters to search</p>
+        )}
+
+        {required && inputValue && !isSelected && !fetchError && !showMinCharHint && !isLoading && (
+          <p className="text-xs text-muted-foreground mt-1">Please select an address from the suggestions</p>
+        )}
+      </div>
     </div>
   );
 };
