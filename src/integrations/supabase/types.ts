@@ -78,7 +78,10 @@ export type Database = {
         Row: {
           age: number
           created_at: string | null
+          first_name: string
+          grade_level: string | null
           id: string
+          last_name: string
           name: string
           school: string
           user_id: string
@@ -86,7 +89,10 @@ export type Database = {
         Insert: {
           age: number
           created_at?: string | null
+          first_name?: string
+          grade_level?: string | null
           id?: string
+          last_name?: string
           name: string
           school: string
           user_id: string
@@ -94,7 +100,10 @@ export type Database = {
         Update: {
           age?: number
           created_at?: string | null
+          first_name?: string
+          grade_level?: string | null
           id?: string
+          last_name?: string
           name?: string
           school?: string
           user_id?: string
