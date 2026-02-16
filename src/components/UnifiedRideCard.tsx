@@ -20,6 +20,7 @@ export interface UnifiedRide {
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
   status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed';
+  rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
   pickupLocation: string;
   dropoffLocation: string;
   rideDate: string;
@@ -40,7 +41,8 @@ export interface UnifiedRide {
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
-  onCancel: () => void;
+  onCancel?: () => void;
+  isPast?: boolean;
 }
 
 const getStatusConfig = (status: UnifiedRide['status'], source: UnifiedRide['source'], hasOtherParent: boolean) => {
@@ -102,35 +104,50 @@ const getParentName = (parent: UnifiedRide['otherParent']) => {
   return parent.username;
 };
 
-export const UnifiedRideCard = ({ ride, onCancel }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast }: UnifiedRideCardProps) => {
   const statusConfig = getStatusConfig(ride.status, ride.source, !!ride.otherParent);
   const StatusIcon = statusConfig.icon;
 
+  const rideStatusBadge = isPast && ride.rideStatus && ride.rideStatus !== 'active' ? (
+    <Badge className={
+      ride.rideStatus === 'completed' ? 'bg-green-500/15 text-green-600 border-green-500/30' :
+      ride.rideStatus === 'cancelled' ? 'bg-red-500/15 text-red-600 border-red-500/30' :
+      'bg-gray-500/15 text-gray-600 border-gray-500/30'
+    }>
+      {ride.rideStatus === 'completed' ? 'Completed' : ride.rideStatus === 'cancelled' ? 'Cancelled' : 'Expired'}
+    </Badge>
+  ) : null;
+
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className={`hover:shadow-lg transition-shadow ${isPast ? 'opacity-75' : ''}`}>
       <CardContent className="p-4 space-y-4">
         {/* Header with status badge and role */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <Badge className={`${statusConfig.className} gap-1.5`}>
-              {StatusIcon && <StatusIcon className="h-3 w-3" />}
-              {statusConfig.label}
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className={`${statusConfig.className} gap-1.5`}>
+                {StatusIcon && <StatusIcon className="h-3 w-3" />}
+                {statusConfig.label}
+              </Badge>
+              {rideStatusBadge}
+            </div>
             {ride.isDriver !== null && (
               <p className="text-xs text-muted-foreground mt-1">
                 {ride.isDriver ? "You're the driver" : "You're the passenger"}
               </p>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={onCancel}
-          >
-            <X className="h-4 w-4 mr-1" />
-            Cancel
-          </Button>
+          {!isPast && onCancel && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+              onClick={onCancel}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+          )}
         </div>
 
         {/* Route */}
