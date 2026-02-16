@@ -149,23 +149,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     fetchUserResponses();
   }, [fetchUserResponses]);
 
-  // Fetch Mapbox token with retry
+  // Mapbox publishable token - safe for client-side use
   useEffect(() => {
-    let cancelled = false;
-    const fetchToken = async (attempt = 0) => {
-      const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-      if (cancelled) return;
-      if (error) {
-        console.error('Error fetching Mapbox token:', error);
-        if (attempt < 3) {
-          setTimeout(() => fetchToken(attempt + 1), 1500 * (attempt + 1));
-        }
-      } else if (data?.token) {
-        setMapboxToken(data.token);
-      }
-    };
-    fetchToken();
-    return () => { cancelled = true; };
+    setMapboxToken('pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg');
   }, []);
 
   // Fetch rides data
