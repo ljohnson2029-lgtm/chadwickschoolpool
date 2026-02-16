@@ -166,11 +166,13 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
     const fetchRides = async () => {
       if (!user) return;
 
-      // Fetch ALL active rides (no date filter - show all for debugging)
+      // Fetch all active rides with date >= today
+      const today = new Date().toISOString().split('T')[0];
       const { data: ridesData, error } = await supabase
         .from('rides')
         .select('*')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .gte('ride_date', today);
 
       if (error) {
         console.error('[FindRidesMap] Error fetching rides:', error);
@@ -179,20 +181,33 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
       console.log('[FindRidesMap] Raw rides from DB:', ridesData?.length || 0, ridesData);
 
-      // Filter to show only rides with valid coordinates OR valid addresses
-      const ridesWithLocation = (ridesData || []).filter(ride => {
-        const hasPickupCoords = ride.pickup_latitude != null && ride.pickup_longitude != null;
-        const hasPickupAddress = ride.pickup_location && ride.pickup_location.trim() !== '';
-        const isValid = hasPickupCoords || hasPickupAddress;
-        
-        if (!isValid) {
-          console.log('[FindRidesMap] Filtering out ride (no location):', ride.id, ride);
+      // Geocode rides that have address but no coordinates
+      const allRides = ridesData || [];
+      for (const ride of allRides) {
+        if (!ride.pickup_latitude && !ride.pickup_longitude && ride.pickup_location) {
+          try {
+            const coords = await geocodeAddress(ride.pickup_location);
+            if (coords) {
+              ride.pickup_longitude = coords[0];
+              ride.pickup_latitude = coords[1];
+              console.log('[FindRidesMap] Geocoded ride:', ride.id, coords);
+            }
+          } catch (err) {
+            console.error('[FindRidesMap] Geocoding failed for ride:', ride.id, err);
+          }
         }
-        
-        return isValid;
+      }
+
+      // Filter to rides with valid coordinates
+      const ridesWithLocation = allRides.filter(ride => {
+        const hasPickupCoords = ride.pickup_latitude != null && ride.pickup_longitude != null;
+        if (!hasPickupCoords) {
+          console.warn('[FindRidesMap] Ride has no coordinates after geocoding attempt:', ride.id, ride.pickup_location);
+        }
+        return hasPickupCoords;
       });
 
-      console.log('[FindRidesMap] Rides with valid location:', ridesWithLocation.length);
+      console.log('[FindRidesMap] Rides with valid coordinates:', ridesWithLocation.length, '/', allRides.length);
 
       // Get unique user IDs and fetch profiles
       const userIds = [...new Set(ridesWithLocation.map(r => r.user_id) || [])];
