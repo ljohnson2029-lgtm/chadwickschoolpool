@@ -5,20 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { Car } from "lucide-react";
+import { Car, History } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteRideDialog } from "@/components/ConfirmDialogs";
 import { UnifiedRideCard, type UnifiedRide } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [unifiedRides, setUnifiedRides] = useState<UnifiedRide[]>([]);
+  const [activeRides, setActiveRides] = useState<UnifiedRide[]>([]);
+  const [pastRides, setPastRides] = useState<UnifiedRide[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<UnifiedRide | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -28,288 +32,16 @@ const MyRides = () => {
 
   useEffect(() => {
     if (user) {
-      fetchAllRides();
+      loadRides();
     }
   }, [user]);
 
-  const fetchAllRides = async () => {
+  const loadRides = async () => {
     if (!user) return;
     setLoadingData(true);
-
-    const allRides: UnifiedRide[] = [];
-
-    // 1. Fetch user's own broadcast rides (Posted)
-    const { data: myRides } = await supabase
-      .from('rides')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .gte('ride_date', new Date().toISOString().split('T')[0]);
-
-    if (myRides) {
-      for (const ride of myRides) {
-        allRides.push({
-          id: ride.id,
-          source: 'posted',
-          rideType: ride.type as 'request' | 'offer',
-          status: ride.type === 'request' ? 'posted-looking' : 'posted-offering',
-          pickupLocation: ride.pickup_location,
-          dropoffLocation: ride.dropoff_location,
-          rideDate: ride.ride_date,
-          rideTime: ride.ride_time,
-          seatsAvailable: ride.seats_available,
-          seatsNeeded: ride.seats_needed,
-          isDriver: ride.type === 'offer',
-          otherParent: null,
-          originalData: ride,
-        });
-      }
-    }
-
-    // 2. Fetch ride conversations where user joined someone else's ride
-    const { data: joinedConversations } = await supabase
-      .from('ride_conversations')
-      .select('*, rides(*)')
-      .eq('sender_id', user.id)
-      .eq('status', 'accepted');
-
-    if (joinedConversations) {
-      const rideOwnerIds = [...new Set(joinedConversations.map(c => c.rides?.user_id).filter(Boolean))];
-      let ownerProfiles: Record<string, any> = {};
-      
-      if (rideOwnerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
-          .in('id', rideOwnerIds);
-        
-        const { data: users } = await supabase
-          .from('users')
-          .select('user_id, email')
-          .in('user_id', rideOwnerIds);
-
-        if (profiles) {
-          ownerProfiles = profiles.reduce((acc, p) => {
-            const userEmail = users?.find(u => u.user_id === p.id)?.email;
-            acc[p.id] = { ...p, email: userEmail };
-            return acc;
-          }, {} as Record<string, any>);
-        }
-      }
-
-      for (const conv of joinedConversations) {
-        if (!conv.rides) continue;
-        const ride = conv.rides;
-        const owner = ownerProfiles[ride.user_id];
-        
-        // Determine if user is joining a ride offer or helping with a request
-        const isHelpingWithRequest = ride.type === 'request';
-        
-        allRides.push({
-          id: conv.id,
-          source: 'conversation',
-          rideType: ride.type as 'request' | 'offer',
-          status: isHelpingWithRequest ? 'helping-out' : 'joined-ride',
-          pickupLocation: ride.pickup_location,
-          dropoffLocation: ride.dropoff_location,
-          rideDate: ride.ride_date,
-          rideTime: ride.ride_time,
-          seatsAvailable: ride.seats_available,
-          seatsNeeded: ride.seats_needed,
-          isDriver: isHelpingWithRequest,
-          otherParent: owner ? {
-            id: owner.id,
-            firstName: owner.first_name,
-            lastName: owner.last_name,
-            username: owner.username,
-            email: owner.share_email ? owner.email : null,
-            phone: owner.share_phone ? owner.phone_number : null,
-          } : null,
-          originalData: { conversation: conv, ride },
-        });
-      }
-    }
-
-    // 2b. Fetch ride conversations where someone joined the USER's ride (user is recipient/owner)
-    const { data: receivedConversations } = await supabase
-      .from('ride_conversations')
-      .select('*, rides(*)')
-      .eq('recipient_id', user.id)
-      .eq('status', 'accepted');
-
-    if (receivedConversations) {
-      const joinerIds = [...new Set(receivedConversations.map(c => c.sender_id).filter(Boolean))];
-      let joinerProfiles: Record<string, any> = {};
-      
-      if (joinerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
-          .in('id', joinerIds);
-        
-        const { data: users } = await supabase
-          .from('users')
-          .select('user_id, email')
-          .in('user_id', joinerIds);
-
-        if (profiles) {
-          joinerProfiles = profiles.reduce((acc, p) => {
-            const userEmail = users?.find(u => u.user_id === p.id)?.email;
-            acc[p.id] = { ...p, email: userEmail };
-            return acc;
-          }, {} as Record<string, any>);
-        }
-      }
-
-      for (const conv of receivedConversations) {
-        if (!conv.rides) continue;
-        const ride = conv.rides;
-        
-        // Skip if this ride is already added as a "posted" ride
-        // We'll update the posted ride's status instead
-        const existingPostedIndex = allRides.findIndex(
-          r => r.source === 'posted' && r.id === ride.id
-        );
-        
-        const joiner = joinerProfiles[conv.sender_id];
-        
-        if (existingPostedIndex !== -1) {
-          // Update the existing posted ride to show it's confirmed with a helper/joiner
-          allRides[existingPostedIndex].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
-          allRides[existingPostedIndex].otherParent = joiner ? {
-            id: joiner.id,
-            firstName: joiner.first_name,
-            lastName: joiner.last_name,
-            username: joiner.username,
-            email: joiner.share_email ? joiner.email : null,
-            phone: joiner.share_phone ? joiner.phone_number : null,
-          } : null;
-          // Keep isDriver as-is since they posted the ride
-        } else {
-          // Add as a new entry if somehow the ride isn't in posted rides
-          allRides.push({
-            id: conv.id,
-            source: 'conversation',
-            rideType: ride.type as 'request' | 'offer',
-            status: ride.type === 'request' ? 'helping-out' : 'joined-ride',
-            pickupLocation: ride.pickup_location,
-            dropoffLocation: ride.dropoff_location,
-            rideDate: ride.ride_date,
-            rideTime: ride.ride_time,
-            seatsAvailable: ride.seats_available,
-            seatsNeeded: ride.seats_needed,
-            isDriver: ride.type === 'offer',
-            otherParent: joiner ? {
-              id: joiner.id,
-              firstName: joiner.first_name,
-              lastName: joiner.last_name,
-              username: joiner.username,
-              email: joiner.share_email ? joiner.email : null,
-              phone: joiner.share_phone ? joiner.phone_number : null,
-            } : null,
-            originalData: { conversation: conv, ride },
-          });
-        }
-      }
-    }
-
-    // 3. Fetch private ride requests (both sent and received, accepted only)
-    const { data: privateRequests } = await supabase
-      .from('private_ride_requests')
-      .select('*')
-      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .eq('status', 'accepted')
-      .gte('ride_date', new Date().toISOString().split('T')[0]);
-
-    if (privateRequests) {
-      const otherUserIds = [...new Set(privateRequests.map(r => 
-        r.sender_id === user.id ? r.recipient_id : r.sender_id
-      ))];
-      
-      let otherProfiles: Record<string, any> = {};
-      
-      if (otherUserIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
-          .in('id', otherUserIds);
-        
-        const { data: users } = await supabase
-          .from('users')
-          .select('user_id, email')
-          .in('user_id', otherUserIds);
-
-        if (profiles) {
-          otherProfiles = profiles.reduce((acc, p) => {
-            const userEmail = users?.find(u => u.user_id === p.id)?.email;
-            acc[p.id] = { ...p, email: userEmail };
-            return acc;
-          }, {} as Record<string, any>);
-        }
-      }
-
-      for (const req of privateRequests) {
-        const isSender = req.sender_id === user.id;
-        const otherId = isSender ? req.recipient_id : req.sender_id;
-        const other = otherProfiles[otherId];
-        
-        // Determine user's role based on who sent and what type
-        let status: UnifiedRide['status'];
-        let isDriver: boolean;
-        
-        if (isSender) {
-          // User sent the request
-          if (req.request_type === 'request') {
-            status = 'joined-ride'; // User requested a ride, other is driving
-            isDriver = false;
-          } else {
-            status = 'helping-out'; // User offered to drive
-            isDriver = true;
-          }
-        } else {
-          // User received the request
-          if (req.request_type === 'request') {
-            status = 'helping-out'; // Other requested, user is driving
-            isDriver = true;
-          } else {
-            status = 'joined-ride'; // Other offered, user is passenger
-            isDriver = false;
-          }
-        }
-
-        allRides.push({
-          id: req.id,
-          source: 'private',
-          rideType: req.request_type,
-          status,
-          pickupLocation: req.pickup_address,
-          dropoffLocation: req.dropoff_address,
-          rideDate: req.ride_date,
-          rideTime: req.pickup_time,
-          seatsAvailable: req.seats_offered,
-          seatsNeeded: req.seats_needed,
-          isDriver,
-          otherParent: other ? {
-            id: other.id,
-            firstName: other.first_name,
-            lastName: other.last_name,
-            username: other.username,
-            email: other.share_email ? other.email : null,
-            phone: other.share_phone ? other.phone_number : null,
-          } : null,
-          originalData: req,
-        });
-      }
-    }
-
-    // Sort by date (soonest first)
-    allRides.sort((a, b) => {
-      const dateA = new Date(`${a.rideDate}T${a.rideTime}`);
-      const dateB = new Date(`${b.rideDate}T${b.rideTime}`);
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    setUnifiedRides(allRides);
+    const { active, past } = await fetchUnifiedRides(user.id);
+    setActiveRides(active);
+    setPastRides(past);
     setLoadingData(false);
   };
 
@@ -325,37 +57,31 @@ const MyRides = () => {
 
     try {
       if (rideToDelete.source === 'posted') {
-        // Delete the broadcast ride
         const { error } = await supabase
           .from('rides')
-          .delete()
+          .update({ status: 'cancelled' })
           .eq('id', rideToDelete.id)
           .eq('user_id', user.id);
-
         if (error) throw error;
-        toast.success('Ride post deleted');
+        toast.success('Ride cancelled');
       } else if (rideToDelete.source === 'conversation') {
-        // Delete the conversation (leaving the ride)
         const { error } = await supabase
           .from('ride_conversations')
           .delete()
           .eq('id', rideToDelete.id)
           .eq('sender_id', user.id);
-
         if (error) throw error;
         toast.success('Left the ride');
       } else if (rideToDelete.source === 'private') {
-        // Delete the private request
         const { error } = await supabase
           .from('private_ride_requests')
           .delete()
           .eq('id', rideToDelete.id);
-
         if (error) throw error;
         toast.success('Ride cancelled');
       }
 
-      fetchAllRides();
+      loadRides();
     } catch (error: any) {
       toast.error('Failed to cancel: ' + error.message);
     }
@@ -384,36 +110,73 @@ const MyRides = () => {
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">My Rides</h1>
-          <p className="text-muted-foreground">
-            All your rides in one place
-          </p>
+          <p className="text-muted-foreground">All your rides in one place</p>
         </div>
 
-        {loadingData ? (
-          <div className="text-center py-12">Loading...</div>
-        ) : unifiedRides.length === 0 ? (
-          <EmptyState
-            icon={Car}
-            title="No Rides Yet"
-            description="Post a ride or join someone else's to get started"
-            action={{
-              label: "Find Rides",
-              onClick: () => navigate('/find-rides')
-            }}
-          />
-        ) : (
-          <ScrollArea className="h-[calc(100vh-250px)]">
-            <div className="space-y-4 pr-4">
-              {unifiedRides.map((ride) => (
-                <UnifiedRideCard
-                  key={`${ride.source}-${ride.id}`}
-                  ride={ride}
-                  onCancel={() => handleCancelRide(ride)}
-                />
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="active" className="gap-1.5">
+              <Car className="h-4 w-4" />
+              Active ({activeRides.length})
+            </TabsTrigger>
+            <TabsTrigger value="past" className="gap-1.5">
+              <History className="h-4 w-4" />
+              Past ({pastRides.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active">
+            {loadingData ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : activeRides.length === 0 ? (
+              <EmptyState
+                icon={Car}
+                title="No Active Rides"
+                description="Post a ride or join someone else's to get started"
+                action={{
+                  label: "Find Rides",
+                  onClick: () => navigate('/find-rides')
+                }}
+              />
+            ) : (
+              <ScrollArea className="h-[calc(100vh-300px)]">
+                <div className="space-y-4 pr-4">
+                  {activeRides.map((ride) => (
+                    <UnifiedRideCard
+                      key={`${ride.source}-${ride.id}`}
+                      ride={ride}
+                      onCancel={() => handleCancelRide(ride)}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past">
+            {loadingData ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : pastRides.length === 0 ? (
+              <EmptyState
+                icon={History}
+                title="No Past Rides"
+                description="Completed and cancelled rides will appear here"
+              />
+            ) : (
+              <ScrollArea className="h-[calc(100vh-300px)]">
+                <div className="space-y-4 pr-4">
+                  {pastRides.map((ride) => (
+                    <UnifiedRideCard
+                      key={`${ride.source}-${ride.id}`}
+                      ride={ride}
+                      isPast
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <DeleteRideDialog
           open={deleteDialogOpen}
