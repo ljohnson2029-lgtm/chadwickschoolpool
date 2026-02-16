@@ -820,6 +820,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      haversine_miles: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       is_link_approved: {
         Args: { parent_user_id: string; student_user_id: string }
         Returns: boolean
@@ -828,6 +832,7 @@ export type Database = {
       is_valid_parent_email: { Args: { email: string }; Returns: boolean }
       is_valid_student_email: { Args: { email: string }; Returns: boolean }
       is_whitelisted_parent: { Args: { check_email: string }; Returns: boolean }
+      notify_expiring_rides: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
