@@ -438,6 +438,8 @@ const HowItWorksSection = ({
               step={step}
               index={index}
               isLast={index === steps.length - 1}
+              isActive={false}
+              onHover={() => {}}
             />
           ))}
         </div>
