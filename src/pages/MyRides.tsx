@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Car, History } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteRideDialog } from "@/components/ConfirmDialogs";
-import { UnifiedRideCard, type UnifiedRide } from "@/components/UnifiedRideCard";
+import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
@@ -127,7 +127,11 @@ const MyRides = () => {
 
           <TabsContent value="active">
             {loadingData ? (
-              <div className="text-center py-12">Loading...</div>
+              <div className="space-y-4 pr-4">
+                {[1, 2, 3].map(i => (
+                  <UnifiedRideCardSkeleton key={i} />
+                ))}
+              </div>
             ) : activeRides.length === 0 ? (
               <EmptyState
                 icon={Car}
@@ -155,7 +159,11 @@ const MyRides = () => {
 
           <TabsContent value="past">
             {loadingData ? (
-              <div className="text-center py-12">Loading...</div>
+              <div className="space-y-4 pr-4">
+                {[1, 2, 3].map(i => (
+                  <UnifiedRideCardSkeleton key={i} />
+                ))}
+              </div>
             ) : pastRides.length === 0 ? (
               <EmptyState
                 icon={History}
