@@ -762,6 +762,7 @@ export type Database = {
       }
       cleanup_expired_codes: { Args: never; Returns: undefined }
       cleanup_old_ride_data: { Args: never; Returns: undefined }
+      cleanup_past_rides: { Args: never; Returns: undefined }
       get_family_schedule: {
         Args: { student_user_id: string }
         Returns: {
