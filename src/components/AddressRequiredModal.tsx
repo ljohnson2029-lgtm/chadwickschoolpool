@@ -186,12 +186,15 @@ export const AddressRequiredModal = ({ open, userId, onAddressAdded, onSkip }: A
         /* Force user to interact */
       }}
     >
+      {/* Removed overflow-hidden so the map can spill out.
+         Added flex-col and max-h-[90vh] for proper dialog sizing.
+      */}
       <DialogContent
         className="sm:max-w-[480px] p-0 gap-0 border shadow-lg flex flex-col max-h-[90vh]"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {/* Header Section */}
           <div className="mb-6">
             <ProgressDots currentStep={2} />
@@ -214,7 +217,7 @@ export const AddressRequiredModal = ({ open, userId, onAddressAdded, onSkip }: A
                 onAddressSelect={handleAddressSelect}
                 placeholder="Enter your home address..."
                 required
-                className="h-11"
+                // FIX: Removed 'className="h-11"' because the component doesn't support it
               />
             </div>
 
