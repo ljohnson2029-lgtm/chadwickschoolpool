@@ -24,7 +24,7 @@ const FamilyCarpools = () => {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
-  const [showHome, setShowHome] = useState(true);
+  const [showHome, setShowHome] = useState(false);
   const [showSchool, setShowSchool] = useState(true);
   const [isUserParent, setIsUserParent] = useState(false);
   const [isUserStudent, setIsUserStudent] = useState(false);

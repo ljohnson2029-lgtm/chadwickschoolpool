@@ -82,7 +82,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   showOffers,
   onToggleRequests,
   onToggleOffers,
-  showHome = true,
+  showHome = false,
   showSchool = true,
   onToggleHome,
   onToggleSchool,
