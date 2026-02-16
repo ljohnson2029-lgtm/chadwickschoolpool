@@ -5,79 +5,56 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-foreground text-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-3 gap-12 mb-12">
+    <footer className="bg-primary text-primary-foreground">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-10 mb-10">
           {/* Brand */}
-          <div>
-            <h3 className="text-2xl font-bold mb-4 text-background">Chadwick SchoolPool</h3>
-            <p className="text-background/80 leading-relaxed">
-              Connecting Chadwick families for safer, smarter, and more sustainable carpooling.
+          <div className="sm:col-span-2 md:col-span-1">
+            <h3 className="text-xl font-bold mb-3">SchoolPool</h3>
+            <p className="text-primary-foreground/70 text-sm leading-relaxed">
+              Safe carpooling for Chadwick School families.
             </p>
           </div>
 
-          {/* Contact & Support */}
+          {/* About */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-background">Contact & Support</h4>
-            <div className="space-y-3">
-              <a 
-                href="mailto:support@chadwickschoolpool.org" 
-                className="flex items-center gap-2 text-background/80 hover:text-background transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                <span>support@chadwickschoolpool.org</span>
-              </a>
-              <p className="text-background/60 text-sm">Response time: 24-48 hours</p>
-              <Link 
-                to="/help" 
-                className="block text-background/80 hover:text-background transition-colors"
-              >
-                Help Center
-              </Link>
+            <h4 className="font-semibold mb-3">About</h4>
+            <div className="space-y-2 text-sm">
+              <Link to="/about" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">About Us</Link>
+              <Link to="/safety" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">Safety</Link>
+              <Link to="/how-it-works" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">How It Works</Link>
             </div>
           </div>
 
-          {/* Links */}
+          {/* Legal */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-background">Quick Links</h4>
-            <div className="space-y-3">
-              <Link 
-                to="/privacy" 
-                className="block text-background/80 hover:text-background transition-colors"
+            <h4 className="font-semibold mb-3">Legal</h4>
+            <div className="space-y-2 text-sm">
+              <Link to="/privacy" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">Terms of Service</Link>
+            </div>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h4 className="font-semibold mb-3">Support</h4>
+            <div className="space-y-2 text-sm">
+              <Link to="/help" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">FAQ / Help</Link>
+              <Link to="/feedback" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">Feedback</Link>
+              <a
+                href="mailto:support@chadwickschoolpool.org"
+                className="flex items-center gap-1.5 text-primary-foreground/70 hover:text-primary-foreground transition-colors"
               >
-                Privacy Policy
-              </Link>
-              <Link 
-                to="/terms" 
-                className="block text-background/80 hover:text-background transition-colors"
-              >
-                Terms of Service
-              </Link>
-              <Link 
-                to="/about" 
-                className="block text-background/80 hover:text-background transition-colors"
-              >
-                About Us
-              </Link>
-              <Link 
-                to="/safety" 
-                className="block text-background/80 hover:text-background transition-colors"
-              >
-                Safety
-              </Link>
-              <Link 
-                to="/feedback" 
-                className="block text-background/80 hover:text-background transition-colors"
-              >
-                Send Feedback
-              </Link>
+                <Mail className="w-3.5 h-3.5" />
+                Contact
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-background/20">
-          <p className="text-background/60 text-sm text-center">
+        {/* Bottom */}
+        <div className="pt-8 border-t border-primary-foreground/15">
+          <p className="text-primary-foreground/50 text-xs text-center">
             © {currentYear} Chadwick SchoolPool. All rights reserved.
           </p>
         </div>
