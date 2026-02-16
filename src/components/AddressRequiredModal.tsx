@@ -1,190 +1,237 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Input } from "@/components/ui/input";
+import { useState, useMemo, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { MapPin, Shield, Users, Navigation, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Loader2 } from "lucide-react";
+import AddressAutocompleteInput from "./AddressAutocompleteInput";
 
-interface AddressSuggestion {
-  place_name: string;
-  center: [number, number]; // [longitude, latitude]
+/* ─── Types ─────────────────────────────────────────────────────── */
+
+interface AddressRequiredModalProps {
+  open: boolean;
+  userId: string;
+  onAddressAdded: () => void;
+  onSkip?: () => void;
 }
 
-interface AddressAutocompleteInputProps {
-  value: string;
-  onAddressSelect: (address: string, latitude: number, longitude: number) => void;
-  placeholder?: string;
-  required?: boolean;
+/* ─── Constants ─────────────────────────────────────────────────── */
+
+const CHADWICK_COORDS = { lat: 33.7555, lng: -118.3937 };
+
+/* ─── Haversine Distance (miles) ────────────────────────────────── */
+
+const getDistanceMiles = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+/* ─── Benefit Row ───────────────────────────────────────────────── */
+
+interface BenefitRowProps {
+  icon: React.ElementType;
+  text: string;
 }
 
-const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({
-  value,
-  onAddressSelect,
-  placeholder = "Enter your home address",
-  required = false,
-}) => {
-  const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<{ lat: number; lng: number } | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const wrapperRef = useRef<HTMLDivElement>(null);
+const BenefitRow = ({ icon: Icon, text }: BenefitRowProps) => (
+  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+    <Icon className="w-4 h-4 text-primary flex-shrink-0" />
+    <span>{text}</span>
+  </div>
+);
+
+/* ─── Progress Dots ─────────────────────────────────────────────── */
+
+const ProgressDots = () => (
+  <div className="flex items-center justify-center gap-2 pb-2">
+    <div className="w-2 h-2 rounded-full bg-primary/30" />
+    <div className="w-2 h-2 rounded-full bg-primary" />
+    <div className="w-2 h-2 rounded-full bg-primary/30" />
+  </div>
+);
+
+/* ─── Main Component ────────────────────────────────────────────── */
+
+export const AddressRequiredModal = ({ open, userId, onAddressAdded, onSkip }: AddressRequiredModalProps) => {
   const { toast } = useToast();
+  const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Update input value when prop changes
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  const isAddressValid = Boolean(address && latitude && longitude);
 
-  // Handle clicks outside to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
+  /* ── Distance to Chadwick ───────────────────────────────── */
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+  const distanceToChadwick = useMemo(() => {
+    if (!latitude || !longitude) return null;
+    const miles = getDistanceMiles(latitude, longitude, CHADWICK_COORDS.lat, CHADWICK_COORDS.lng);
+    return miles < 1
+      ? "Less than 1 mile from Chadwick"
+      : `~${Math.round(miles)} mile${Math.round(miles) !== 1 ? "s" : ""} from Chadwick`;
+  }, [latitude, longitude]);
+
+  /* ── Handlers ───────────────────────────────────────────── */
+
+  const handleAddressSelect = useCallback((selectedAddress: string, lat: number, lng: number) => {
+    setAddress(selectedAddress);
+    setLatitude(lat);
+    setLongitude(lng);
   }, []);
 
-  const fetchSuggestions = async (query: string) => {
-    if (!query.trim() || query.length < 3) {
-      setSuggestions([]);
-      setFetchError(null);
+  const handleClearAddress = useCallback(() => {
+    setAddress("");
+    setLatitude(null);
+    setLongitude(null);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!address || !latitude || !longitude) {
+      toast({
+        title: "Address required",
+        description: "Please select a valid address from the suggestions",
+        variant: "destructive",
+      });
       return;
     }
 
-    setIsLoading(true);
-    setFetchError(null);
-
+    setSaving(true);
     try {
-      // Use Nominatim (OpenStreetMap) for geocoding - no auth required
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
-        {
-          headers: {
-            Accept: "application/json",
-            "User-Agent": "ChadwickCarpools/1.0",
-          },
-        },
-      );
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          home_address: address,
+          home_latitude: latitude,
+          home_longitude: longitude,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch address suggestions");
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      console.log("Nominatim response:", data);
+      toast({
+        title: "Address saved!",
+        description: "You're all set to start finding carpool partners.",
+      });
 
-      // Transform Nominatim format to our format
-      const formattedSuggestions: AddressSuggestion[] = data.map((item: any) => ({
-        place_name: item.display_name,
-        center: [parseFloat(item.lon), parseFloat(item.lat)] as [number, number],
-      }));
-
-      setSuggestions(formattedSuggestions);
-      setShowSuggestions(true);
-
-      if (formattedSuggestions.length === 0) {
-        setFetchError("No addresses found. Try a different search.");
-      }
-    } catch (error) {
-      console.error("Error fetching address suggestions:", error);
-      setFetchError("Unable to find address suggestions. Please try again.");
-      setSuggestions([]);
+      onAddressAdded();
+    } catch (error: any) {
+      console.error("Error saving address:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save address",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    setSelectedAddress(null); // Clear selected address when typing
-
-    // Clear previous timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Debounce API call
-    timeoutRef.current = setTimeout(() => {
-      fetchSuggestions(newValue);
-    }, 500);
-  };
-
-  const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    const [longitude, latitude] = suggestion.center;
-    setInputValue(suggestion.place_name);
-    setSelectedAddress({ lat: latitude, lng: longitude });
-    setShowSuggestions(false);
-    setSuggestions([]);
-
-    // Call the callback with the selected address
-    onAddressSelect(suggestion.place_name, latitude, longitude);
-
-    toast({
-      title: "Address Selected",
-      description: "Address successfully geocoded",
-    });
-  };
-
-  const handleInputFocus = () => {
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
-    }
-  };
+  }, [address, latitude, longitude, userId, onAddressAdded, toast]);
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <div className="relative">
-        <Input
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onFocus={handleInputFocus}
-          placeholder={placeholder}
-          required={required}
-          className="pr-10"
-        />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : selectedAddress ? (
-            <MapPin className="h-4 w-4 text-primary" />
-          ) : (
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent
+        className="sm:max-w-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        {/* Progress indicator */}
+        <ProgressDots />
+
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <MapPin className="w-5 h-5 text-primary" />
+            </div>
+            <DialogTitle className="text-xl">One More Step: Add Your Home Address</DialogTitle>
+          </div>
+          <DialogDescription>We need your address to connect you with nearby families.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          {/* ── Benefits (shown before address is selected) ── */}
+          {!isAddressValid && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-foreground">We need your address to:</p>
+              <div className="space-y-2">
+                <BenefitRow icon={Users} text="Show you on the map for other parents" />
+                <BenefitRow icon={Navigation} text="Calculate proximity to Chadwick School" />
+                <BenefitRow icon={MapPin} text="Find carpool partners near your route" />
+              </div>
+            </div>
+          )}
+
+          {/* ── Address Input ─────────────────────────────── */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Home Address</label>
+            <AddressAutocompleteInput
+              value={address}
+              onAddressSelect={handleAddressSelect}
+              placeholder="Start typing your address..."
+              required
+            />
+          </div>
+
+          {/* ── Confirmation (shown after address selected) ─ */}
+          {isAddressValid && (
+            <div className="space-y-2" aria-live="polite" aria-label="Address confirmation">
+              <div className="flex items-start gap-2.5 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-emerald-700 truncate">Address located</p>
+                  {distanceToChadwick && <p className="text-xs text-emerald-600/70 mt-0.5">{distanceToChadwick}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearAddress}
+                  className="text-xs text-emerald-600 hover:text-emerald-800 underline underline-offset-2 shrink-0"
+                  aria-label="Change address"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Privacy Notice ────────────────────────────── */}
+          <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+            <Shield className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              <strong>Privacy:</strong> Your exact address is private. Only your approximate location is shown to other
+              parents on the map.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Actions ─────────────────────────────────────── */}
+        <div className="space-y-2">
+          <LoadingButton
+            onClick={handleSubmit}
+            disabled={!isAddressValid}
+            loading={saving}
+            loadingText="Saving..."
+            className="w-full"
+          >
+            Continue to Dashboard
+          </LoadingButton>
+
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+              aria-label="Skip adding address for now"
+            >
+              I'll add my address later
+            </button>
           )}
         </div>
-      </div>
-
-      {/* Suggestions dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              type="button"
-              className="w-full px-4 py-3 text-left hover:bg-accent transition-colors flex items-start gap-2 border-b border-border last:border-b-0"
-              onClick={() => handleSuggestionClick(suggestion)}
-            >
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">{suggestion.place_name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Error message */}
-      {fetchError && !isLoading && <p className="text-xs text-destructive mt-1">{fetchError}</p>}
-
-      {/* Validation message */}
-      {required && inputValue && !selectedAddress && !fetchError && (
-        <p className="text-xs text-muted-foreground mt-1">Please select an address from the suggestions</p>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default AddressAutocompleteInput;
+export default AddressRequiredModal;
