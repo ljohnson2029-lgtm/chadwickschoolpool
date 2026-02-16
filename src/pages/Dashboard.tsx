@@ -6,13 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  SkeletonQuickActionCard, 
-  SkeletonRideCard, 
-  SkeletonListItem 
-} from "@/components/ui/skeleton-card";
 import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
@@ -20,15 +14,16 @@ import {
   Map as MapIcon, 
   MessageSquare, 
   Calendar, 
-  Plus,
   ArrowRight,
   Hand,
   Car,
   CheckCircle2,
   Clock,
-  Send,
   Users,
-  Link2
+  Link2,
+  GraduationCap,
+  MapPin,
+  User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -99,6 +94,16 @@ interface PrivateRequest {
   };
 }
 
+interface Child {
+  id: string;
+  first_name: string;
+  last_name: string;
+  name: string;
+  school: string;
+  age: number;
+  grade_level: string | null;
+}
+
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -106,28 +111,23 @@ const Dashboard = () => {
   const [myBroadcastPosts, setMyBroadcastPosts] = useState<BroadcastRide[]>([]);
   const [nearbyBroadcasts, setNearbyBroadcasts] = useState<BroadcastRide[]>([]);
   const [activeConversations, setActiveConversations] = useState<Conversation[]>([]);
-  const [upcomingRides, setUpcomingRides] = useState<any[]>([]);
   const [pendingConversationsCount, setPendingConversationsCount] = useState(0);
-  const [privateRequestsSent, setPrivateRequestsSent] = useState<PrivateRequest[]>([]);
   const [privateRequestsReceived, setPrivateRequestsReceived] = useState<PrivateRequest[]>([]);
   const [pendingPrivateRequestsCount, setPendingPrivateRequestsCount] = useState(0);
+  const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
   const [isUserStudent, setIsUserStudent] = useState(false);
 
   const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
 
-  // Fetch user email to determine if student
   useEffect(() => {
     const fetchUserEmail = async () => {
       if (!user) return;
-
-      // If profile already says student, avoid extra query.
       if (profile?.account_type === 'student') {
         setIsUserStudent(true);
         return;
       }
-
       const { data } = await supabase
         .from('users')
         .select('email')
@@ -143,8 +143,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-
-    // Students use the student dashboard; skip parent dashboard data fetching.
     if (shouldUseStudentDashboard) {
       setLoading(false);
       return;
@@ -164,7 +162,6 @@ const Dashboard = () => {
         .order('ride_date', { ascending: true });
       
       if (myPosts) {
-        // Fetch profiles for these posts
         const userIds = [...new Set(myPosts.map(p => p.user_id))];
         let profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
@@ -173,10 +170,7 @@ const Dashboard = () => {
             .select('id, first_name, last_name, username')
             .in('id', userIds);
           if (profiles) {
-            profilesMap = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
+            profilesMap = profiles.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
           }
         }
         setMyBroadcastPosts(myPosts.map(post => ({
@@ -194,10 +188,9 @@ const Dashboard = () => {
         .neq('user_id', user.id)
         .gte('ride_date', new Date().toISOString().split('T')[0])
         .order('ride_date', { ascending: true })
-        .limit(3);
+        .limit(5);
       
       if (broadcasts) {
-        // Fetch profiles for these broadcasts
         const userIds = [...new Set(broadcasts.map(b => b.user_id))];
         let profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
@@ -206,10 +199,7 @@ const Dashboard = () => {
             .select('id, first_name, last_name, username')
             .in('id', userIds);
           if (profiles) {
-            profilesMap = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
+            profilesMap = profiles.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
           }
         }
         setNearbyBroadcasts(broadcasts.map(b => ({
@@ -224,10 +214,9 @@ const Dashboard = () => {
         .select('*, rides(type, ride_date, ride_time, pickup_location, dropoff_location)')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(3);
       
       if (conversations) {
-        // Fetch profiles for senders and recipients
         const profileIds = [...new Set([
           ...conversations.map(c => c.sender_id),
           ...conversations.map(c => c.recipient_id)
@@ -239,10 +228,7 @@ const Dashboard = () => {
             .select('id, first_name, last_name, username')
             .in('id', profileIds);
           if (profiles) {
-            profilesMap = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
+            profilesMap = profiles.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
           }
         }
         const enrichedConversations = conversations.map(c => ({
@@ -257,76 +243,6 @@ const Dashboard = () => {
         setPendingConversationsCount(pendingCount);
       }
 
-      // Fetch upcoming confirmed rides
-      const { data: upcoming } = await supabase
-        .from('ride_conversations')
-        .select('*, rides(type, ride_date, ride_time, pickup_location, dropoff_location)')
-        .eq('status', 'accepted')
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .order('created_at', { ascending: true })
-        .limit(5);
-      
-      if (upcoming) {
-        // Fetch profiles for senders and recipients
-        const profileIds = [...new Set([
-          ...upcoming.map(c => c.sender_id),
-          ...upcoming.map(c => c.recipient_id)
-        ])];
-        let profilesMap: Record<string, any> = {};
-        if (profileIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, username')
-            .in('id', profileIds);
-          if (profiles) {
-            profilesMap = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
-          }
-        }
-        // Filter to only show future rides
-        const futureRides = upcoming.filter(ride => {
-          if (!ride.rides?.ride_date) return false;
-          return new Date(ride.rides.ride_date) >= new Date(new Date().toISOString().split('T')[0]);
-        }).map(r => ({
-          ...r,
-          sender_profile: profilesMap[r.sender_id] || null,
-          recipient_profile: profilesMap[r.recipient_id] || null
-        }));
-        setUpcomingRides(futureRides);
-      }
-
-      // Fetch private requests sent
-      const { data: sentPrivate } = await supabase
-        .from('private_ride_requests')
-        .select('*')
-        .eq('sender_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      
-      if (sentPrivate) {
-        // Fetch recipient profiles
-        const recipientIds = [...new Set(sentPrivate.map(r => r.recipient_id))];
-        let recipientProfiles: Record<string, any> = {};
-        if (recipientIds.length > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, username')
-            .in('id', recipientIds);
-          if (profiles) {
-            recipientProfiles = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
-          }
-        }
-        setPrivateRequestsSent(sentPrivate.map(r => ({
-          ...r,
-          recipient: recipientProfiles[r.recipient_id] || null
-        })) as any);
-      }
-
       // Fetch private requests received
       const { data: receivedPrivate } = await supabase
         .from('private_ride_requests')
@@ -336,7 +252,6 @@ const Dashboard = () => {
         .limit(3);
       
       if (receivedPrivate) {
-        // Fetch sender profiles
         const senderIds = [...new Set(receivedPrivate.map(r => r.sender_id))];
         let senderProfiles: Record<string, any> = {};
         if (senderIds.length > 0) {
@@ -345,10 +260,7 @@ const Dashboard = () => {
             .select('id, first_name, last_name, username')
             .in('id', senderIds);
           if (profiles) {
-            senderProfiles = profiles.reduce((acc, p) => {
-              acc[p.id] = p;
-              return acc;
-            }, {} as Record<string, any>);
+            senderProfiles = profiles.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>);
           }
         }
         const enrichedReceived = receivedPrivate.map(r => ({
@@ -356,9 +268,17 @@ const Dashboard = () => {
           sender: senderProfiles[r.sender_id] || null
         }));
         setPrivateRequestsReceived(enrichedReceived as any);
-        const pendingPrivateCount = enrichedReceived.filter(r => r.status === 'pending').length;
-        setPendingPrivateRequestsCount(pendingPrivateCount);
+        setPendingPrivateRequestsCount(enrichedReceived.filter(r => r.status === 'pending').length);
       }
+
+      // Fetch children
+      const { data: childrenData } = await supabase
+        .from('children')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('first_name', { ascending: true });
+      
+      if (childrenData) setChildren(childrenData as Child[]);
 
       setLoading(false);
     };
@@ -367,56 +287,32 @@ const Dashboard = () => {
   }, [user, shouldUseStudentDashboard]);
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
+    if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
     return username.substring(0, 2).toUpperCase();
   };
 
-  // Both students and parents now see the same unified UI
+  const getName = (firstName: string | null, lastName: string | null, username: string) => {
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return firstName;
+    return username;
+  };
 
   if (!user || !profile) {
     return (
       <DashboardLayout>
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          {/* Header skeleton */}
-          <div className="mb-8">
-            <Skeleton className="h-9 w-64 mb-2" />
-            <Skeleton className="h-5 w-80" />
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-9 w-72" />
+            <Skeleton className="h-5 w-48" />
           </div>
-
-          {/* Quick Actions skeleton */}
-          <div className="mb-8">
-            <Skeleton className="h-8 w-40 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SkeletonQuickActionCard />
-              <SkeletonQuickActionCard />
-              <SkeletonQuickActionCard />
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-20 rounded-lg" />)}
           </div>
-
-          {/* Broadcast Posts skeleton */}
-          <div className="mb-8">
-            <Skeleton className="h-8 w-48 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SkeletonRideCard />
-              <SkeletonRideCard />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-lg" />)}
           </div>
-
-          {/* Private Requests skeleton */}
-          <div>
-            <Skeleton className="h-8 w-48 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <SkeletonListItem />
-                <SkeletonListItem />
-              </div>
-              <div className="space-y-3">
-                <SkeletonListItem />
-                <SkeletonListItem />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-48 rounded-lg" />)}
           </div>
         </div>
       </DashboardLayout>
@@ -427,590 +323,392 @@ const Dashboard = () => {
     return <StudentDashboard />;
   }
 
+  const totalActiveRides = myBroadcastPosts.length;
+  const totalPending = pendingPrivateRequestsCount + pendingConversationsCount;
+
   return (
     <DashboardLayout>
       {showTour && <OnboardingTour onComplete={completeTour} />}
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
-        {/* Header */}
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
+
+        {/* ── HERO HEADER ── */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, {profile.first_name}!</h1>
-            <Badge 
-              variant={isUserStudent ? 'secondary' : 'default'}
-              className={isUserStudent 
-                ? 'bg-blue-500/10 text-blue-600' 
-                : 'bg-green-500/10 text-green-600'
-              }
-            >
-              {isUserStudent ? 'Student Account' : 'Parent Account'}
-            </Badge>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-12 w-12 sm:h-14 sm:w-14 border-2 border-primary/20">
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg">
+                {getInitials(profile.first_name, profile.last_name, profile.username)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Welcome back, {profile.first_name || profile.username}!
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Manage your carpools and connect with Chadwick families
+              </p>
+            </div>
           </div>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            {isUserStudent 
-              ? 'View carpool information and browse available rides'
-              : 'Manage your carpools and find ride partners'
-            }
-          </p>
         </div>
 
-        {/* Student Alert */}
-        {isUserStudent && (
-          <Card className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-            <CardContent className="py-4">
-              <div className="flex items-start gap-3">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                <div>
-                  <p className="font-medium text-blue-900 dark:text-blue-100">Student Account - View Only</p>
-                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                    You can browse all rides, but ask your parent to manage ride requests and offers.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => navigate('/family-links')}
-                    className="mt-2 gap-2"
-                  >
-                    <Link2 className="h-4 w-4" />
-                    Link to Parent
-                  </Button>
-                </div>
+        {/* ── STATS ROW ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 sm:mb-8">
+          <Card className="rounded-lg shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950">
+                <Car className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{totalActiveRides}</p>
+                <p className="text-xs text-muted-foreground">Active Rides</p>
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {/* SECTION 1: Quick Actions */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {/* Find Rides (Browse + Post) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/find-rides')}>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 sm:p-3 rounded-full bg-primary/10">
-                    <Radio className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg">Find Rides</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Browse & post public</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
-                  Browse available rides or post your own for all parents to see
-                </p>
-                <Button className="w-full gap-2 h-10 sm:h-11">
-                  <Radio className="h-4 w-4" />
-                  View Rides
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* My Rides (All Management) */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 active:scale-[0.98]" onClick={() => navigate('/my-rides')}>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 sm:p-3 rounded-full bg-green-500/10">
-                    <Car className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg">My Rides</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">All your rides</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 hidden sm:block">
-                  Manage your posted rides and private requests
-                </p>
-                <Button variant="outline" className="w-full gap-2 h-10 sm:h-11">
-                  <Car className="h-4 w-4" />
-                  View All
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="rounded-lg shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950">
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{totalPending}</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950">
+                <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{activeConversations.length}</p>
+                <p className="text-xs text-muted-foreground">Messages</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-lg shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950">
+                <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-foreground">{children.length}</p>
+                <p className="text-xs text-muted-foreground">Children</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* SECTION 2: Your Broadcast Posts */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h2 className="text-xl sm:text-2xl font-semibold">Your Broadcast Posts</h2>
-            <Button variant="ghost" onClick={() => navigate('/my-rides')} className="gap-2 text-sm h-9">
-              <span className="hidden sm:inline">View All</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SkeletonRideCard />
-              <SkeletonRideCard />
-            </div>
-          ) : myBroadcastPosts.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Broadcast Posts</h3>
-                <p className="text-muted-foreground mb-4">
-                  {isUserStudent 
-                    ? 'Your linked parents will post rides here'
-                    : 'Post your first ride to find carpool partners!'
-                  }
-                </p>
-                {isUserStudent ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button disabled className="gap-2">
-                          <Plus className="h-4 w-4" />
-                          Post a Ride
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Only parents can post rides. Ask your parent for help.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Button onClick={() => navigate('/post-ride')} className="gap-2">
-                    <Plus className="h-4 w-4" />
+        {/* ── QUICK ACTIONS ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 sm:mb-8">
+          <Card
+            className="rounded-lg shadow-sm border-2 border-transparent hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+            onClick={() => navigate('/post-ride?type=offer')}
+          >
+            <CardContent className="p-5 sm:p-6">
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center mb-3">
+                <Car className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">Offer a Ride</h3>
+              <p className="text-xs text-muted-foreground">Share your commute with another family</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="rounded-lg shadow-sm border-2 border-transparent hover:border-red-300 dark:hover:border-red-700 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+            onClick={() => navigate('/post-ride?type=request')}
+          >
+            <CardContent className="p-5 sm:p-6">
+              <div className="w-11 h-11 rounded-xl bg-red-50 dark:bg-red-950 flex items-center justify-center mb-3">
+                <Hand className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">Request a Ride</h3>
+              <p className="text-xs text-muted-foreground">Ask for help getting your kids to school</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="rounded-lg shadow-sm border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+            onClick={() => navigate('/find-rides')}
+          >
+            <CardContent className="p-5 sm:p-6">
+              <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center mb-3">
+                <MapIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">View Map</h3>
+              <p className="text-xs text-muted-foreground">Browse rides and parents near you</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── MAIN GRID (2 columns on desktop) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* ── MY RIDES ── */}
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">My Rides</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/my-rides')} className="gap-1 text-xs h-8">
+                  View All <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1,2].map(i => <Skeleton key={i} className="h-20 rounded-lg" />)}
+                </div>
+              ) : myBroadcastPosts.length === 0 ? (
+                <div className="text-center py-8">
+                  <Radio className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground mb-3">No active rides</p>
+                  <Button size="sm" onClick={() => navigate('/post-ride')} className="gap-1.5">
                     Post a Ride
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myBroadcastPosts.slice(0, 4).map((ride) => (
-                <Card key={ride.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <Badge className="gap-1">
-                        {ride.type === 'request' ? (
-                          <>
-                            <Hand className="h-3 w-3" />
-                            Request
-                          </>
-                        ) : (
-                          <>
-                            <Car className="h-3 w-3" />
-                            Offer
-                          </>
-                        )}
-                      </Badge>
-                      <Badge variant="secondary">
-                        <Radio className="h-3 w-3 mr-1" />
-                        Public
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="text-sm">
-                      <p className="font-medium">{ride.pickup_location}</p>
-                      <p className="text-muted-foreground">to {ride.dropoff_location}</p>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{format(new Date(ride.ride_date), 'MMM d')}</span>
-                      <span>{ride.ride_time}</span>
-                      <span>
-                        {ride.type === 'request' 
-                          ? `${ride.seats_needed} seats needed`
-                          : `${ride.seats_available} seats available`}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* SECTION 3: Available Rides Near You */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Available Rides Near You</h2>
-            <Button variant="ghost" onClick={() => navigate('/find-rides')} className="gap-2">
-              See All
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading nearby rides...
-              </CardContent>
-            </Card>
-          ) : nearbyBroadcasts.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Radio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Available Rides</h3>
-                <p className="text-muted-foreground mb-4">
-                  Check back later or try the map to send direct requests
-                </p>
-                <Button variant="outline" onClick={() => navigate('/map')} className="gap-2">
-                  <MapIcon className="h-4 w-4" />
-                  Open Map
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {nearbyBroadcasts.map((ride) => (
-                <Card key={ride.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/find-rides')}>
-                  <CardContent className="py-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getInitials(ride.profiles?.first_name || null, ride.profiles?.last_name || null, ride.profiles?.username || '')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{ride.profiles?.first_name} {ride.profiles?.last_name}</p>
-                          <Badge variant="outline" className="gap-1">
-                            {ride.type === 'request' ? (
-                              <>
-                                <Hand className="h-3 w-3" />
-                                Request
-                              </>
-                            ) : (
-                              <>
-                                <Car className="h-3 w-3" />
-                                Offer
-                              </>
-                            )}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {ride.pickup_location} → {ride.dropoff_location}
-                        </p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                          <span>{format(new Date(ride.ride_date), 'MMM d')}</span>
-                          <span>{ride.ride_time}</span>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                  {myBroadcastPosts.slice(0, 5).map((ride) => (
+                    <div
+                      key={ride.id}
+                      className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                      onClick={() => navigate('/my-rides')}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className={`flex-shrink-0 gap-1 ${
+                          ride.type === 'offer'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+                            : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300'
+                        }`}>
+                          {ride.type === 'offer' ? <Car className="h-3 w-3" /> : <Hand className="h-3 w-3" />}
+                          {ride.type === 'offer' ? 'Offer' : 'Request'}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{ride.pickup_location}</p>
+                          <p className="text-xs text-muted-foreground truncate">to {ride.dropoff_location}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(ride.ride_date), 'MMM d')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {ride.ride_time}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {ride.type === 'offer' ? ride.seats_available : ride.seats_needed}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="gap-1">
-                        View
-                        <ArrowRight className="h-3 w-3" />
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* SECTION 4: Private Ride Requests */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Private Ride Requests</h2>
-            <Button variant="ghost" onClick={() => navigate('/requests/private')} className="gap-2">
-              View All
-              {pendingPrivateRequestsCount > 0 && (
-                <Badge variant="default" className="ml-2">
-                  {pendingPrivateRequestsCount}
-                </Badge>
+                  ))}
+                </div>
               )}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Pending Requests for You */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Pending for You</CardTitle>
-                <CardDescription>Requests awaiting your response</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
-                ) : privateRequestsReceived.filter(r => r.status === 'pending').length === 0 ? (
-                  <div className="text-center py-6">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground">No pending requests</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {privateRequestsReceived
-                      .filter(r => r.status === 'pending')
-                      .slice(0, 3)
-                      .map((request) => (
-                        <div key={request.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {getInitials(
-                                  request.sender?.first_name || null,
-                                  request.sender?.last_name || null,
-                                  request.sender?.username || ''
-                                )}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium">
-                                {request.sender?.first_name} {request.sender?.last_name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {request.request_type === 'request' ? '🙏 Ride Request' : '🚗 Ride Offer'}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(request.ride_date), 'MMM d')} at {request.pickup_time}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      size="sm"
-                      onClick={() => navigate('/requests/private')}
-                    >
-                      View All Pending
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Your Sent Requests */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Your Sent Requests</CardTitle>
-                <CardDescription>Requests you've sent to other parents</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Loading...</div>
-                ) : privateRequestsSent.length === 0 ? (
-                  <div className="text-center py-6">
-                    <Send className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground mb-3">No requests sent yet</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate('/map/find-parents')}
-                      className="gap-2"
-                    >
-                      <MapIcon className="h-4 w-4" />
-                      Find Parents on Map
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {privateRequestsSent.slice(0, 3).map((request) => {
-                      const statusColor = 
-                        request.status === 'accepted' ? 'text-green-600' :
-                        request.status === 'declined' ? 'text-red-600' :
-                        'text-yellow-600';
-                      
-                      return (
-                        <div key={request.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {getInitials(
-                                  request.recipient?.first_name || null,
-                                  request.recipient?.last_name || null,
-                                  request.recipient?.username || ''
-                                )}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium">
-                                {request.recipient?.first_name} {request.recipient?.last_name}
-                              </p>
-                              <p className={`text-xs ${statusColor} font-medium capitalize`}>
-                                {request.status === 'accepted' && '✓ '}
-                                {request.status === 'declined' && '✗ '}
-                                {request.status}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(request.ride_date), 'MMM d')} at {request.pickup_time}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      size="sm"
-                      onClick={() => navigate('/requests/private')}
-                    >
-                      View All Requests
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* SECTION 5: Active Conversations */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Your Ride Connections</h2>
-            <Button variant="ghost" onClick={() => navigate('/conversations')} className="gap-2">
-              View All
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading connections...
-              </CardContent>
-            </Card>
-          ) : activeConversations.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Ride Connections</h3>
-                <p className="text-muted-foreground mb-4">
-                  Join a ride or fulfill a request to connect with other parents
-                </p>
-                <Button variant="outline" onClick={() => navigate('/find-rides')} className="gap-2">
-                  <Radio className="h-4 w-4" />
-                  Browse Rides
+          {/* ── NEARBY RIDES ── */}
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">Nearby Rides</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/find-rides')} className="gap-1 text-xs h-8">
+                  See All <ArrowRight className="h-3 w-3" />
                 </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {activeConversations.map((conv) => {
-                const isRecipient = conv.recipient_id === user.id;
-                const otherParty = isRecipient ? conv.sender_profile : conv.recipient_profile;
-
-                return (
-                  <Card key={conv.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/conversations')}>
-                    <CardContent className="py-4">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(otherParty?.first_name || null, otherParty?.last_name || null, otherParty?.username || '')}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-lg" />)}
+                </div>
+              ) : nearbyBroadcasts.length === 0 ? (
+                <div className="text-center py-8">
+                  <MapPin className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground mb-3">No rides available nearby</p>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/find-rides')} className="gap-1.5">
+                    <MapIcon className="h-3.5 w-3.5" /> Open Map
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                  {nearbyBroadcasts.map((ride) => (
+                    <div
+                      key={ride.id}
+                      className="p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                      onClick={() => navigate('/find-rides')}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                            {getInitials(ride.profiles?.first_name || null, ride.profiles?.last_name || null, ride.profiles?.username || '')}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium">{otherParty?.first_name} {otherParty?.last_name}</p>
-                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Connected
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-medium truncate">
+                              {getName(ride.profiles?.first_name || null, ride.profiles?.last_name || null, ride.profiles?.username || '')}
+                            </p>
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 gap-0.5 ${
+                              ride.type === 'offer'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300'
+                            }`}>
+                              {ride.type === 'offer' ? 'Offer' : 'Request'}
                             </Badge>
                           </div>
-                          {conv.rides && (
-                            <>
-                              <p className="text-sm text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate">
+                            {ride.pickup_location} → {ride.dropoff_location}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <span>{format(new Date(ride.ride_date), 'MMM d')}</span>
+                            <span>{ride.ride_time}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── RECENT MESSAGES ── */}
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-lg font-semibold">Recent Messages</CardTitle>
+                  {pendingConversationsCount > 0 && (
+                    <Badge className="bg-primary text-primary-foreground text-xs h-5 min-w-5 px-1.5">
+                      {pendingConversationsCount}
+                    </Badge>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/conversations')} className="gap-1 text-xs h-8">
+                  View All <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
+                </div>
+              ) : activeConversations.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No messages yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeConversations.slice(0, 3).map((conv) => {
+                    const isRecipient = conv.recipient_id === user.id;
+                    const otherParty = isRecipient ? conv.sender_profile : conv.recipient_profile;
+                    const isUnread = conv.status === 'pending' && isRecipient;
+
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                          isUnread ? 'border-primary/30 bg-primary/5' : 'border-border hover:bg-accent/50'
+                        }`}
+                        onClick={() => navigate('/conversations')}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                              {getInitials(otherParty?.first_name || null, otherParty?.last_name || null, otherParty?.username || '')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm truncate ${isUnread ? 'font-semibold' : 'font-medium'}`}>
+                                {getName(otherParty?.first_name || null, otherParty?.last_name || null, otherParty?.username || '')}
+                              </p>
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                                conv.status === 'accepted'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300'
+                              }`}>
+                                {conv.status === 'accepted' ? 'Connected' : 'Pending'}
+                              </Badge>
+                            </div>
+                            {conv.rides && (
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">
                                 {conv.rides.pickup_location} → {conv.rides.dropoff_location}
                               </p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                                <span>{format(new Date(conv.rides.ride_date), 'MMM d')}</span>
-                                <span>{conv.rides.ride_time}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {conv.rides.type === 'request' ? 'Request' : 'Offer'}
-                                </Badge>
-                              </div>
-                            </>
-                          )}
+                            )}
+                          </div>
+                          {isUnread && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* SECTION 6: Upcoming Rides */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Upcoming Rides</h2>
-          </div>
-          
-          {loading ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Loading upcoming rides...
-              </CardContent>
-            </Card>
-          ) : upcomingRides.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Upcoming Rides</h3>
-                <p className="text-muted-foreground">
-                  You don't have any confirmed rides yet
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {upcomingRides.map((ride) => {
-                const isDriver = ride.sender_id === user.id && ride.rides?.type === 'offer';
-                const otherParty = ride.sender_id === user.id ? ride.recipient_profile : ride.sender_profile;
-
-                return (
-                  <Card key={ride.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Confirmed
-                        </Badge>
-                        {isDriver && (
-                          <Badge variant="outline">You're Driving</Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(otherParty?.first_name || null, otherParty?.last_name || null, otherParty?.username || '')}
+          {/* ── MY FAMILY (children) ── */}
+          <Card className="rounded-lg shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">My Family</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} className="gap-1 text-xs h-8">
+                  Manage <ArrowRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1,2].map(i => <Skeleton key={i} className="h-14 rounded-lg" />)}
+                </div>
+              ) : children.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground mb-3">No children added yet</p>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="gap-1.5">
+                    <User className="h-3.5 w-3.5" /> Add Child
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {children.map((child) => (
+                    <div key={child.id} className="p-3 rounded-lg border border-border">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className="bg-secondary/20 text-secondary text-xs font-semibold">
+                            {child.first_name?.[0]?.toUpperCase() || child.name?.[0]?.toUpperCase() || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{otherParty?.first_name} {otherParty?.last_name}</p>
-                          <p className="text-xs text-muted-foreground">@{otherParty?.username}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {child.first_name && child.last_name 
+                              ? `${child.first_name} ${child.last_name}` 
+                              : child.name}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                            {child.grade_level && (
+                              <span className="flex items-center gap-1">
+                                <GraduationCap className="h-3 w-3" />
+                                {child.grade_level}
+                              </span>
+                            )}
+                            <span>{child.school}</span>
+                          </div>
                         </div>
                       </div>
-                      
-                      {ride.rides && (
-                        <>
-                          <Separator />
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              {format(new Date(ride.rides.ride_date), 'EEEE, MMM d, yyyy')}
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              {ride.rides.ride_time}
-                            </div>
-                          </div>
-                          <Separator />
-                          <div className="text-sm space-y-1">
-                            <p className="font-medium">{ride.rides.pickup_location}</p>
-                            <p className="text-muted-foreground">to {ride.rides.dropoff_location}</p>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
       </div>
     </DashboardLayout>
