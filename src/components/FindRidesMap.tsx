@@ -1,24 +1,38 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import type { GeoJSON } from 'geojson';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import type { GeoJSON } from "geojson";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import RideUserBadge from "@/components/RideUserBadge";
-import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { isParent as checkIsParent, isStudent as checkIsStudent } from '@/lib/permissions';
-import { JoinRideDialog, OfferRideDialog } from './ConfirmDialogs';
-import MapFilterPanel from './MapFilterPanel';
+import { useToast } from "@/hooks/use-toast";
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from "lucide-react";
+import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
+import { JoinRideDialog, OfferRideDialog } from "./ConfirmDialogs";
+import MapFilterPanel from "./MapFilterPanel";
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface RideProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  username: string;
+  phone_number?: string | null;
+  share_phone?: boolean | null;
+  share_email?: boolean | null;
+}
 
 interface Ride {
   id: string;
-  type: 'request' | 'offer';
+  type: "request" | "offer";
   pickup_location: string;
   dropoff_location: string;
   pickup_latitude: number | null;
@@ -31,31 +45,15 @@ interface Ride {
   seats_available: number | null;
   route_details: string | null;
   user_id: string;
-  profile?: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    username: string;
-    phone_number?: string | null;
-    share_phone?: boolean | null;
-    share_email?: boolean | null;
-  };
+  profile?: RideProfile;
   userEmail?: string;
-   hasAcceptedConnection?: boolean;
+  hasAcceptedConnection?: boolean;
 }
 
 interface RideResponse {
   ride_id: string;
   status: string;
 }
-
-// Chadwick School coordinates (verified)
-const CHADWICK_SCHOOL = {
-  name: 'Chadwick School',
-  address: '26800 S Academy Dr, Palos Verdes Peninsula, CA 90274',
-  lat: 33.77667,
-  lng: -118.36111
-};
 
 interface FindRidesMapProps {
   height?: string;
@@ -76,9 +74,610 @@ interface FindRidesMapProps {
   onFocusRideHandled?: () => void;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const CHADWICK_SCHOOL = {
+  name: "Chadwick School",
+  address: "26800 S Academy Dr, Palos Verdes Peninsula, CA 90274",
+  lat: 33.77667,
+  lng: -118.36111,
+};
+
+const DEFAULT_CENTER: [number, number] = [-118.3964, 33.7447];
+const DEFAULT_ZOOM = 11;
+const CLUSTER_MAX_ZOOM = 14;
+const CLUSTER_RADIUS = 50;
+const FIT_BOUNDS_PADDING = { top: 80, bottom: 80, left: 100, right: 100 };
+
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
+
+/* ═══════════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke("geocode-address", { body: { address } });
+    if (error || !data?.coordinates) return null;
+    return [data.coordinates.longitude, data.coordinates.latitude];
+  } catch {
+    return null;
+  }
+};
+
+const getDisplayName = (ride: Ride): string => {
+  if (ride.profile?.first_name && ride.profile?.last_name) {
+    return `${ride.profile.first_name} ${ride.profile.last_name}`;
+  }
+  if (ride.profile?.first_name) return ride.profile.first_name;
+  if (ride.profile?.username?.trim()) return ride.profile.username;
+  if (ride.userEmail) return ride.userEmail.split("@")[0];
+  return "Parent";
+};
+
+const getOwnerName = (ride: Ride | null): string => {
+  if (!ride) return "the ride owner";
+  if (ride.profile?.first_name) {
+    return `${ride.profile.first_name} ${ride.profile.last_name || ""}`.trim();
+  }
+  return ride.profile?.username || "the ride owner";
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARKER DOM BUILDERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const createHomeMarkerElement = (): HTMLDivElement => {
+  const el = document.createElement("div");
+  el.className =
+    "flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer";
+  el.innerHTML =
+    '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+  el.setAttribute("aria-label", "Your home location");
+  return el;
+};
+
+const createSchoolMarkerElement = (): HTMLDivElement => {
+  const el = document.createElement("div");
+  el.className =
+    "flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer";
+  el.innerHTML =
+    '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
+  el.setAttribute("aria-label", "Chadwick School");
+  return el;
+};
+
+const createMarkerPopup = (title: string, titleColor: string, address: string): mapboxgl.Popup => {
+  const container = document.createElement("div");
+  container.className = "p-2";
+
+  const titleEl = document.createElement("p");
+  titleEl.className = `font-semibold ${titleColor}`;
+  titleEl.textContent = title;
+
+  const addressEl = document.createElement("p");
+  addressEl.className = "text-sm text-gray-600";
+  addressEl.textContent = address;
+
+  container.appendChild(titleEl);
+  container.appendChild(addressEl);
+
+  return new mapboxgl.Popup({ offset: 25 }).setDOMContent(container);
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOOK: useUserInfo
+   ═══════════════════════════════════════════════════════════════════ */
+
+const useUserInfo = (userId: string | undefined) => {
+  const [userEmail, setUserEmail] = useState("");
+  const [isUserParent, setIsUserParent] = useState(false);
+  const [isUserStudent, setIsUserStudent] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchUserInfo = async () => {
+      const { data } = await supabase.from("users").select("email").eq("user_id", userId).single();
+
+      if (data?.email) {
+        setUserEmail(data.email);
+        setIsUserParent(checkIsParent(data.email));
+        setIsUserStudent(checkIsStudent(data.email));
+      }
+    };
+
+    fetchUserInfo();
+  }, [userId]);
+
+  return { userEmail, isUserParent, isUserStudent };
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOOK: useRideResponses
+   ═══════════════════════════════════════════════════════════════════ */
+
+const useRideResponses = (userId: string | undefined) => {
+  const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
+
+  const fetchUserResponses = useCallback(async () => {
+    if (!userId) return;
+
+    const { data, error } = await supabase.from("ride_conversations").select("ride_id, status").eq("sender_id", userId);
+
+    if (!error) {
+      setUserResponses(data || []);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchUserResponses();
+  }, [fetchUserResponses]);
+
+  const getResponseStatus = useCallback(
+    (rideId: string): string | null => {
+      return userResponses.find((r) => r.ride_id === rideId)?.status || null;
+    },
+    [userResponses],
+  );
+
+  return { userResponses, fetchUserResponses, getResponseStatus };
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOOK: useMapRides
+   ═══════════════════════════════════════════════════════════════════ */
+
+const useMapRides = (userId: string | undefined) => {
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchRides = async () => {
+      setLoading(true);
+
+      const today = new Date().toISOString().split("T")[0];
+      const { data: ridesData, error } = await supabase
+        .from("rides")
+        .select("*")
+        .eq("status", "active")
+        .gte("ride_date", today);
+
+      if (error || !ridesData) {
+        setLoading(false);
+        return;
+      }
+
+      // Geocode rides missing coordinates (parallel)
+      const geocodePromises = ridesData.map(async (ride) => {
+        if (!ride.pickup_latitude && !ride.pickup_longitude && ride.pickup_location) {
+          const coords = await geocodeAddress(ride.pickup_location);
+          if (coords) {
+            ride.pickup_longitude = coords[0];
+            ride.pickup_latitude = coords[1];
+          }
+        }
+        return ride;
+      });
+
+      const geocodedRides = await Promise.allSettled(geocodePromises);
+      const allRides = geocodedRides
+        .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+        .map((r) => r.value);
+
+      // Filter to rides with valid coordinates
+      const ridesWithLocation = allRides.filter(
+        (ride) => ride.pickup_latitude != null && ride.pickup_longitude != null,
+      );
+
+      // Fetch profiles and emails
+      const userIds = [...new Set(ridesWithLocation.map((r) => r.user_id))];
+
+      let profilesMap: Record<string, RideProfile> = {};
+      let emailsMap: Record<string, string> = {};
+
+      if (userIds.length > 0) {
+        const [profilesResult, usersResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, first_name, last_name, username, phone_number, share_phone, share_email")
+            .in("id", userIds),
+          supabase.from("users").select("user_id, email").in("user_id", userIds),
+        ]);
+
+        if (profilesResult.data) {
+          profilesMap = profilesResult.data.reduce(
+            (acc, p) => {
+              acc[p.id] = p;
+              return acc;
+            },
+            {} as Record<string, RideProfile>,
+          );
+        }
+
+        if (usersResult.data) {
+          emailsMap = usersResult.data.reduce(
+            (acc, u) => {
+              acc[u.user_id] = u.email;
+              return acc;
+            },
+            {} as Record<string, string>,
+          );
+        }
+      }
+
+      const combinedRides: Ride[] = ridesWithLocation.map((ride) => ({
+        ...ride,
+        profile: profilesMap[ride.user_id] || null,
+        userEmail: emailsMap[ride.user_id] || null,
+        hasAcceptedConnection: (ride as any).is_fulfilled === true,
+      }));
+
+      setRides(combinedRides);
+      setLoading(false);
+    };
+
+    fetchRides();
+  }, [userId]);
+
+  return { rides, setRides, loading };
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUB-COMPONENT: RideActionButton
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface RideActionButtonProps {
+  ride: Ride;
+  currentUserId: string | undefined;
+  isParent: boolean;
+  responseStatus: string | null;
+  onRespond: (ride: Ride) => void;
+}
+
+const RideActionButton: React.FC<RideActionButtonProps> = ({
+  ride,
+  currentUserId,
+  isParent,
+  responseStatus,
+  onRespond,
+}) => {
+  const isOwnRide = ride.user_id === currentUserId;
+  const rideIsFull = ride.hasAcceptedConnection && !isOwnRide && responseStatus !== "accepted";
+
+  // Own ride
+  if (isOwnRide) {
+    return ride.hasAcceptedConnection ? (
+      <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" disabled>
+        <CheckCircle className="h-4 w-4" />
+        Connected with another parent
+      </Button>
+    ) : (
+      <Button className="w-full gap-2" disabled variant="secondary">
+        <CheckCircle className="h-4 w-4" />
+        This is your ride
+      </Button>
+    );
+  }
+
+  // Ride full
+  if (rideIsFull) {
+    return (
+      <Button className="w-full gap-2" disabled variant="secondary">
+        <Users className="h-4 w-4" />
+        Ride Full
+      </Button>
+    );
+  }
+
+  // Not a parent
+  if (!isParent) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button className="w-full gap-2" disabled variant="secondary">
+            {ride.type === "request" ? (
+              <>
+                <Car className="h-4 w-4" />I Can Help!
+              </>
+            ) : (
+              <>
+                <Hand className="h-4 w-4" />I Need This!
+              </>
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Only parents can manage rides. Ask your parent for help.</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // Pending response
+  if (responseStatus === "pending") {
+    return (
+      <Button className="w-full gap-2" disabled variant="outline">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        {ride.type === "request" ? "Offer Sent - Pending" : "Request Pending"}
+      </Button>
+    );
+  }
+
+  // Accepted
+  if (responseStatus === "accepted") {
+    return (
+      <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled>
+        <CheckCircle className="h-4 w-4" />
+        {ride.type === "request" ? "Offer Accepted!" : "Request Approved!"}
+      </Button>
+    );
+  }
+
+  // Declined
+  if (responseStatus === "declined") {
+    return (
+      <Button className="w-full gap-2" disabled variant="secondary">
+        <X className="h-4 w-4" />
+        {ride.type === "request" ? "Offer Declined" : "Request Declined"}
+      </Button>
+    );
+  }
+
+  // Default: action button
+  return (
+    <Button className="w-full gap-2" onClick={() => onRespond(ride)}>
+      {ride.type === "request" ? (
+        <>
+          <Car className="h-4 w-4" />
+          Offer Your Ride
+        </>
+      ) : (
+        <>
+          <Hand className="h-4 w-4" />
+          Request to Join
+        </>
+      )}
+    </Button>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUB-COMPONENT: SelectedRidePanel
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface SelectedRidePanelProps {
+  ride: Ride;
+  currentUserId: string | undefined;
+  isParent: boolean;
+  isStudent: boolean;
+  responseStatus: string | null;
+  onClose: () => void;
+  onRespond: (ride: Ride) => void;
+}
+
+const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
+  ride,
+  currentUserId,
+  isParent,
+  isStudent,
+  responseStatus,
+  onClose,
+  onRespond,
+}) => {
+  const formatTime = (timeStr: string): string => {
+    try {
+      return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    } catch {
+      return timeStr;
+    }
+  };
+
+  return (
+    <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl z-50">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <RideUserBadge
+              userId={ride.user_id}
+              firstName={ride.profile?.first_name || null}
+              lastName={ride.profile?.last_name || null}
+              username={getDisplayName(ride)}
+              accountType="parent"
+              email={ride.userEmail}
+              phoneNumber={ride.profile?.phone_number}
+              shareEmail={ride.profile?.share_email ?? false}
+              sharePhone={ride.profile?.share_phone ?? false}
+              isCurrentUser={ride.user_id === currentUserId}
+              viewerIsStudent={isStudent}
+              variant="full"
+              showViewButton
+              distance={0}
+            />
+          </div>
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              onClick={onClose}
+              aria-label="Close ride details"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Badge className={ride.type === "request" ? "bg-red-500" : "bg-green-500"}>
+              {ride.type === "request" ? (
+                <>
+                  <Hand className="h-3 w-3 mr-1" /> Request
+                </>
+              ) : (
+                <>
+                  <Car className="h-3 w-3 mr-1" /> Offer
+                </>
+              )}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          {/* Route */}
+          <div className="flex items-start gap-2">
+            <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
+            <div className="text-sm">
+              <div className="font-medium">{ride.pickup_location}</div>
+              <div className="text-muted-foreground">to {ride.dropoff_location}</div>
+            </div>
+          </div>
+
+          {/* Date & Time */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              {format(new Date(ride.ride_date), "MMM d, yyyy")}
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {formatTime(ride.ride_time)}
+            </div>
+          </div>
+
+          {/* Seats / Status */}
+          <div className="flex items-center gap-2 text-sm">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            {ride.hasAcceptedConnection ? (
+              <span className="text-amber-600 font-medium">
+                {ride.user_id === currentUserId ? "Ride Connected" : "Ride Full"}
+              </span>
+            ) : ride.type === "offer" ? (
+              `${ride.seats_available} seats available`
+            ) : (
+              `${ride.seats_needed} seats needed`
+            )}
+          </div>
+
+          {/* Route details */}
+          {ride.route_details && <p className="text-sm text-muted-foreground pt-2 border-t">{ride.route_details}</p>}
+        </div>
+
+        {/* Action */}
+        <RideActionButton
+          ride={ride}
+          currentUserId={currentUserId}
+          isParent={isParent}
+          responseStatus={responseStatus}
+          onRespond={onRespond}
+        />
+      </CardContent>
+    </Card>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUB-COMPONENT: MapLoadingState
+   ═══════════════════════════════════════════════════════════════════ */
+
+const MapLoadingState: React.FC<{ height: string }> = ({ height }) => (
+  <div
+    className="w-full bg-muted rounded-lg flex flex-col items-center justify-center border border-border gap-3"
+    style={{ height }}
+    role="status"
+    aria-label="Loading map"
+  >
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    <p className="text-muted-foreground text-sm">Loading map…</p>
+  </div>
+);
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAPBOX LAYER HELPERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+const LAYER_IDS = ["clusters", "cluster-count", "unclustered-point"] as const;
+
+const SOURCE_ID = "rides-source";
+
+const cleanupMapLayers = (mapInstance: mapboxgl.Map) => {
+  LAYER_IDS.forEach((id) => {
+    if (mapInstance.getLayer(id)) mapInstance.removeLayer(id);
+  });
+  if (mapInstance.getSource(SOURCE_ID)) {
+    mapInstance.removeSource(SOURCE_ID);
+  }
+};
+
+const addClusterLayers = (mapInstance: mapboxgl.Map) => {
+  // Cluster circles
+  mapInstance.addLayer({
+    id: "clusters",
+    type: "circle",
+    source: SOURCE_ID,
+    filter: ["has", "point_count"],
+    paint: {
+      "circle-color": [
+        "case",
+        [">", ["get", "sumOffers"], 0],
+        [
+          "case",
+          [">", ["get", "sumRequests"], 0],
+          "#f59e0b", // Amber — mixed
+          "#22c55e", // Green — all offers
+        ],
+        "#ef4444", // Red — all requests
+      ],
+      "circle-radius": ["step", ["get", "point_count"], 18, 10, 24, 25, 30],
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+    },
+  });
+
+  // Cluster count text
+  mapInstance.addLayer({
+    id: "cluster-count",
+    type: "symbol",
+    source: SOURCE_ID,
+    filter: ["has", "point_count"],
+    layout: {
+      "text-field": "{point_count_abbreviated}",
+      "text-size": 13,
+      "text-font": ["DIN Pro Medium", "Arial Unicode MS Bold"],
+      "text-allow-overlap": true,
+    },
+    paint: {
+      "text-color": "#ffffff",
+    },
+  });
+
+  // Unclustered points
+  mapInstance.addLayer({
+    id: "unclustered-point",
+    type: "circle",
+    source: SOURCE_ID,
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": ["case", ["==", ["get", "type"], "offer"], "#22c55e", "#ef4444"],
+      "circle-radius": 12,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#ffffff",
+    },
+  });
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
 
 const FindRidesMap: React.FC<FindRidesMapProps> = ({
-  height = '500px',
+  height = "500px",
   showRequests,
   showOffers,
   onToggleRequests,
@@ -88,474 +687,237 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   onToggleHome,
   onToggleSchool,
   focusRide,
-  onFocusRideHandled
+  onFocusRideHandled,
 }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+
+  /* ── Refs ───────────────────────────────────────────────── */
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapLoadedRef = useRef(false);
-  const [mapboxToken, setMapboxToken] = useState<string>('');
-  const [rides, setRides] = useState<Ride[]>([]);
+  const eventHandlersRef = useRef<Array<{ type: string; layer: string; handler: any }>>([]);
+
+  /* ── Custom hooks ───────────────────────────────────────── */
+  const { isUserParent, isUserStudent } = useUserInfo(user?.id);
+  const { fetchUserResponses, getResponseStatus } = useRideResponses(user?.id);
+  const { rides, setRides, loading } = useMapRides(user?.id);
+
+  /* ── Local state ────────────────────────────────────────── */
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [isUserParent, setIsUserParent] = useState(false);
-  const [isUserStudent, setIsUserStudent] = useState(false);
-  
-  // Track user's existing responses to rides
-  const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
   const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch user email and determine role
+  /* ── Derived data ───────────────────────────────────────── */
+  const filteredRides = useMemo(
+    () => rides.filter((r) => (showRequests && r.type === "request") || (showOffers && r.type === "offer")),
+    [rides, showRequests, showOffers],
+  );
+
+  const rideCounts = useMemo(
+    () => ({
+      requests: rides.filter((r) => r.type === "request").length,
+      offers: rides.filter((r) => r.type === "offer").length,
+    }),
+    [rides],
+  );
+
+  /* ── Initialize map ─────────────────────────────────────── */
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('users')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data?.email) {
-        setUserEmail(data.email);
-        setIsUserParent(checkIsParent(data.email));
-        setIsUserStudent(checkIsStudent(data.email));
-      }
-    };
-    fetchUserInfo();
-  }, [user]);
+    if (!mapContainer.current || !profile) return;
 
-  // Fetch user's existing ride responses
-  const fetchUserResponses = useCallback(async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('ride_conversations')
-      .select('ride_id, status')
-      .eq('sender_id', user.id);
-    
-    if (error) {
-      console.error('Error fetching user responses:', error);
-    } else {
-      setUserResponses(data || []);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchUserResponses();
-  }, [fetchUserResponses]);
-
-  // Mapbox publishable token - safe for client-side use
-  useEffect(() => {
-    setMapboxToken('pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg');
-  }, []);
-
-  // Fetch rides data
-  useEffect(() => {
-    const fetchRides = async () => {
-      if (!user) return;
-
-      // Fetch all active rides with date >= today
-      const today = new Date().toISOString().split('T')[0];
-      const { data: ridesData, error } = await supabase
-        .from('rides')
-        .select('*')
-        .eq('status', 'active')
-        .gte('ride_date', today);
-
-      if (error) {
-        console.error('[FindRidesMap] Error fetching rides:', error);
-        return;
-      }
-
-      console.log('[FindRidesMap] Raw rides from DB:', ridesData?.length || 0, ridesData);
-
-      // Geocode rides that have address but no coordinates
-      const allRides = ridesData || [];
-      for (const ride of allRides) {
-        if (!ride.pickup_latitude && !ride.pickup_longitude && ride.pickup_location) {
-          try {
-            const coords = await geocodeAddress(ride.pickup_location);
-            if (coords) {
-              ride.pickup_longitude = coords[0];
-              ride.pickup_latitude = coords[1];
-              console.log('[FindRidesMap] Geocoded ride:', ride.id, coords);
-            }
-          } catch (err) {
-            console.error('[FindRidesMap] Geocoding failed for ride:', ride.id, err);
-          }
-        }
-      }
-
-      // Filter to rides with valid coordinates
-      const ridesWithLocation = allRides.filter(ride => {
-        const hasPickupCoords = ride.pickup_latitude != null && ride.pickup_longitude != null;
-        if (!hasPickupCoords) {
-          console.warn('[FindRidesMap] Ride has no coordinates after geocoding attempt:', ride.id, ride.pickup_location);
-        }
-        return hasPickupCoords;
-      });
-
-      console.log('[FindRidesMap] Rides with valid coordinates:', ridesWithLocation.length, '/', allRides.length);
-
-      // Get unique user IDs and fetch profiles
-      const userIds = [...new Set(ridesWithLocation.map(r => r.user_id) || [])];
-      let profilesMap: Record<string, any> = {};
-      let emailsMap: Record<string, string> = {};
-      
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, username, phone_number, share_phone, share_email')
-          .in('id', userIds);
-        
-        if (profilesData) {
-          profilesMap = profilesData.reduce((acc, p) => {
-            acc[p.id] = p;
-            return acc;
-          }, {} as Record<string, any>);
-        }
-
-        // Fetch emails for users who share them
-        const { data: usersData } = await supabase
-          .from('users')
-          .select('user_id, email')
-          .in('user_id', userIds);
-        
-        if (usersData) {
-          emailsMap = usersData.reduce((acc, u) => {
-            acc[u.user_id] = u.email;
-            return acc;
-          }, {} as Record<string, string>);
-        }
-      }
-
-      const combinedData = ridesWithLocation.map(ride => ({
-        ...ride,
-        profile: profilesMap[ride.user_id] || null,
-        userEmail: emailsMap[ride.user_id] || null
-      }));
-
-      console.log('[FindRidesMap] Final combined rides:', combinedData.length);
-     // Use is_fulfilled column from rides table for "Ride Full" status
-     const ridesWithConnectionStatus = combinedData.map(ride => ({
-       ...ride,
-       hasAcceptedConnection: (ride as any).is_fulfilled === true
-     }));
-     
-     console.log('[FindRidesMap] Rides with connection status:', ridesWithConnectionStatus.length);
-     setRides(ridesWithConnectionStatus as Ride[]);
-    };
-
-    fetchRides();
-  }, [user]);
-
-  // Geocode address
-  const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('geocode-address', {
-        body: { address }
-      });
-
-      if (error || !data?.coordinates) {
-        return null;
-      }
-
-      return [data.coordinates.longitude, data.coordinates.latitude];
-    } catch (err) {
-      return null;
-    }
-  };
-
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !profile) return;
-
-    mapboxgl.accessToken = mapboxToken;
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
     const userLat = (profile as any)?.home_latitude;
     const userLng = (profile as any)?.home_longitude;
-    const centerCoord: [number, number] = userLat && userLng 
-      ? [userLng, userLat] 
-      : [-118.3964, 33.7447];
+    const center: [number, number] = userLat && userLng ? [userLng, userLat] : DEFAULT_CENTER;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: centerCoord,
-      zoom: 11,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center,
+      zoom: DEFAULT_ZOOM,
     });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.current.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.current.addControl(new mapboxgl.ScaleControl({ unit: "imperial" }), "bottom-left");
 
-    map.current.on('load', () => {
+    map.current.on("load", () => {
       mapLoadedRef.current = true;
-      // Trigger the clustering effect by forcing a re-render
-      setRides(prev => [...prev]);
+      setRides((prev) => [...prev]);
     });
 
     return () => {
       mapLoadedRef.current = false;
-      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
+      // Clean up event handlers
+      eventHandlersRef.current.forEach(({ type, layer, handler }) => {
+        map.current?.off(type as any, layer, handler);
+      });
+      eventHandlersRef.current = [];
       map.current?.remove();
+      map.current = null;
     };
-  }, [mapboxToken, profile]);
+  }, [profile]);
 
-  // Add ride markers using native Mapbox clustering + HTML markers for home/school
+  /* ── Update markers and layers ──────────────────────────── */
   useEffect(() => {
-    if (!map.current || !mapboxToken || !mapLoadedRef.current) return;
-    
-    // Clear existing HTML markers (home/school)
-    markersRef.current.forEach(marker => marker.remove());
+    if (!map.current || !mapLoadedRef.current) return;
+
+    // Clear HTML markers
+    markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Remove old clustering layers/source if they exist
-    const layersToRemove = ['clusters', 'cluster-count', 'unclustered-point', 'unclustered-icon-request', 'unclustered-icon-offer'];
-    layersToRemove.forEach(id => {
-      if (map.current!.getLayer(id)) map.current!.removeLayer(id);
+    // Clean up previous event handlers
+    eventHandlersRef.current.forEach(({ type, layer, handler }) => {
+      map.current?.off(type as any, layer, handler);
     });
-    if (map.current.getSource('rides-source')) map.current.removeSource('rides-source');
-    
+    eventHandlersRef.current = [];
+
+    // Clean up previous layers/source
+    cleanupMapLayers(map.current);
+
     const bounds = new mapboxgl.LngLatBounds();
     let hasValidMarkers = false;
 
-    // Add user's home marker (blue) - HTML marker
+    // ── Home marker ──
     if (showHome && profile?.home_address && profile?.home_latitude && profile?.home_longitude) {
-      const userLat = profile.home_latitude;
-      const userLng = profile.home_longitude;
-      
-      const el = document.createElement('div');
-      el.className = 'flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
-      el.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
-
-      const popupDiv = document.createElement('div');
-      popupDiv.className = 'p-2';
-      const title = document.createElement('p');
-      title.className = 'font-semibold text-blue-600';
-      title.textContent = 'Your Home';
-      const address = document.createElement('p');
-      address.className = 'text-sm text-gray-600';
-      address.textContent = profile.home_address;
-      popupDiv.appendChild(title);
-      popupDiv.appendChild(address);
-      
-      const popup = new mapboxgl.Popup({ offset: 25 });
-      popup.setDOMContent(popupDiv);
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([userLng, userLat])
+      const popup = createMarkerPopup("Your Home", "text-blue-600", profile.home_address);
+      const marker = new mapboxgl.Marker(createHomeMarkerElement())
+        .setLngLat([profile.home_longitude, profile.home_latitude])
         .setPopup(popup)
         .addTo(map.current!);
-      
+
       markersRef.current.push(marker);
-      bounds.extend([userLng, userLat]);
+      bounds.extend([profile.home_longitude, profile.home_latitude]);
       hasValidMarkers = true;
     }
 
-    // Add Chadwick School marker (orange) - HTML marker
+    // ── School marker ──
     if (showSchool) {
-      const schoolEl = document.createElement('div');
-      schoolEl.className = 'flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer';
-      schoolEl.innerHTML = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
-
-      const schoolPopupDiv = document.createElement('div');
-      schoolPopupDiv.className = 'p-2';
-      const schoolTitle = document.createElement('p');
-      schoolTitle.className = 'font-semibold text-orange-600';
-      schoolTitle.textContent = CHADWICK_SCHOOL.name;
-      const schoolAddress = document.createElement('p');
-      schoolAddress.className = 'text-sm text-gray-600';
-      schoolAddress.textContent = CHADWICK_SCHOOL.address;
-      schoolPopupDiv.appendChild(schoolTitle);
-      schoolPopupDiv.appendChild(schoolAddress);
-      
-      const schoolPopup = new mapboxgl.Popup({ offset: 25 });
-      schoolPopup.setDOMContent(schoolPopupDiv);
-
-      const schoolMarker = new mapboxgl.Marker(schoolEl)
+      const popup = createMarkerPopup(CHADWICK_SCHOOL.name, "text-orange-600", CHADWICK_SCHOOL.address);
+      const marker = new mapboxgl.Marker(createSchoolMarkerElement())
         .setLngLat([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat])
-        .setPopup(schoolPopup)
+        .setPopup(popup)
         .addTo(map.current!);
-      
-      markersRef.current.push(schoolMarker);
+
+      markersRef.current.push(marker);
       bounds.extend([CHADWICK_SCHOOL.lng, CHADWICK_SCHOOL.lat]);
       hasValidMarkers = true;
     }
 
-    // Build GeoJSON for filtered rides
-    const filteredRides = rides.filter(r => 
-      (showRequests && r.type === 'request') || (showOffers && r.type === 'offer')
-    );
-
+    // ── Build GeoJSON ──
     const features = filteredRides
-      .filter(r => r.pickup_latitude != null && r.pickup_longitude != null)
-      .map(ride => {
+      .filter((r) => r.pickup_latitude != null && r.pickup_longitude != null)
+      .map((ride) => {
         bounds.extend([ride.pickup_longitude!, ride.pickup_latitude!]);
         hasValidMarkers = true;
         return {
-          type: 'Feature' as const,
+          type: "Feature" as const,
           properties: {
             id: ride.id,
             type: ride.type,
-            isOffer: ride.type === 'offer' ? 1 : 0,
-            isRequest: ride.type === 'request' ? 1 : 0,
+            isOffer: ride.type === "offer" ? 1 : 0,
+            isRequest: ride.type === "request" ? 1 : 0,
           },
           geometry: {
-            type: 'Point' as const,
+            type: "Point" as const,
             coordinates: [ride.pickup_longitude!, ride.pickup_latitude!],
           },
         };
       });
 
     const geojsonData: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
+      type: "FeatureCollection",
       features,
     };
 
-    // Add clustered GeoJSON source
-    map.current.addSource('rides-source', {
-      type: 'geojson',
+    // ── Add source + layers ──
+    map.current.addSource(SOURCE_ID, {
+      type: "geojson",
       data: geojsonData,
       cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50,
+      clusterMaxZoom: CLUSTER_MAX_ZOOM,
+      clusterRadius: CLUSTER_RADIUS,
       clusterProperties: {
-        'sumOffers': ['+', ['get', 'isOffer']],
-        'sumRequests': ['+', ['get', 'isRequest']],
+        sumOffers: ["+", ["get", "isOffer"]],
+        sumRequests: ["+", ["get", "isRequest"]],
       },
     });
 
-    // Cluster circles — color depends on content
-    map.current.addLayer({
-      id: 'clusters',
-      type: 'circle',
-      source: 'rides-source',
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': [
-          'case',
-          ['>', ['get', 'sumOffers'], 0],
-          [
-            'case',
-            ['>', ['get', 'sumRequests'], 0],
-            '#f59e0b', // Amber — mixed
-            '#22c55e', // Green — all offers
-          ],
-          '#ef4444', // Red — all requests
-        ],
-        'circle-radius': [
-          'step',
-          ['get', 'point_count'],
-          18, // base size for 2-9
-          10, 24, // 10-24
-          25, 30, // 25+
-        ],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
+    addClusterLayers(map.current);
 
-    // Cluster count text
-    map.current.addLayer({
-      id: 'cluster-count',
-      type: 'symbol',
-      source: 'rides-source',
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': '{point_count_abbreviated}',
-        'text-size': 13,
-        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
-        'text-allow-overlap': true,
-      },
-      paint: {
-        'text-color': '#ffffff',
-      },
-    });
-
-    // Unclustered individual ride circles
-    map.current.addLayer({
-      id: 'unclustered-point',
-      type: 'circle',
-      source: 'rides-source',
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-color': [
-          'case',
-          ['==', ['get', 'type'], 'offer'],
-          '#22c55e',
-          '#ef4444',
-        ],
-        'circle-radius': 12,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
-
-    // Click on cluster → zoom in
-    map.current.on('click', 'clusters', (e) => {
-      const features = map.current!.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-      if (!features.length) return;
-      const clusterId = features[0].properties?.cluster_id;
-      const source = map.current!.getSource('rides-source') as mapboxgl.GeoJSONSource;
+    // ── Event handlers (tracked for cleanup) ──
+    const onClusterClick = (e: mapboxgl.MapMouseEvent) => {
+      const feats = map.current!.queryRenderedFeatures(e.point, {
+        layers: ["clusters"],
+      });
+      if (!feats.length) return;
+      const clusterId = feats[0].properties?.cluster_id;
+      const source = map.current!.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource;
       source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
         if (err) return;
-        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
-        map.current!.easeTo({ center: coords, zoom: zoom });
+        const coords = (feats[0].geometry as GeoJSON.Point).coordinates as [number, number];
+        map.current!.easeTo({ center: coords, zoom });
       });
-    });
+    };
 
-    // Click on unclustered point → select ride
-    map.current.on('click', 'unclustered-point', (e) => {
-      const features = map.current!.queryRenderedFeatures(e.point, { layers: ['unclustered-point'] });
-      if (!features.length) return;
-      const rideId = features[0].properties?.id;
-      const ride = rides.find(r => r.id === rideId);
+    const onPointClick = (e: mapboxgl.MapMouseEvent) => {
+      const feats = map.current!.queryRenderedFeatures(e.point, {
+        layers: ["unclustered-point"],
+      });
+      if (!feats.length) return;
+      const rideId = feats[0].properties?.id;
+      const ride = rides.find((r) => r.id === rideId);
       if (ride) setSelectedRide(ride);
-    });
+    };
 
-    // Cursor changes
-    map.current.on('mouseenter', 'clusters', () => {
-      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-    });
-    map.current.on('mouseleave', 'clusters', () => {
-      if (map.current) map.current.getCanvas().style.cursor = '';
-    });
-    map.current.on('mouseenter', 'unclustered-point', () => {
-      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-    });
-    map.current.on('mouseleave', 'unclustered-point', () => {
-      if (map.current) map.current.getCanvas().style.cursor = '';
-    });
+    const pointerCursor = () => {
+      if (map.current) map.current.getCanvas().style.cursor = "pointer";
+    };
+    const defaultCursor = () => {
+      if (map.current) map.current.getCanvas().style.cursor = "";
+    };
 
-    // Fit map to show all markers
+    map.current.on("click", "clusters", onClusterClick);
+    map.current.on("click", "unclustered-point", onPointClick);
+    map.current.on("mouseenter", "clusters", pointerCursor);
+    map.current.on("mouseleave", "clusters", defaultCursor);
+    map.current.on("mouseenter", "unclustered-point", pointerCursor);
+    map.current.on("mouseleave", "unclustered-point", defaultCursor);
+
+    // Track for cleanup
+    eventHandlersRef.current = [
+      { type: "click", layer: "clusters", handler: onClusterClick },
+      { type: "click", layer: "unclustered-point", handler: onPointClick },
+      { type: "mouseenter", layer: "clusters", handler: pointerCursor },
+      { type: "mouseleave", layer: "clusters", handler: defaultCursor },
+      { type: "mouseenter", layer: "unclustered-point", handler: pointerCursor },
+      { type: "mouseleave", layer: "unclustered-point", handler: defaultCursor },
+    ];
+
+    // ── Fit bounds ──
     if (hasValidMarkers && !bounds.isEmpty()) {
       map.current.fitBounds(bounds, {
-        padding: { top: 80, bottom: 80, left: 100, right: 100 },
+        padding: FIT_BOUNDS_PADDING,
         maxZoom: 14,
         duration: 1000,
       });
     }
-  }, [showHome, showSchool, rides, showRequests, showOffers, profile, mapboxToken]);
+  }, [showHome, showSchool, filteredRides, profile, rides]);
 
-
-  // Handle focus on a specific ride from list view
+  /* ── Focus on a specific ride ───────────────────────────── */
   useEffect(() => {
     if (!focusRide || !map.current) return;
 
     const focusOnRide = async () => {
-      // Find the ride in our rides array
-      const ride = rides.find(r => r.id === focusRide.id);
-      if (ride) {
-        setSelectedRide(ride);
-      }
+      const ride = rides.find((r) => r.id === focusRide.id);
+      if (ride) setSelectedRide(ride);
 
-      // Get coordinates to center on
       let coords: [number, number] | null = null;
       if (focusRide.pickup_latitude && focusRide.pickup_longitude) {
         coords = [focusRide.pickup_longitude, focusRide.pickup_latitude];
@@ -567,123 +929,82 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
         map.current.flyTo({
           center: coords,
           zoom: 14,
-          duration: 1500
+          duration: 1500,
         });
       }
 
-      // Clear the focus after handling
       onFocusRideHandled?.();
     };
 
     focusOnRide();
   }, [focusRide, rides, onFocusRideHandled]);
 
-  const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    if (username && username.trim()) {
-      return username.substring(0, 2).toUpperCase();
-    }
-    return 'NA';
-  };
-
-  // Get display name with proper fallbacks - never show "Unknown"
-  const getDisplayName = (ride: Ride): string => {
-    if (ride.profile?.first_name && ride.profile?.last_name) {
-      return `${ride.profile.first_name} ${ride.profile.last_name}`;
-    }
-    if (ride.profile?.first_name) {
-      return ride.profile.first_name;
-    }
-    if (ride.profile?.username && ride.profile.username.trim()) {
-      return ride.profile.username;
-    }
-    // Fallback to email if available
-    if (ride.userEmail) {
-      return ride.userEmail.split('@')[0]; // Show email prefix
-    }
-    return 'Parent';
-  };
-
-  // Get user's response status for a ride
-  const getUserResponseStatus = (rideId: string): string | null => {
-    const response = userResponses.find(r => r.ride_id === rideId);
-    return response?.status || null;
-  };
-
-  // Initiate response flow with confirmation dialog
-  const initiateRespondToRide = (ride: Ride) => {
+  /* ── Ride response handler ──────────────────────────────── */
+  const initiateRespondToRide = useCallback((ride: Ride) => {
     setRespondingToRide(ride);
-    if (ride.type === 'offer') {
+    if (ride.type === "offer") {
       setShowJoinDialog(true);
     } else {
       setShowOfferDialog(true);
     }
-  };
+  }, []);
 
-  // Handle the actual response after confirmation
-  const handleConfirmResponse = async () => {
+  const handleConfirmResponse = useCallback(async () => {
     if (!user || !respondingToRide) return;
     setActionLoading(true);
 
-    const ownerName = respondingToRide.profile?.first_name 
-      ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
-      : respondingToRide.profile?.username || 'the ride owner';
+    const ownerName = getOwnerName(respondingToRide);
 
     try {
-      const { error } = await supabase
-        .from('ride_conversations')
-        .insert({
-          ride_id: respondingToRide.id,
-          sender_id: user.id,
-          recipient_id: respondingToRide.user_id,
-          status: 'pending',
-          message: respondingToRide.type === 'request' 
-            ? `I can help with your ride request!`
-            : `I'd like to join your offered ride!`
-        });
+      const { error } = await supabase.from("ride_conversations").insert({
+        ride_id: respondingToRide.id,
+        sender_id: user.id,
+        recipient_id: respondingToRide.user_id,
+        status: "pending",
+        message:
+          respondingToRide.type === "request"
+            ? "I can help with your ride request!"
+            : "I'd like to join your offered ride!",
+      });
 
       if (error) {
-        console.error('Error responding to ride:', error);
         toast({
           title: "Error",
           description: "Failed to send your request. Please try again.",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
-      // Send notification to ride owner
-      try {
-        await supabase.functions.invoke('create-notification', {
+      // Send notification (non-blocking)
+      supabase.functions
+        .invoke("create-notification", {
           body: {
             userId: respondingToRide.user_id,
-            type: respondingToRide.type === 'request' ? 'ride_offer_received' : 'ride_join_request',
-            message: respondingToRide.type === 'request'
-              ? `${profile?.first_name || 'Someone'} offered to help with your ride request`
-              : `${profile?.first_name || 'Someone'} wants to join your ride`
-          }
-        });
-      } catch (notifError) {
-        console.error('Error sending notification:', notifError);
-      }
-      
+            type: respondingToRide.type === "request" ? "ride_offer_received" : "ride_join_request",
+            message:
+              respondingToRide.type === "request"
+                ? `${profile?.first_name || "Someone"} offered to help with your ride request`
+                : `${profile?.first_name || "Someone"} wants to join your ride`,
+          },
+        })
+        .catch((err) => console.error("Error sending notification:", err));
+
       toast({
-        title: respondingToRide.type === 'request' ? "Offer Sent!" : "Request Sent!",
-        description: respondingToRide.type === 'request'
-          ? `Your ride offer was sent to ${ownerName}! They'll be notified and can accept or decline.`
-          : `Your join request was sent to ${ownerName}! They'll be notified and can approve or decline.`,
+        title: respondingToRide.type === "request" ? "Offer Sent!" : "Request Sent!",
+        description:
+          respondingToRide.type === "request"
+            ? `Your ride offer was sent to ${ownerName}! They'll be notified and can accept or decline.`
+            : `Your join request was sent to ${ownerName}! They'll be notified and can approve or decline.`,
       });
 
-      // Refresh user responses to update button state
       await fetchUserResponses();
       setSelectedRide(null);
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "An error occurred. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setActionLoading(false);
@@ -691,24 +1012,28 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       setShowOfferDialog(false);
       setRespondingToRide(null);
     }
-  };
+  }, [user, respondingToRide, profile, toast, fetchUserResponses]);
 
-  if (!mapboxToken) {
-    return (
-      <div 
-        className="w-full bg-muted rounded-lg flex items-center justify-center border border-border" 
-        style={{ height }}
-      >
-        <p className="text-muted-foreground">Loading map...</p>
-      </div>
-    );
+  /* ── Render ─────────────────────────────────────────────── */
+  if (!MAPBOX_TOKEN) {
+    return <MapLoadingState height={height} />;
   }
 
   return (
     <div className="relative" style={{ height }}>
-      {/* Map Container */}
-      <div ref={mapContainer} className="w-full h-full rounded-lg" />
-      
+      {/* Map */}
+      <div ref={mapContainer} className="w-full h-full rounded-lg" role="application" aria-label="Carpool rides map" />
+
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-lg z-10">
+          <div className="flex items-center gap-2 bg-background/90 px-4 py-2 rounded-full shadow">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading rides…</span>
+          </div>
+        </div>
+      )}
+
       {/* Filter Panel */}
       <div className="absolute top-4 left-4 z-10">
         <MapFilterPanel
@@ -720,224 +1045,48 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           onToggleOffers={onToggleOffers}
           onToggleHome={onToggleHome || (() => {})}
           onToggleSchool={onToggleSchool || (() => {})}
-          requestCount={rides.filter(r => r.type === 'request').length}
-          offerCount={rides.filter(r => r.type === 'offer').length}
+          requestCount={rideCounts.requests}
+          offerCount={rideCounts.offers}
         />
       </div>
 
-      {/* Selected Ride Panel */}
-      {selectedRide && (
-        <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl z-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <RideUserBadge
-                  userId={selectedRide.user_id}
-                  firstName={selectedRide.profile?.first_name || null}
-                  lastName={selectedRide.profile?.last_name || null}
-                  username={getDisplayName(selectedRide)}
-                  accountType="parent"
-                  email={selectedRide.userEmail}
-                  phoneNumber={selectedRide.profile?.phone_number}
-                  shareEmail={selectedRide.profile?.share_email ?? false}
-                  sharePhone={selectedRide.profile?.share_phone ?? false}
-                  isCurrentUser={selectedRide.user_id === user?.id}
-                  viewerIsStudent={isUserStudent}
-                  variant="full"
-                  showViewButton={true}
-                  distance={0}
-                />
-              </div>
-              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full"
-                  onClick={() => setSelectedRide(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Badge className={selectedRide.type === 'request' ? 'bg-red-500' : 'bg-green-500'}>
-                  {selectedRide.type === 'request' ? (
-                    <><Hand className="h-3 w-3 mr-1" /> Request</>
-                  ) : (
-                    <><Car className="h-3 w-3 mr-1" /> Offer</>
-                  )}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                <div className="text-sm">
-                  <div className="font-medium">{selectedRide.pickup_location}</div>
-                  <div className="text-muted-foreground">to {selectedRide.dropoff_location}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {format(new Date(selectedRide.ride_date), 'MMM d, yyyy')}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  {selectedRide.ride_time}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                {selectedRide.hasAcceptedConnection ? (
-                  <span className="text-amber-600 font-medium">
-                    {selectedRide.user_id === user?.id ? 'Ride Connected' : 'Ride Full'}
-                  </span>
-                ) : selectedRide.type === 'offer'
-                  ? `${selectedRide.seats_available} seats available`
-                  : `${selectedRide.seats_needed} seats needed`}
-              </div>
-
-              {selectedRide.route_details && (
-                <p className="text-sm text-muted-foreground pt-2 border-t">
-                  {selectedRide.route_details}
-                </p>
-              )}
-            </div>
-
-            {/* Action Button - Only for Parents */}
-            {(() => {
-              const isOwnRide = selectedRide.user_id === user?.id;
-              const responseStatus = getUserResponseStatus(selectedRide.id);
-              const hasPendingResponse = responseStatus === 'pending';
-              const hasAcceptedResponse = responseStatus === 'accepted';
-              const hasDeclinedResponse = responseStatus === 'declined';
-             const rideIsFull = selectedRide.hasAcceptedConnection && !isOwnRide && !hasAcceptedResponse;
-
-              if (isOwnRide) {
-               return selectedRide.hasAcceptedConnection ? (
-                 <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" disabled>
-                   <CheckCircle className="h-4 w-4" />
-                   Connected with another parent
-                 </Button>
-               ) : (
-                  <Button className="w-full gap-2" disabled variant="secondary">
-                    <CheckCircle className="h-4 w-4" />
-                    This is your ride
-                  </Button>
-                );
-              }
-
-             // Show "Ride Full" if someone else already connected
-             if (rideIsFull) {
-               return (
-                 <Button className="w-full gap-2" disabled variant="secondary">
-                   <Users className="h-4 w-4" />
-                   Ride Full
-                 </Button>
-               );
-             }
-
-              if (!isUserParent) {
-                return (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button className="w-full gap-2" disabled variant="secondary">
-                        {selectedRide.type === 'request' ? (
-                          <>
-                            <Car className="h-4 w-4" />
-                            I Can Help!
-                          </>
-                        ) : (
-                          <>
-                            <Hand className="h-4 w-4" />
-                            I Need This!
-                          </>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Only parents can manage rides. Ask your parent for help.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              if (hasPendingResponse) {
-                return (
-                  <Button className="w-full gap-2" disabled variant="outline">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {selectedRide.type === 'request' ? 'Offer Sent - Pending' : 'Request Pending'}
-                  </Button>
-                );
-              }
-
-              if (hasAcceptedResponse) {
-                return (
-                  <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled>
-                    <CheckCircle className="h-4 w-4" />
-                    {selectedRide.type === 'request' ? 'Offer Accepted!' : 'Request Approved!'}
-                  </Button>
-                );
-              }
-
-              if (hasDeclinedResponse) {
-                return (
-                  <Button className="w-full gap-2" disabled variant="secondary">
-                    <X className="h-4 w-4" />
-                    {selectedRide.type === 'request' ? 'Offer Declined' : 'Request Declined'}
-                  </Button>
-                );
-              }
-
-              // No existing response - show action button
-              return (
-                <Button 
-                  className="w-full gap-2"
-                  onClick={() => initiateRespondToRide(selectedRide)}
-                >
-                  {selectedRide.type === 'request' ? (
-                    <>
-                      <Car className="h-4 w-4" />
-                      Offer Your Ride
-                    </>
-                  ) : (
-                    <>
-                      <Hand className="h-4 w-4" />
-                      Request to Join
-                    </>
-                  )}
-                </Button>
-              );
-            })()}
-          </CardContent>
-        </Card>
+      {/* No rides message */}
+      {!loading && filteredRides.length === 0 && rides.length > 0 && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+          <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm shadow px-4 py-2">
+            No {showRequests && !showOffers ? "requests" : !showRequests && showOffers ? "offers" : "rides"} match your
+            filters
+          </Badge>
+        </div>
       )}
 
-      {/* Join Ride Confirmation Dialog */}
+      {/* Selected Ride Panel */}
+      {selectedRide && (
+        <SelectedRidePanel
+          ride={selectedRide}
+          currentUserId={user?.id}
+          isParent={isUserParent}
+          isStudent={isUserStudent}
+          responseStatus={getResponseStatus(selectedRide.id)}
+          onClose={() => setSelectedRide(null)}
+          onRespond={initiateRespondToRide}
+        />
+      )}
+
+      {/* Confirmation Dialogs */}
       <JoinRideDialog
         open={showJoinDialog}
         onOpenChange={setShowJoinDialog}
         onConfirm={handleConfirmResponse}
-        ownerName={
-          respondingToRide?.profile?.first_name 
-            ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
-            : respondingToRide?.profile?.username || 'the ride owner'
-        }
+        ownerName={getOwnerName(respondingToRide)}
         loading={actionLoading}
       />
 
-      {/* Offer Ride Confirmation Dialog */}
       <OfferRideDialog
         open={showOfferDialog}
         onOpenChange={setShowOfferDialog}
         onConfirm={handleConfirmResponse}
-        requesterName={
-          respondingToRide?.profile?.first_name 
-            ? `${respondingToRide.profile.first_name} ${respondingToRide.profile.last_name || ''}`.trim()
-            : respondingToRide?.profile?.username || 'the requester'
-        }
+        requesterName={getOwnerName(respondingToRide)}
         loading={actionLoading}
       />
     </div>
