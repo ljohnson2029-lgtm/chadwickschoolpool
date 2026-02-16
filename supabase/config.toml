@@ -20,3 +20,36 @@ verify_jwt = false
 
 [functions.auth-check-username]
 verify_jwt = false
+
+[functions.get-mapbox-token]
+verify_jwt = false
+
+[functions.geocode-address]
+verify_jwt = false
+
+[functions.calculate-route]
+verify_jwt = false
+
+[functions.get-parent-locations]
+verify_jwt = false
+
+[functions.get-parent-profile]
+verify_jwt = false
+
+[functions.lookup-parent]
+verify_jwt = false
+
+[functions.create-notification]
+verify_jwt = false
+
+[functions.cleanup-expired-rides]
+verify_jwt = false
+
+[functions.generate-test-parent]
+verify_jwt = false
+
+[functions.delete-test-parents]
+verify_jwt = false
+
+[functions.auth-create-account]
+verify_jwt = false
