@@ -54,16 +54,9 @@ const DeleteAccountSection = () => {
     setIsDeleting(true);
 
     try {
-      // 1. Log the reason for leaving (Optional: store in a separate 'feedback' table)
+      // 1. Log the reason for leaving (optional, silent fail)
       if (deleteReason) {
-        await supabase
-          .from("feedback")
-          .insert({
-            user_id: user.id,
-            type: "account_deletion",
-            message: deleteReason,
-          })
-          .catch(() => null); // Fail silently if feedback table doesn't exist
+        console.log("Account deletion reason:", deleteReason);
       }
 
       // 2. Delete profile data (Cascading deletes handled by DB FKs usually, but explicit is safer)
