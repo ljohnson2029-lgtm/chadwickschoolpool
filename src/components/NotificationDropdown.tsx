@@ -13,7 +13,8 @@ import {
   Car,
   BellOff,
   Users,
-  Trash2
+  Trash2,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -261,6 +262,12 @@ export const NotificationDropdown = () => {
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'private_request_declined':
         return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'nearby_ride':
+        return <MapPin className="h-4 w-4 text-emerald-500" />;
+      case 'new_message':
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case 'ride_expiring':
+        return <Clock className="h-4 w-4 text-amber-500" />;
       default:
         return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
@@ -281,7 +288,16 @@ export const NotificationDropdown = () => {
     }
     
     // Navigate based on notification type
-    if (notification.type.includes('link') || notification.type.includes('unlinked')) {
+    if (notification.type === 'nearby_ride') {
+      setIsOpen(false);
+      navigate('/find-rides');
+    } else if (notification.type === 'new_message') {
+      setIsOpen(false);
+      navigate('/conversations');
+    } else if (notification.type === 'ride_expiring') {
+      setIsOpen(false);
+      navigate('/my-rides');
+    } else if (notification.type.includes('link') || notification.type.includes('unlinked')) {
       setIsOpen(false);
       navigate('/family-links');
     } else if (isPrivateRequestNotification(notification.type)) {
@@ -289,7 +305,7 @@ export const NotificationDropdown = () => {
       navigate('/requests/private');
     } else if (isRideNotification(notification.type)) {
       setIsOpen(false);
-      navigate('/map');
+      navigate('/find-rides');
     }
   };
 
