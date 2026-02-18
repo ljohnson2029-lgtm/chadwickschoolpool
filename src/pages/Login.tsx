@@ -220,6 +220,12 @@ const Login = () => {
                   Sign up
                 </Button>
               </p>
+              <p className="text-sm text-foreground/70">
+                Don't have access?{' '}
+                <Button variant="ghost" onClick={() => navigate('/request-access')} className="p-0 h-auto font-semibold text-primary hover:text-primary/80">
+                  Request Access
+                </Button>
+              </p>
             </div>
           </form>
         ) : (

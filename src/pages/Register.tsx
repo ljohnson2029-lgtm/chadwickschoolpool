@@ -66,9 +66,10 @@ const Register = () => {
       if (!checkData?.approved) {
         toast({
           title: "Email not approved",
-          description: checkData?.message || "This email is not approved for registration. Please contact an administrator.",
+          description: "This email hasn't been approved yet. Please submit an access request first.",
           variant: "destructive",
         });
+        navigate("/request-access");
         setLoading(false);
         return;
       }
@@ -477,15 +478,27 @@ const Register = () => {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
 
-              <div className="text-center text-sm">
-                <span className="text-foreground/70">Already have an account? </span>
-                <Button
-                  variant="ghost"
-                  className="p-0 h-auto font-semibold text-primary hover:text-primary/80"
-                  onClick={() => navigate("/login")}
-                >
-                  Log in
-                </Button>
+              <div className="text-center text-sm space-y-1">
+                <div>
+                  <span className="text-foreground/70">Already have an account? </span>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto font-semibold text-primary hover:text-primary/80"
+                    onClick={() => navigate("/login")}
+                  >
+                    Log in
+                  </Button>
+                </div>
+                <div>
+                  <span className="text-foreground/70">Don't have access? </span>
+                  <Button
+                    variant="ghost"
+                    className="p-0 h-auto font-semibold text-primary hover:text-primary/80"
+                    onClick={() => navigate("/request-access")}
+                  >
+                    Request Access
+                  </Button>
+                </div>
               </div>
             </form>
           )}
