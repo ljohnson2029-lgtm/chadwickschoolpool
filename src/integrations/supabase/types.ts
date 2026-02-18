@@ -16,37 +16,40 @@ export type Database = {
     Tables: {
       access_requests: {
         Row: {
+          approved_by: string | null
           created_at: string
           email: string
           full_name: string
           id: string
           reason: string | null
-          requester_type: string
           reviewed_at: string | null
           status: string
           updated_at: string
+          user_type: string
         }
         Insert: {
+          approved_by?: string | null
           created_at?: string
           email: string
           full_name: string
           id?: string
           reason?: string | null
-          requester_type: string
           reviewed_at?: string | null
           status?: string
           updated_at?: string
+          user_type: string
         }
         Update: {
+          approved_by?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
           reason?: string | null
-          requester_type?: string
           reviewed_at?: string | null
           status?: string
           updated_at?: string
+          user_type?: string
         }
         Relationships: []
       }
@@ -94,16 +97,19 @@ export type Database = {
       }
       approved_emails: {
         Row: {
+          approved_by: string | null
           created_at: string
           email: string
           id: string
         }
         Insert: {
+          approved_by?: string | null
           created_at?: string
           email: string
           id?: string
         }
         Update: {
+          approved_by?: string | null
           created_at?: string
           email?: string
           id?: string
