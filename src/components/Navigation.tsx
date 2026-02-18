@@ -20,6 +20,8 @@ const Navigation = () => {
   const [isParent, setIsParent] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingAccessRequests, setPendingAccessRequests] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,6 +41,8 @@ const Navigation = () => {
         setIsParent(false);
         setUserRole(null);
         setPendingRequestsCount(0);
+        setIsAdmin(false);
+        setPendingAccessRequests(0);
         return;
       }
       
@@ -55,6 +59,22 @@ const Navigation = () => {
         if (data.role === 'parent') {
           fetchPendingRequests();
         }
+      }
+
+      // Check admin status via edge function
+      try {
+        const { data: adminData, error } = await supabase.functions.invoke("manage-access-requests", {
+          method: "GET",
+        });
+        if (!error && adminData?.requests) {
+          setIsAdmin(true);
+          const pending = (adminData.requests as any[]).filter((r: any) => r.status === 'pending').length;
+          setPendingAccessRequests(pending);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch {
+        setIsAdmin(false);
       }
     };
     
@@ -289,6 +309,21 @@ const Navigation = () => {
                     {item.label}
                   </DropdownMenuItem>
                 ))}
+                {isAdmin && (
+                  <DropdownMenuItem
+                    onClick={() => navigate("/admin/approvals")}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>Admin</span>
+                      {pendingAccessRequests > 0 && (
+                        <Badge variant="destructive" className="ml-2">
+                          {pendingAccessRequests}
+                        </Badge>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -344,6 +379,20 @@ const Navigation = () => {
                 </button>
               );
             })}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  navigate("/admin/approvals");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-between w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
+              >
+                <span>Admin</span>
+                {pendingAccessRequests > 0 && (
+                  <Badge variant="destructive">{pendingAccessRequests}</Badge>
+                )}
+              </button>
+            )}
             
             <div className="pt-4 space-y-3">
               {user ? (
