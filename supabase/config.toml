@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.submit-access-request]
 verify_jwt = false
+
+[functions.manage-access-requests]
+verify_jwt = false
