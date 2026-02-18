@@ -28,10 +28,10 @@ serve(async (req) => {
       });
     }
 
-    const { email, full_name, requester_type, reason } = await req.json();
+    const { email, full_name, requester_type: user_type, reason } = await req.json();
 
     // Validate
-    if (!email || !full_name || !requester_type) {
+    if (!email || !full_name || !user_type) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -47,8 +47,8 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!["parent", "student"].includes(requester_type)) {
-      return new Response(JSON.stringify({ error: "Invalid requester type" }), {
+    if (!["parent", "student"].includes(user_type)) {
+      return new Response(JSON.stringify({ error: "Invalid user type" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -76,7 +76,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase.from("access_requests").insert({
       email: email.toLowerCase().trim(),
       full_name: full_name.trim(),
-      requester_type,
+      user_type,
       reason: reason?.trim() || null,
     });
 
@@ -87,7 +87,7 @@ serve(async (req) => {
     if (RESEND_API_KEY) {
       const escapeHtml = (t: string) => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
       const adminEmails = ["luke.r.johnson.2010@gmail.com", "efang508@gmail.com"];
-      const typeLabel = requester_type === "parent" ? "Chadwick Parent" : "Chadwick Student";
+      const typeLabel = user_type === "parent" ? "Chadwick Parent" : "Chadwick Student";
 
       await fetch("https://api.resend.com/emails", {
         method: "POST",
