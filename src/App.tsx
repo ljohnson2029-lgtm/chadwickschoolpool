@@ -39,6 +39,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Help = lazy(() => import("./pages/Help"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const RequestAccess = lazy(() => import("./pages/RequestAccess"));
 
 // Loading component for lazy loaded pages
 const PageLoader = () => (
@@ -115,6 +116,7 @@ const AppRoutes = () => {
         {/* Public profile view */}
         <Route path="/profile/:userId" element={<PublicProfile />} />
         
+        <Route path="/request-access" element={<RequestAccess />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

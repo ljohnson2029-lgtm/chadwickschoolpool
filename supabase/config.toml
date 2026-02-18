@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.auth-create-account]
 verify_jwt = false
+
+[functions.submit-access-request]
+verify_jwt = false
