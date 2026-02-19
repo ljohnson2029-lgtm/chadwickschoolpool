@@ -19,7 +19,8 @@ const requestSchema = z.object({
   email: z.string().trim().email("Please enter a valid email address").max(254),
   full_name: z.string().trim().min(1, "Full name is required").max(100),
   requester_type: z.enum(["parent", "student"], { required_error: "Please select your role" }),
-  reason: z.string().trim().max(500).optional(),
+  attends_chadwick: z.enum(["yes", "no"], { required_error: "Please answer this question" }),
+  reason: z.string().trim().min(1, "Please tell us why you need access").max(500),
 });
 
 type RequestFormValues = z.infer<typeof requestSchema>;
@@ -151,10 +152,37 @@ const RequestAccess = () => {
 
                 <FormField
                   control={form.control}
+                  name="attends_chadwick"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Do you or your child attend Chadwick School? *</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-col space-y-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="chadwick-yes" />
+                            <Label htmlFor="chadwick-yes">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="chadwick-no" />
+                            <Label htmlFor="chadwick-no">No</Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="reason"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Why do you need access? (optional)</FormLabel>
+                      <FormLabel>Why do you need access? *</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Tell us briefly why you'd like to join SchoolPool..."
