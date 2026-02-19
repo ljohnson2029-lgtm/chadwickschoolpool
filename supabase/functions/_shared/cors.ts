@@ -4,11 +4,13 @@
 const ALLOWED_ORIGINS = [
   'https://chadwickschoolpool.lovable.app',
   'https://id-preview--0448966d-bdd1-486b-a1ee-cd456b9f1300.lovable.app',
+  'https://chadwickschoolpool.org',
+  'https://www.chadwickschoolpool.org',
 ];
 
 export function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') || '';
-  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com'));
+  const isAllowed = ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.endsWith('.lovable.app') || origin.endsWith('.lovableproject.com') || origin.endsWith('chadwickschoolpool.org'));
 
   return {
     'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0],
