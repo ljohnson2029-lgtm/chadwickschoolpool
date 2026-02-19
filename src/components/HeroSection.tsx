@@ -38,7 +38,7 @@ const HeroSection = () => {
             }}
             size="lg"
             variant="outline"
-            className="text-lg px-10 py-6 rounded-full border-2 border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-300 font-semibold"
+            className="text-lg px-10 py-6 rounded-full border-2 border-primary-foreground/40 text-primary-foreground bg-transparent hover:bg-primary-foreground/10 transition-all duration-300 font-semibold"
           >
             Learn More
           </Button>
