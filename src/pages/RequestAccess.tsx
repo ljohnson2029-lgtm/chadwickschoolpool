@@ -41,14 +41,40 @@ const RequestAccess = () => {
   const onSubmit = async (values: RequestFormValues) => {
     setSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke("submit-access-request", {
+      const { data, error } = await supabase.functions.invoke("submit-access-request", {
         body: values,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to extract a meaningful message from the error
+        let message = "Failed to submit request. Please try again.";
+        if (error instanceof Error) {
+          // For FunctionsHttpError, try to get the response body
+          const context = (error as any).context;
+          if (context && typeof context.json === 'function') {
+            try {
+              const errorBody = await context.json();
+              message = errorBody?.error || message;
+            } catch {
+              // ignore parse error
+            }
+          } else {
+            message = error.message || message;
+          }
+        }
+        toast({ title: "Error", description: message, variant: "destructive" });
+        return;
+      }
+
+      // Also check if data contains an error (edge function returned 200 but with error in body)
+      if (data && typeof data === 'object' && data.error) {
+        toast({ title: "Error", description: data.error, variant: "destructive" });
+        return;
+      }
 
       setSubmitted(true);
     } catch (err: any) {
+      console.error("Submit access request error:", err);
       toast({
         title: "Error",
         description: err?.message || "Failed to submit request. Please try again.",
