@@ -29,7 +29,7 @@ const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
   onToggleHome,
   onToggleSchool,
   requestCount = 0,
-  offerCount = 0,
+  offerCount = 0
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -58,96 +58,96 @@ const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
           variant="ghost"
           size="sm"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full h-6 px-1 flex items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
+          className="w-full h-6 px-1 flex items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground">
+          
           <span className="flex items-center gap-1.5">
             <Filter className="h-3 w-3" />
             Filters
           </span>
-          {isCollapsed ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronUp className="h-3 w-3" />
-          )}
+          {isCollapsed ?
+          <ChevronDown className="h-3 w-3" /> :
+
+          <ChevronUp className="h-3 w-3" />
+          }
         </Button>
 
-        {!isCollapsed && (
-          <div className="space-y-1.5 pt-1 border-t border-border">
+        {!isCollapsed &&
+        <div className="space-y-1.5 pt-1 border-t border-border">
             {/* Ride Offers (green, listed first) */}
             <div className="flex items-center gap-2">
               <Checkbox
-                id="filter-offers"
-                checked={showOffers}
-                onCheckedChange={(checked) => onToggleOffers(checked === true)}
-                className="h-3.5 w-3.5 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-              />
+              id="filter-offers"
+              checked={showOffers}
+              onCheckedChange={(checked) => onToggleOffers(checked === true)}
+              className="h-3.5 w-3.5 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" />
+            
               <Label
-                htmlFor="filter-offers"
-                className="flex items-center gap-1.5 text-xs cursor-pointer flex-1"
-              >
+              htmlFor="filter-offers"
+              className="flex items-center gap-1.5 text-xs cursor-pointer flex-1">
+              
                 <div className="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center">
                   <Car className="h-2 w-2 text-white" />
                 </div>
                 <span>Ride Offers</span>
-                {offerCount > 0 && (
-                  <span className="text-[10px] text-muted-foreground">({offerCount})</span>
-                )}
+                {offerCount > 0 &&
+              <span className="text-[10px] text-muted-foreground">({offerCount})</span>
+              }
               </Label>
             </div>
 
             {/* Ride Requests (red) */}
             <div className="flex items-center gap-2">
               <Checkbox
-                id="filter-requests"
-                checked={showRequests}
-                onCheckedChange={(checked) => onToggleRequests(checked === true)}
-                className="h-3.5 w-3.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-              />
+              id="filter-requests"
+              checked={showRequests}
+              onCheckedChange={(checked) => onToggleRequests(checked === true)}
+              className="h-3.5 w-3.5 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500" />
+            
               <Label
-                htmlFor="filter-requests"
-                className="flex items-center gap-1.5 text-xs cursor-pointer flex-1"
-              >
+              htmlFor="filter-requests"
+              className="flex items-center gap-1.5 text-xs cursor-pointer flex-1">
+              
                 <div className="w-3 h-3 rounded-full bg-red-500 flex items-center justify-center">
                   <Hand className="h-2 w-2 text-white" />
                 </div>
                 <span>Ride Requests</span>
-                {requestCount > 0 && (
-                  <span className="text-[10px] text-muted-foreground">({requestCount})</span>
-                )}
+                {requestCount > 0 &&
+              <span className="text-[10px] text-muted-foreground">({requestCount})</span>
+              }
               </Label>
             </div>
 
             {/* Family Homes (blue) */}
             <div className="flex items-center gap-2 pt-1 border-t border-border/50">
               <Checkbox
-                id="filter-home"
-                checked={showHome}
-                onCheckedChange={(checked) => onToggleHome(checked === true)}
-                className="h-3.5 w-3.5 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-              />
+              id="filter-home"
+              checked={showHome}
+              onCheckedChange={(checked) => onToggleHome(checked === true)}
+              className="h-3.5 w-3.5 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500" />
+            
               <Label
-                htmlFor="filter-home"
-                className="flex items-center gap-1.5 text-xs cursor-pointer"
-              >
+              htmlFor="filter-home"
+              className="flex items-center gap-1.5 text-xs cursor-pointer">
+              
                 <div className="w-3 h-3 rounded-full bg-blue-500 flex items-center justify-center">
                   <Home className="h-2 w-2 text-white" />
                 </div>
-                <span>Family Homes</span>
+                <span>Your Home</span>
               </Label>
             </div>
 
             {/* School (orange) */}
             <div className="flex items-center gap-2">
               <Checkbox
-                id="filter-school"
-                checked={showSchool}
-                onCheckedChange={(checked) => onToggleSchool(checked === true)}
-                className="h-3.5 w-3.5 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-              />
+              id="filter-school"
+              checked={showSchool}
+              onCheckedChange={(checked) => onToggleSchool(checked === true)}
+              className="h-3.5 w-3.5 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500" />
+            
               <Label
-                htmlFor="filter-school"
-                className="flex items-center gap-1.5 text-xs cursor-pointer"
-              >
+              htmlFor="filter-school"
+              className="flex items-center gap-1.5 text-xs cursor-pointer">
+              
                 <div className="w-3 h-3 rounded-full bg-orange-500 flex items-center justify-center">
                   <School className="h-2 w-2 text-white" />
                 </div>
@@ -158,31 +158,31 @@ const MapFilterPanel: React.FC<MapFilterPanelProps> = ({
             {/* Show All / Hide All */}
             <div className="flex gap-1.5 pt-1.5 border-t border-border/50">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShowAll}
-                disabled={allOn}
-                className="flex-1 h-6 text-[10px] px-1.5 gap-1"
-              >
+              variant="outline"
+              size="sm"
+              onClick={handleShowAll}
+              disabled={allOn}
+              className="flex-1 h-6 text-[10px] px-1.5 gap-1">
+              
                 <Eye className="h-2.5 w-2.5" />
                 Show All
               </Button>
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleHideAll}
-                disabled={allOff}
-                className="flex-1 h-6 text-[10px] px-1.5 gap-1"
-              >
+              variant="outline"
+              size="sm"
+              onClick={handleHideAll}
+              disabled={allOff}
+              className="flex-1 h-6 text-[10px] px-1.5 gap-1">
+              
                 <EyeOff className="h-2.5 w-2.5" />
                 Hide All
               </Button>
             </div>
           </div>
-        )}
+        }
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 };
 
 export default MapFilterPanel;
