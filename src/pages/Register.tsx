@@ -528,7 +528,7 @@ const Register = () => {
                     ) : (
                       <>
                         <p className="text-sm font-semibold text-foreground mb-2">
-                          👨‍👩‍👧 Parent/Staff Email Detected!
+                          👨‍👩‍👧 Parent Email Detected!
                         </p>
                         <p className="text-sm text-muted-foreground mb-2">
                           Check your email for the verification code.
