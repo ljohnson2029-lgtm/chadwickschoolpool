@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users } from "lucide-react";
+import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle } from "lucide-react";
 
 interface Child {
   first_name: string;
@@ -20,13 +20,48 @@ interface Child {
   grade_level: string;
 }
 
+/* ── Validation helpers ──────────────────────────── */
+
+const isValidPhone = (phone: string) => phone.replace(/\D/g, "").length >= 10;
+const isMinLength = (val: string, min: number) => val.trim().length >= min;
+
+interface FieldError {
+  show: boolean;
+  message: string;
+}
+
+const FieldErrorMessage = ({ error }: { error?: FieldError }) => {
+  if (!error?.show) return null;
+  return (
+    <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      {error.message}
+    </p>
+  );
+};
+
+const RequiredLabel = ({ children, icon, htmlFor }: { children: React.ReactNode; icon?: React.ReactNode; htmlFor?: string }) => (
+  <Label htmlFor={htmlFor} className="flex items-center gap-1">
+    {icon} {children} <span className="text-destructive">*</span>
+  </Label>
+);
+
+const OptionalLabel = ({ children, icon, htmlFor }: { children: React.ReactNode; icon?: React.ReactNode; htmlFor?: string }) => (
+  <Label htmlFor={htmlFor} className="flex items-center gap-1">
+    {icon} {children}
+  </Label>
+);
+
 const ProfileSetup = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const formRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState(1);
   const totalSteps = 3;
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // Profile fields
   const [firstName, setFirstName] = useState("");
@@ -62,19 +97,13 @@ const ProfileSetup = () => {
   const isParent = profile?.account_type === "parent";
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
-    }
+    if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
 
-  // If profile is already complete, redirect to dashboard
   useEffect(() => {
-    if (profile?.profile_complete) {
-      navigate("/dashboard");
-    }
+    if (profile?.profile_complete) navigate("/dashboard");
   }, [profile, navigate]);
 
-  // Pre-fill from existing profile
   useEffect(() => {
     if (profile) {
       setFirstName(profile.first_name || "");
@@ -83,24 +112,78 @@ const ProfileSetup = () => {
       setHomeAddress(profile.home_address || "");
       setHomeLatitude(profile.home_latitude || null);
       setHomeLongitude(profile.home_longitude || null);
-      if (!isParent) {
-        setGradeLevel(profile.grade_level || "");
-      }
+      if (!isParent) setGradeLevel(profile.grade_level || "");
     }
   }, [profile, isParent]);
+
+  const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
 
   const handleAddressSelect = (address: string, lat: number, lng: number) => {
     setHomeAddress(address);
     setHomeLatitude(lat);
     setHomeLongitude(lng);
+    markTouched("address");
   };
+
+  /* ── Field-level validation ─────────────────────── */
+
+  const getFieldError = (field: string): FieldError => {
+    const show = touched[field] || attemptedSubmit;
+    switch (field) {
+      case "firstName":
+        if (!isMinLength(firstName, 2)) return { show, message: "First name must be at least 2 characters" };
+        break;
+      case "lastName":
+        if (!isMinLength(lastName, 2)) return { show, message: "Last name must be at least 2 characters" };
+        break;
+      case "phone":
+        if (!phoneNumber.trim()) return { show, message: "This field is required" };
+        if (!isValidPhone(phoneNumber)) return { show, message: "Phone must be at least 10 digits" };
+        break;
+      case "address":
+        if (!homeAddress || !homeLatitude || !homeLongitude) return { show, message: "Please select an address from the dropdown" };
+        break;
+      case "gradeLevel":
+        if (!gradeLevel) return { show, message: "This field is required" };
+        break;
+      case "carMake":
+        if (!carMake.trim()) return { show, message: "This field is required" };
+        break;
+      case "carModel":
+        if (!carModel.trim()) return { show, message: "This field is required" };
+        break;
+    }
+    return { show: false, message: "" };
+  };
+
+  const hasError = (field: string) => {
+    const err = getFieldError(field);
+    return err.show && err.message.length > 0;
+  };
+
+  const errorInputClass = (field: string) => hasError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
   /* ── Step 2 validation ─────────────────────────── */
   const isStep2Valid = () => {
-    if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim()) return false;
+    if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
+    if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
     if (!homeAddress || !homeLatitude || !homeLongitude) return false;
     if (!isParent && !gradeLevel) return false;
+    if (isParent && (!carMake.trim() || !carModel.trim())) return false;
     return true;
+  };
+
+  const handleAttemptContinue = () => {
+    setAttemptedSubmit(true);
+    if (!isStep2Valid()) {
+      // Scroll to first error
+      setTimeout(() => {
+        const firstError = formRef.current?.querySelector(".text-destructive.text-sm");
+        firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      return;
+    }
+    handleSaveProfile();
   };
 
   /* ── Save profile (Step 2 → 3) ─────────────────── */
@@ -142,7 +225,6 @@ const ProfileSetup = () => {
 
       if (profileError) throw profileError;
 
-      // Sync to users table
       await supabase
         .from("users")
         .update({
@@ -152,7 +234,6 @@ const ProfileSetup = () => {
         })
         .eq("user_id", user.id);
 
-      // Save children for parents
       if (isParent) {
         await supabase.from("children").delete().eq("user_id", user.id);
         const validChildren = children.filter(c => c.first_name && c.age);
@@ -186,24 +267,17 @@ const ProfileSetup = () => {
 
     try {
       const normalizedEmail = linkEmail.toLowerCase().trim();
-
-      // Look up the target user
       const { data: targetData, error: lookupError } = await supabase.functions.invoke("lookup-parent", {
         body: { email: normalizedEmail },
       });
 
       if (lookupError || !targetData?.userId) {
-        toast({
-          title: "User not found",
-          description: "No account found with that email address.",
-          variant: "destructive",
-        });
+        toast({ title: "User not found", description: "No account found with that email address.", variant: "destructive" });
         setLinkSending(false);
         return;
       }
 
       if (isParent) {
-        // Parent linking to student
         const { error } = await supabase.from("account_links").insert({
           parent_id: user.id,
           student_id: targetData.userId,
@@ -211,7 +285,6 @@ const ProfileSetup = () => {
         });
         if (error) throw error;
       } else {
-        // Student linking to parent
         const { error } = await supabase.from("account_links").insert({
           student_id: user.id,
           parent_id: targetData.userId,
@@ -243,7 +316,6 @@ const ProfileSetup = () => {
       if (error) throw error;
 
       toast({ title: "Welcome!", description: "Your profile is complete. Enjoy the app!" });
-      // Force reload to refresh profile in context
       window.location.href = "/dashboard";
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -275,6 +347,9 @@ const ProfileSetup = () => {
             {step === 3 && "Link Accounts"}
           </p>
           <Progress value={progressPercent} className="mt-4" />
+          {step === 2 && (
+            <p className="text-xs text-muted-foreground mt-2">Required fields marked with <span className="text-destructive">*</span></p>
+          )}
         </div>
 
         {/* Step 1: Welcome */}
@@ -284,9 +359,7 @@ const ProfileSetup = () => {
               <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                 {isParent ? <User className="h-8 w-8 text-primary" /> : <GraduationCap className="h-8 w-8 text-primary" />}
               </div>
-              <CardTitle className="text-2xl">
-                Welcome, {profile.username}!
-              </CardTitle>
+              <CardTitle className="text-2xl">Welcome, {profile.username}!</CardTitle>
               <CardDescription className="text-base">
                 Your {isParent ? "parent" : "student"} account has been created. Let's set up your profile so you can start using the app.
               </CardDescription>
@@ -301,7 +374,7 @@ const ProfileSetup = () => {
 
         {/* Step 2: Profile Information */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className="space-y-6" ref={formRef}>
             {/* Personal Info */}
             <Card>
               <CardHeader>
@@ -312,23 +385,46 @@ const ProfileSetup = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>First Name <span className="text-destructive">*</span></Label>
-                    <Input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" />
+                    <RequiredLabel htmlFor="firstName">First Name</RequiredLabel>
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={e => setFirstName(e.target.value)}
+                      onBlur={() => markTouched("firstName")}
+                      placeholder="First name"
+                      className={errorInputClass("firstName")}
+                    />
+                    <FieldErrorMessage error={getFieldError("firstName")} />
                   </div>
                   <div>
-                    <Label>Last Name <span className="text-destructive">*</span></Label>
-                    <Input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" />
+                    <RequiredLabel htmlFor="lastName">Last Name</RequiredLabel>
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={e => setLastName(e.target.value)}
+                      onBlur={() => markTouched("lastName")}
+                      placeholder="Last name"
+                      className={errorInputClass("lastName")}
+                    />
+                    <FieldErrorMessage error={getFieldError("lastName")} />
                   </div>
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                  <OptionalLabel icon={<Mail className="h-3.5 w-3.5" />}>Email</OptionalLabel>
                   <Input value={user.email || ""} disabled className="bg-muted" />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1">
-                    <Phone className="h-3.5 w-3.5" /> Phone Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Input type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="(555) 123-4567" />
+                  <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={e => setPhoneNumber(e.target.value)}
+                    onBlur={() => markTouched("phone")}
+                    placeholder="(555) 123-4567"
+                    className={errorInputClass("phone")}
+                  />
+                  <FieldErrorMessage error={getFieldError("phone")} />
                 </div>
               </CardContent>
             </Card>
@@ -341,16 +437,20 @@ const ProfileSetup = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <AddressAutocompleteInput
-                  value={homeAddress}
-                  onAddressSelect={handleAddressSelect}
-                  placeholder="Enter your home address"
-                  required
-                />
-                {homeLatitude && homeLongitude && (
+                <div className={hasError("address") ? "[&_input]:border-destructive" : ""}>
+                  <AddressAutocompleteInput
+                    value={homeAddress}
+                    onAddressSelect={handleAddressSelect}
+                    placeholder="Enter your home address"
+                    required
+                  />
+                </div>
+                {homeLatitude && homeLongitude ? (
                   <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Address verified
                   </p>
+                ) : (
+                  <FieldErrorMessage error={getFieldError("address")} />
                 )}
               </CardContent>
             </Card>
@@ -364,14 +464,19 @@ const ProfileSetup = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                    <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
-                    <SelectContent>
-                      {GRADE_LEVELS.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    <Select value={gradeLevel} onValueChange={v => { setGradeLevel(v); markTouched("gradeLevel"); }}>
+                      <SelectTrigger className={hasError("gradeLevel") ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GRADE_LEVELS.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldErrorMessage error={getFieldError("gradeLevel")} />
+                  </div>
                   <div>
                     <Label>Parent/Guardian Name</Label>
                     <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
@@ -408,25 +513,41 @@ const ProfileSetup = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Car Make</Label>
-                        <Input value={carMake} onChange={e => setCarMake(e.target.value)} placeholder="e.g. Toyota" />
+                        <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
+                        <Input
+                          id="carMake"
+                          value={carMake}
+                          onChange={e => setCarMake(e.target.value)}
+                          onBlur={() => markTouched("carMake")}
+                          placeholder="e.g. Toyota"
+                          className={errorInputClass("carMake")}
+                        />
+                        <FieldErrorMessage error={getFieldError("carMake")} />
                       </div>
                       <div>
-                        <Label>Car Model</Label>
-                        <Input value={carModel} onChange={e => setCarModel(e.target.value)} placeholder="e.g. Camry" />
+                        <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
+                        <Input
+                          id="carModel"
+                          value={carModel}
+                          onChange={e => setCarModel(e.target.value)}
+                          onBlur={() => markTouched("carModel")}
+                          placeholder="e.g. Camry"
+                          className={errorInputClass("carModel")}
+                        />
+                        <FieldErrorMessage error={getFieldError("carModel")} />
                       </div>
                       <div>
-                        <Label>Car Color</Label>
-                        <Input value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
+                        <Label htmlFor="carColor">Car Color</Label>
+                        <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
                       </div>
                       <div>
-                        <Label>License Plate</Label>
-                        <Input value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
+                        <Label htmlFor="licensePlate">License Plate</Label>
+                        <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
                       </div>
                     </div>
                     <div>
-                      <Label>Available Seats</Label>
-                      <Input type="number" min="1" max="8" value={carSeats} onChange={e => setCarSeats(e.target.value)} placeholder="Number of seats" />
+                      <OptionalLabel htmlFor="carSeats">Available Seats</OptionalLabel>
+                      <Input id="carSeats" type="number" min="1" max="8" value={carSeats} onChange={e => setCarSeats(e.target.value)} placeholder="Number of seats (optional)" />
                     </div>
                   </CardContent>
                 </Card>
@@ -490,8 +611,9 @@ const ProfileSetup = () => {
               </Button>
               <Button
                 className="flex-1 gap-2"
-                disabled={!isStep2Valid() || saving}
-                onClick={handleSaveProfile}
+                disabled={saving}
+                onClick={handleAttemptContinue}
+                variant={isStep2Valid() ? "default" : "secondary"}
               >
                 {saving ? "Saving..." : "Save & Continue"} <ArrowRight className="h-4 w-4" />
               </Button>
@@ -517,6 +639,9 @@ const ProfileSetup = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  You can skip this step and link accounts later in your Profile settings.
+                </p>
                 {linkSent ? (
                   <div className="text-center space-y-3">
                     <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
@@ -527,9 +652,7 @@ const ProfileSetup = () => {
                 ) : (
                   <div className="space-y-3">
                     <div>
-                      <Label>
-                        {isParent ? "Child's Email" : "Parent's Email"}
-                      </Label>
+                      <Label>{isParent ? "Child's Email" : "Parent's Email"}</Label>
                       <Input
                         type="email"
                         value={linkEmail}
