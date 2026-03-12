@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Link, Shield } from 'lucide-react';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Shield } from 'lucide-react';
 import { TopConnections } from '@/components/TopConnections';
 import { supabase } from '@/integrations/supabase/client';
 import TabNavigation from '@/components/TabNavigation';
@@ -12,6 +12,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { SignOutDialog } from "@/components/ConfirmDialogs";
+import FamilyLinksSection from "@/components/FamilyLinksSection";
+import { Separator } from "@/components/ui/separator";
 
 interface LinkedStudent {
   student_id: string;
@@ -38,35 +40,28 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserRole = async () => {
       if (!user) return;
-      
       const { data } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
-      
       setUserRole(data?.role || null);
     };
-
     fetchUserRole();
   }, [user]);
 
   useEffect(() => {
     const fetchLinkedChildren = async () => {
       if (!user || !profile) return;
-      
       const { data, error } = await supabase.rpc('get_linked_students', {
         parent_user_id: user.id
       });
-
       if (error) {
         console.error('Error fetching linked children:', error);
         return;
       }
-
       setLinkedChildren(data || []);
     };
-
     if (profile?.account_type === 'parent') {
       fetchLinkedChildren();
     }
@@ -76,10 +71,6 @@ const Profile = () => {
     setSigningOut(true);
     await logout();
     navigate('/');
-  };
-
-  const openSignOutDialog = () => {
-    setSignOutDialogOpen(true);
   };
 
   if (loading || !user || !profile) {
@@ -108,13 +99,14 @@ const Profile = () => {
               <Button onClick={() => navigate('/profile/setup')} variant="outline">
                 Edit Profile
               </Button>
-              <Button onClick={openSignOutDialog} variant="outline">
+              <Button onClick={() => setSignOutDialogOpen(true)} variant="outline">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </Button>
             </div>
           </div>
 
+          {/* Personal Information */}
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -130,15 +122,9 @@ const Profile = () => {
                     }`}
                   >
                     {isChild ? (
-                      <>
-                        <GraduationCap className="h-3 w-3" />
-                        Child Account
-                      </>
+                      <><GraduationCap className="h-3 w-3" />Child Account</>
                     ) : (
-                      <>
-                        <Users className="h-3 w-3" />
-                        Parent Account
-                      </>
+                      <><Users className="h-3 w-3" />Parent Account</>
                     )}
                   </Badge>
                 </div>
@@ -198,11 +184,7 @@ const Profile = () => {
                     <p className="text-xs text-muted-foreground mt-1">
                       Add your home address to use map features and find carpool partners.
                     </p>
-                    <Button 
-                      size="sm" 
-                      className="mt-2"
-                      onClick={() => navigate('/profile/setup')}
-                    >
+                    <Button size="sm" className="mt-2" onClick={() => navigate('/profile/setup')}>
                       Add Address
                     </Button>
                   </div>
@@ -228,32 +210,10 @@ const Profile = () => {
                   </p>
                 </div>
               </div>
-
-              {isParent && linkedChildren.length > 0 && (
-                <>
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <GraduationCap className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-sm font-medium text-muted-foreground">Linked Children</p>
-                    </div>
-                    <div className="space-y-2 ml-8">
-                      {linkedChildren.map((child) => (
-                        <div key={child.student_id} className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600">
-                            {child.student_first_name} {child.student_last_name}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            ({child.student_email})
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
 
+          {/* Vehicle Information */}
           {isParent && (profile.car_make || profile.car_model) && (
             <Card>
               <CardHeader>
@@ -277,27 +237,23 @@ const Profile = () => {
             </Card>
           )}
 
-          {isChild && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Link className="h-5 w-5" />
-                  Family Links
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Connect with your parent's account to view their carpool schedules
-                </p>
-                <Button onClick={() => navigate('/family-links')}>
-                  <Link className="mr-2 h-4 w-4" />
-                  Manage Family Links
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Family Links Section - embedded directly */}
+          <Separator />
+          <div>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <Users className="h-6 w-6" />
+              Family Links
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {isChild
+                ? "Connect with your parent's account to let them schedule rides for you"
+                : "Review and manage students linked to your account"
+              }
+            </p>
+            <FamilyLinksSection />
+          </div>
 
-          {/* Frequent Carpool Partners — only visible to the user themselves */}
+          {/* Frequent Carpool Partners */}
           <TopConnections limit={3} variant="profile" />
 
           {!profile.home_address && (
