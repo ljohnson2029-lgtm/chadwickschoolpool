@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Radio, MapPin, Car, Calendar, Link2, User, Menu, MessageSquarePlus } from "lucide-react";
+import { Home, Car, Calendar, User, Menu, MessageSquarePlus, Info, Shield, HelpCircle, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -21,44 +21,22 @@ const MobileBottomNav = () => {
   const isActive = (path: string) => location.pathname === path;
   const isStudent = profile?.account_type === "student";
 
-  // Parent tabs for bottom nav (4 main + 1 more)
-  const parentTabs = [
-    { label: "Home", path: "/dashboard", icon: Home },
-    { label: "Find", path: "/find-rides", icon: Radio },
-    { label: "Map", path: "/map/find-parents", icon: MapPin },
-    { label: "Rides", path: "/my-rides", icon: Car },
-  ];
-
-  // Student tabs
-  const studentTabs = [
+  // 4 visible tabs + More menu
+  const mainTabs = [
     { label: "Home", path: "/dashboard", icon: Home },
     { label: "Carpools", path: "/family-carpools", icon: Calendar },
-    { label: "Link", path: "/family-links", icon: Link2 },
+    ...(!isStudent ? [{ label: "My Rides", path: "/my-rides", icon: Car }] : []),
     { label: "Profile", path: "/profile", icon: User },
   ];
 
-  const mainTabs = isStudent ? studentTabs : parentTabs;
-
-  // Overflow menu items
-  const parentMenuItems = [
-    { label: "Profile", path: "/profile", icon: User },
-    { label: "Conversations", path: "/conversations" },
-    { label: "Family Links", path: "/family-links" },
+  // Hamburger/More menu items
+  const menuItems = [
     { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
-    { label: "Settings", path: "/settings" },
-    { label: "About", path: "/about" },
-    { label: "Safety", path: "/safety" },
-    { label: "How It Works", path: "/how-it-works" },
+    { label: "About", path: "/about", icon: Info },
+    { label: "Safety", path: "/safety", icon: Shield },
+    { label: "How It Works", path: "/how-it-works", icon: HelpCircle },
+    { label: "Settings", path: "/settings", icon: Settings },
   ];
-
-  const studentMenuItems = [
-    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
-    { label: "Settings", path: "/settings" },
-    { label: "About", path: "/about" },
-    { label: "Safety", path: "/safety" },
-  ];
-
-  const menuItems = isStudent ? studentMenuItems : parentMenuItems;
 
   if (!user) return null;
 
@@ -98,19 +76,23 @@ const MobileBottomNav = () => {
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
             <div className="grid gap-2 pb-8">
-              {menuItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  className="w-full justify-start h-12 text-base"
-                  onClick={() => {
-                    navigate(item.path);
-                    setSheetOpen(false);
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.path}
+                    variant="ghost"
+                    className="w-full justify-start h-12 text-base gap-3"
+                    onClick={() => {
+                      navigate(item.path);
+                      setSheetOpen(false);
+                    }}
+                  >
+                    {Icon && <Icon className="h-5 w-5" />}
+                    {item.label}
+                  </Button>
+                );
+              })}
             </div>
           </SheetContent>
         </Sheet>

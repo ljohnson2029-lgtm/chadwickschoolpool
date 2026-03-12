@@ -5,18 +5,14 @@ import {
   Menu,
   Car,
   User,
-  Users as UsersIcon,
   Home,
-  Radio,
-  Plus,
-  MessageSquare,
-  MapPin,
-  Send,
-  Link2,
-  Settings,
-  GraduationCap,
   Calendar,
+  GraduationCap,
   MessageSquarePlus,
+  Info,
+  Shield,
+  HelpCircle,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -36,44 +32,22 @@ const TabNavigation = () => {
   const isActive = (path: string) => location.pathname === path;
   const isStudent = profile?.account_type === 'student';
 
-  // Parent tabs
-  const parentTabs = [
+  // 5 tabs: Dashboard, Family Carpools, My Rides, Profile, Hamburger
+  const mainTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
     { label: "Family Carpools", path: "/family-carpools", icon: Calendar },
-    { label: "My Rides", path: "/my-rides", icon: Car },
-  ];
-
-  // Student tabs - restricted
-  const studentTabs = [
-    { label: "Dashboard", path: "/dashboard", icon: Home },
-    { label: "Family Carpools", path: "/family-carpools", icon: Calendar },
-    { label: "Link to Parent", path: "/family-links", icon: Link2 },
-  ];
-
-  const mainTabs = isStudent ? studentTabs : parentTabs;
-
-  // Parent menu items
-  const parentMenuItems = [
+    ...(!isStudent ? [{ label: "My Rides", path: "/my-rides", icon: Car }] : []),
     { label: "Profile", path: "/profile", icon: User },
-    { label: "Conversations", path: "/conversations", icon: MessageSquare },
-    { label: "Family Links", path: "/family-links", icon: UsersIcon },
+  ];
+
+  // Hamburger menu items
+  const menuItems = [
     { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
-    { label: "About", path: "/about" },
-    { label: "Safety", path: "/safety" },
-    { label: "How It Works", path: "/how-it-works" },
+    { label: "About", path: "/about", icon: Info },
+    { label: "Safety", path: "/safety", icon: Shield },
+    { label: "How It Works", path: "/how-it-works", icon: HelpCircle },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
-
-  // Student menu items - restricted
-  const studentMenuItems = [
-    { label: "Profile", path: "/profile", icon: User },
-    { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
-    { label: "Settings", path: "/settings", icon: Settings },
-    { label: "About", path: "/about" },
-    { label: "Safety", path: "/safety" },
-  ];
-
-  const menuItems = isStudent ? studentMenuItems : parentMenuItems;
 
   const accountType = profile?.account_type;
 
@@ -139,7 +113,7 @@ const TabNavigation = () => {
             </DropdownMenu>
           </div>
 
-          {/* Right side - Theme Toggle, Account Badge & Notifications */}
+          {/* Right side */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
             {user && accountType && (
@@ -175,7 +149,6 @@ const TabNavigation = () => {
               </>
             )}
           </div>
-
         </div>
       </div>
     </nav>
