@@ -103,7 +103,7 @@ const Login = () => {
 
         // Store user info for modals
         setLoggedInUserId(authUser.id);
-        setUserAccountType((profileData?.account_type as 'student' | 'parent' | 'staff') || 'parent');
+        setUserAccountType((profileData?.account_type as 'student' | 'parent') || 'parent');
         setUserFirstName(profileData?.first_name || '');
 
         const isParentOrStaff = profileData?.account_type === 'parent' || profileData?.account_type === 'staff';
