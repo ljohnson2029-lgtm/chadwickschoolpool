@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users } from "lucide-react";
 
 interface Child {
   first_name: string;
