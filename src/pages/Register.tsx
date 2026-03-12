@@ -699,7 +699,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Waiver Checkboxes - Only for parent/staff accounts */}
+              {/* Waiver Checkboxes - Only for parent accounts */}
               {!isStudentEmail && (
                 <SignupWaiverCheckboxes
                   insuranceAgreed={insuranceAgreed}

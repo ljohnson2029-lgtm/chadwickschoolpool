@@ -106,11 +106,11 @@ const Login = () => {
         setUserAccountType((profileData?.account_type as 'student' | 'parent') || 'parent');
         setUserFirstName(profileData?.first_name || '');
 
-        const isParentOrStaff = profileData?.account_type === 'parent' || profileData?.account_type === 'staff';
+        const isParent = profileData?.account_type === 'parent';
         const needsAddress = !profileData?.home_address;
 
-        // For parents/staff without address, show address modal
-        if (isParentOrStaff && needsAddress) {
+        // For parents without address, show address modal
+        if (isParent && needsAddress) {
           setShowAddressModal(true);
           return;
         }
