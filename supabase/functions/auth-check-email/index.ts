@@ -69,7 +69,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const normalizedEmail = email.toLowerCase();
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if email already has an account (duplicate check)
+    const { data: existingUser, error: existingError } = await supabase
+      .from('users')
+      .select('user_id')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('Error checking existing user:', existingError);
+    }
+
+    if (existingUser) {
+      console.log(`Email already registered: ${normalizedEmail}`);
+      return new Response(
+        JSON.stringify({ approved: false, exists: true, message: 'An account with this email already exists. Please log in instead.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check if it's a Chadwick School email
     if (normalizedEmail.endsWith('@chadwickschool.org')) {
