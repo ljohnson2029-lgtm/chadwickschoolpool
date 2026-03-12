@@ -671,31 +671,6 @@ const Register = () => {
                 </div>
               )}
 
-              {!isStudentEmail && (
-                <div className="space-y-2">
-                  <Label>Account Type</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={userType === 'parent' ? 'default' : 'outline'}
-                      onClick={() => setUserType('parent')}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      👨‍👩‍👧‍👦 Parent
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={userType === 'staff' ? 'default' : 'outline'}
-                      onClick={() => setUserType('staff')}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      👔 Staff
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
