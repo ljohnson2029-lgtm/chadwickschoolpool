@@ -22,7 +22,7 @@ const Login = () => {
   const [actualEmail, setActualEmail] = useState('');
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [userAccountType, setUserAccountType] = useState<'student' | 'parent' | 'staff'>('parent');
+  const [userAccountType, setUserAccountType] = useState<'student' | 'parent'>('parent');
   const [userFirstName, setUserFirstName] = useState('');
   const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   
