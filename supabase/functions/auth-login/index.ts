@@ -42,7 +42,7 @@ serve(async (req) => {
     const { data: usernameUsers, error: usernameError } = await supabase
       .from('users')
       .select('*')
-      .eq('username', sanitizedInput)
+      .ilike('username', sanitizedInput)
       .limit(1);
 
     if (usernameError) {
