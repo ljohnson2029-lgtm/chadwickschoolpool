@@ -24,6 +24,7 @@ interface Profile {
   parent_guardian_name: string | null;
   parent_guardian_phone: string | null;
   parent_guardian_email: string | null;
+  profile_complete: boolean;
   created_at: string;
   updated_at: string;
 }
