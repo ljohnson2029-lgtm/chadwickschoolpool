@@ -36,7 +36,7 @@ const TabNavigation = () => {
   const isActive = (path: string) => location.pathname === path;
   const isStudent = profile?.account_type === 'student';
 
-  // Parent/Staff tabs - same as students but with My Rides
+  // Parent tabs
   const parentTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
     { label: "Family Carpools", path: "/family-carpools", icon: Calendar },
