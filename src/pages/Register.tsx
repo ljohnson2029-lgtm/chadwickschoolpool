@@ -168,7 +168,7 @@ const Register = () => {
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate waivers are agreed (only for parent/staff accounts)
+    // Validate waivers are agreed (only for parent accounts)
     if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
       toast({
         title: "Agreement Required",
