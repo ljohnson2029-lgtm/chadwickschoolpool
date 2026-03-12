@@ -31,7 +31,7 @@ const Register = () => {
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameHint, setUsernameHint] = useState('');
   const [isStudentEmail, setIsStudentEmail] = useState(false);
-  const [userType, setUserType] = useState<'parent' | 'staff'>('parent');
+  // userType removed - auto-assigned by backend based on email whitelist
   
   // Waiver checkboxes state
   const [insuranceAgreed, setInsuranceAgreed] = useState(false);
