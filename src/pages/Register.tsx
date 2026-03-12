@@ -224,7 +224,6 @@ const Register = () => {
           firstName,
           lastName,
           phoneNumber: phoneNumber || null,
-          userType: isStudentEmail ? 'student' : userType,
         },
       });
 
