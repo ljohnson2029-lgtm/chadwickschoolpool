@@ -22,7 +22,7 @@ const Login = () => {
   const [actualEmail, setActualEmail] = useState('');
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [userAccountType, setUserAccountType] = useState<'student' | 'parent' | 'staff'>('parent');
+  const [userAccountType, setUserAccountType] = useState<'student' | 'parent'>('parent');
   const [userFirstName, setUserFirstName] = useState('');
   const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   
@@ -103,14 +103,14 @@ const Login = () => {
 
         // Store user info for modals
         setLoggedInUserId(authUser.id);
-        setUserAccountType((profileData?.account_type as 'student' | 'parent' | 'staff') || 'parent');
+        setUserAccountType((profileData?.account_type as 'student' | 'parent') || 'parent');
         setUserFirstName(profileData?.first_name || '');
 
-        const isParentOrStaff = profileData?.account_type === 'parent' || profileData?.account_type === 'staff';
+        const isParent = profileData?.account_type === 'parent';
         const needsAddress = !profileData?.home_address;
 
-        // For parents/staff without address, show address modal
-        if (isParentOrStaff && needsAddress) {
+        // For parents without address, show address modal
+        if (isParent && needsAddress) {
           setShowAddressModal(true);
           return;
         }

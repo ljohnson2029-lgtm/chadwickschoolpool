@@ -41,7 +41,7 @@ const helpSections = [
       },
       {
         question: "What's the difference between Student and Parent accounts?",
-        answer: "Student accounts are designed for Chadwick students to link with their parents and view family carpools. Parent/Staff accounts have full access to create carpools, find other parents on the map, and manage ride requests."
+        answer: "Student accounts are designed for Chadwick students to link with their parents and view family carpools. Parent accounts have full access to create carpools, find other parents on the map, and manage ride requests."
       },
       {
         question: "How do I link my student account to my parent?",
@@ -111,7 +111,7 @@ const helpSections = [
 const faqs = [
   {
     question: "Why can't I create carpools?",
-    answer: "Only parent and staff accounts can create and manage carpools. Student accounts can view their linked parent's carpools but cannot create their own. This is for safety and to ensure all carpools are managed by verified adults."
+    answer: "Only parent accounts can create and manage carpools. Student accounts can view their linked parent's carpools but cannot create their own. This is for safety and to ensure all carpools are managed by verified adults."
   },
   {
     question: "How do I link my child's account?",

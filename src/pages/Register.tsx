@@ -31,7 +31,7 @@ const Register = () => {
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameHint, setUsernameHint] = useState('');
   const [isStudentEmail, setIsStudentEmail] = useState(false);
-  const [userType, setUserType] = useState<'parent' | 'staff'>('parent');
+  // userType removed - auto-assigned by backend based on email whitelist
   
   // Waiver checkboxes state
   const [insuranceAgreed, setInsuranceAgreed] = useState(false);
@@ -168,7 +168,7 @@ const Register = () => {
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate waivers are agreed (only for parent/staff accounts)
+    // Validate waivers are agreed (only for parent accounts)
     if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
       toast({
         title: "Agreement Required",
@@ -224,7 +224,6 @@ const Register = () => {
           firstName,
           lastName,
           phoneNumber: phoneNumber || null,
-          userType: isStudentEmail ? 'student' : userType,
         },
       });
 
@@ -529,7 +528,7 @@ const Register = () => {
                     ) : (
                       <>
                         <p className="text-sm font-semibold text-foreground mb-2">
-                          👨‍👩‍👧 Parent/Staff Email Detected!
+                          👨‍👩‍👧 Parent Email Detected!
                         </p>
                         <p className="text-sm text-muted-foreground mb-2">
                           Check your email for the verification code.
@@ -672,31 +671,6 @@ const Register = () => {
                 </div>
               )}
 
-              {!isStudentEmail && (
-                <div className="space-y-2">
-                  <Label>Account Type</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={userType === 'parent' ? 'default' : 'outline'}
-                      onClick={() => setUserType('parent')}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      👨‍👩‍👧‍👦 Parent
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={userType === 'staff' ? 'default' : 'outline'}
-                      onClick={() => setUserType('staff')}
-                      disabled={loading}
-                      className="w-full"
-                    >
-                      👔 Staff
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -725,7 +699,7 @@ const Register = () => {
                 />
               </div>
 
-              {/* Waiver Checkboxes - Only for parent/staff accounts */}
+              {/* Waiver Checkboxes - Only for parent accounts */}
               {!isStudentEmail && (
                 <SignupWaiverCheckboxes
                   insuranceAgreed={insuranceAgreed}

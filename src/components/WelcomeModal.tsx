@@ -6,7 +6,7 @@ import { MapPin, Users, Car, Link2, Calendar, GraduationCap } from "lucide-react
 interface WelcomeModalProps {
   open: boolean;
   onClose: () => void;
-  accountType: "student" | "parent" | "staff";
+  accountType: "student" | "parent";
   firstName?: string;
 }
 
