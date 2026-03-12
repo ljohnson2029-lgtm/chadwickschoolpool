@@ -371,6 +371,7 @@ export type Database = {
           parent_guardian_name: string | null
           parent_guardian_phone: string | null
           phone_number: string | null
+          profile_complete: boolean
           share_email: boolean | null
           share_phone: boolean | null
           show_on_map: boolean | null
@@ -400,6 +401,7 @@ export type Database = {
           parent_guardian_name?: string | null
           parent_guardian_phone?: string | null
           phone_number?: string | null
+          profile_complete?: boolean
           share_email?: boolean | null
           share_phone?: boolean | null
           show_on_map?: boolean | null
@@ -429,6 +431,7 @@ export type Database = {
           parent_guardian_name?: string | null
           parent_guardian_phone?: string | null
           phone_number?: string | null
+          profile_complete?: boolean
           share_email?: boolean | null
           share_phone?: boolean | null
           show_on_map?: boolean | null
