@@ -343,7 +343,6 @@ const ProfileSetup = () => {
               <CardContent>
                 <AddressAutocompleteInput
                   value={homeAddress}
-                  onChange={setHomeAddress}
                   onAddressSelect={handleAddressSelect}
                   placeholder="Enter your home address"
                   required
