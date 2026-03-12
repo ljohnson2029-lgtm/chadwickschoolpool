@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ParentOnlyRoute from "./components/ParentOnlyRoute";
+import RequireProfileComplete from "./components/RequireProfileComplete";
 import SplashScreen from "./components/SplashScreen";
 
 // Eager load critical pages
