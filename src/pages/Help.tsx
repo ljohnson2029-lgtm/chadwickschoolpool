@@ -111,7 +111,7 @@ const helpSections = [
 const faqs = [
   {
     question: "Why can't I create carpools?",
-    answer: "Only parent and staff accounts can create and manage carpools. Student accounts can view their linked parent's carpools but cannot create their own. This is for safety and to ensure all carpools are managed by verified adults."
+    answer: "Only parent accounts can create and manage carpools. Student accounts can view their linked parent's carpools but cannot create their own. This is for safety and to ensure all carpools are managed by verified adults."
   },
   {
     question: "How do I link my child's account?",

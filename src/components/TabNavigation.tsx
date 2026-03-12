@@ -52,7 +52,7 @@ const TabNavigation = () => {
 
   const mainTabs = isStudent ? studentTabs : parentTabs;
 
-  // Parent/Staff menu items
+  // Parent menu items
   const parentMenuItems = [
     { label: "Profile", path: "/profile", icon: User },
     { label: "Conversations", path: "/conversations", icon: MessageSquare },
