@@ -63,6 +63,17 @@ const Register = () => {
         throw new Error('Failed to verify email eligibility');
       }
 
+      if (checkData?.exists) {
+        toast({
+          title: "Account already exists",
+          description: "An account with this email already exists. Please log in instead.",
+          variant: "destructive",
+        });
+        setTimeout(() => navigate("/login"), 2000);
+        setLoading(false);
+        return;
+      }
+
       if (!checkData?.approved) {
         toast({
           title: "Email not approved",
