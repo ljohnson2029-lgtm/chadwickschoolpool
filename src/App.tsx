@@ -73,56 +73,58 @@ const AppRoutes = () => {
   }
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/safety" element={<Safety />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/carpools" element={<FamilyCarpools />} />
-        <Route path="/carpools/create" element={<FamilyCarpools />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/setup" element={<ProfileSetup />} />
-        <Route path="/family-carpools" element={<FamilyCarpools />} />
-        <Route path="/verify-email" element={<EmailVerification />} />
-        <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
-        <Route path="/family-links" element={<FamilyLinks />} />
-        {/* Redirects from old routes */}
-        <Route path="/linked-accounts" element={<FamilyLinks />} />
-        <Route path="/student-linking" element={<FamilyLinks />} />
-        <Route path="/parent-approvals" element={<FamilyLinks />} />
-        <Route path="/map" element={<MapDemo />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/feedback" element={<Feedback />} />
-        
-        {/* Rides - accessible to all but with permission differences */}
-        <Route path="/find-rides" element={<FindRides />} />
-        <Route path="/post-ride" element={
-          <ParentOnlyRoute><PostRide /></ParentOnlyRoute>
-        } />
-        <Route path="/conversations" element={<Conversations />} />
-        <Route path="/my-rides" element={<MyRides />} />
-        
-        {/* Parent-only routes */}
-        <Route path="/requests/private" element={
-          <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
-        } />
-        
-        {/* Public profile view */}
-        <Route path="/profile/:userId" element={<PublicProfile />} />
-        
-        <Route path="/request-access" element={<RequestAccess />} />
-        <Route path="/admin/approvals" element={<AdminApprovals />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Suspense>
+    <RequireProfileComplete>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/safety" element={<Safety />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/carpools" element={<FamilyCarpools />} />
+          <Route path="/carpools/create" element={<FamilyCarpools />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/setup" element={<ProfileSetup />} />
+          <Route path="/family-carpools" element={<FamilyCarpools />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/admin/verified-emails" element={<AdminVerifiedEmails />} />
+          <Route path="/family-links" element={<FamilyLinks />} />
+          {/* Redirects from old routes */}
+          <Route path="/linked-accounts" element={<FamilyLinks />} />
+          <Route path="/student-linking" element={<FamilyLinks />} />
+          <Route path="/parent-approvals" element={<FamilyLinks />} />
+          <Route path="/map" element={<MapDemo />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/feedback" element={<Feedback />} />
+          
+          {/* Rides - accessible to all but with permission differences */}
+          <Route path="/find-rides" element={<FindRides />} />
+          <Route path="/post-ride" element={
+            <ParentOnlyRoute><PostRide /></ParentOnlyRoute>
+          } />
+          <Route path="/conversations" element={<Conversations />} />
+          <Route path="/my-rides" element={<MyRides />} />
+          
+          {/* Parent-only routes */}
+          <Route path="/requests/private" element={
+            <ParentOnlyRoute><MyPrivateRequests /></ParentOnlyRoute>
+          } />
+          
+          {/* Public profile view */}
+          <Route path="/profile/:userId" element={<PublicProfile />} />
+          
+          <Route path="/request-access" element={<RequestAccess />} />
+          <Route path="/admin/approvals" element={<AdminApprovals />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </RequireProfileComplete>
   );
 };
 
