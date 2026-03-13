@@ -181,10 +181,37 @@ const ProfileSetup = () => {
         if (!isParent && !parentGuardianPhone.trim()) return { show, message: "This field is required" };
         if (!isParent && parentGuardianPhone.trim() && !isValidPhone(parentGuardianPhone)) return { show, message: "Phone must be at least 10 digits" };
         break;
-      case "children":
-        if (isParent && (!children.length || !children.some(c => c.first_name.trim()))) return { show, message: "At least one child with a name is required" };
-        break;
     }
+
+    return { show: false, message: "" };
+  };
+
+  const isChildEmpty = (c: Child) => !c.first_name.trim() && !c.last_name.trim() && !c.age.trim() && !c.grade_level;
+  const isChildComplete = (c: Child) => c.first_name.trim().length > 0 && c.last_name.trim().length > 0 && c.age.trim().length > 0 && c.grade_level.length > 0;
+  const isChildPartial = (c: Child) => !isChildEmpty(c) && !isChildComplete(c);
+
+  const getChildFieldError = (childIndex: number, field: keyof Child): FieldError => {
+    const key = `child-${childIndex}-${field}`;
+    const show = childTouched[key] || attemptedSubmit;
+    const child = children[childIndex];
+    if (!child) return { show: false, message: "" };
+    // Only validate if the child has at least one field filled (partial)
+    if (isChildEmpty(child)) return { show: false, message: "" };
+    const val = child[field];
+    if (!val || !val.toString().trim()) return { show, message: "This field is required" };
+    return { show: false, message: "" };
+  };
+
+  const childFieldHasError = (childIndex: number, field: keyof Child) => {
+    const err = getChildFieldError(childIndex, field);
+    return err.show && err.message.length > 0;
+  };
+
+  const childErrorInputClass = (childIndex: number, field: keyof Child) => 
+    childFieldHasError(childIndex, field) ? "border-destructive focus-visible:ring-destructive" : "";
+
+  const markChildTouched = (childIndex: number, field: keyof Child) => 
+    setChildTouched(prev => ({ ...prev, [`child-${childIndex}-${field}`]: true }));
 
     return { show: false, message: "" };
   };
