@@ -158,8 +158,13 @@ const FamilyLinksSection = () => {
 
     setIsSubmitting(true);
     try {
+      const trimmedEmail = email.trim().toLowerCase();
+      
+      // Students search for parents, parents search for students
+      const expectedRole = isStudent ? 'parent' : 'student';
+      
       const { data: targetUser, error: lookupError } = await supabase.functions.invoke('lookup-parent', {
-        body: { email: email.toLowerCase() },
+        body: { email: trimmedEmail, expected_role: expectedRole },
       });
 
       if (lookupError) throw lookupError;
