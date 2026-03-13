@@ -1,0 +1,1 @@
+UPDATE public.profiles SET profile_complete = false;
