@@ -641,11 +641,10 @@ const ProfileSetup = () => {
               </Button>
               <Button
                 className="flex-1 gap-2"
-                disabled={saving}
+                disabled={saving || !step2Valid}
                 onClick={handleAttemptContinue}
-                variant={isStep2Valid() ? "default" : "secondary"}
               >
-                {saving ? "Saving..." : "Save & Continue"} <ArrowRight className="h-4 w-4" />
+                {saving ? "Saving..." : step2Valid ? "Save & Continue" : "Complete required fields"} <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
