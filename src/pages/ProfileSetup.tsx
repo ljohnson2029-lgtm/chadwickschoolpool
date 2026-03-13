@@ -364,21 +364,41 @@ const ProfileSetup = () => {
         return;
       }
 
-      if (isParent) {
-        const { error } = await supabase.from("account_links").insert({
-          parent_id: user.id,
-          student_id: targetData.user_id,
-          status: "pending",
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("account_links").insert({
-          student_id: user.id,
-          parent_id: targetData.user_id,
-          status: "pending",
-        });
-        if (error) throw error;
+      const studentId = isParent ? targetData.user_id : user.id;
+      const parentId = isParent ? user.id : targetData.user_id;
+
+      // Check for existing link
+      const { data: existingLink } = await supabase
+        .from("account_links")
+        .select("id, status")
+        .eq("student_id", studentId)
+        .eq("parent_id", parentId)
+        .maybeSingle();
+
+      if (existingLink) {
+        if (existingLink.status === "pending") {
+          // Auto-approve if the other side already sent a request
+          await supabase.from("account_links").update({ status: "approved" }).eq("id", existingLink.id);
+          setLinkSent(true);
+          toast({ title: "Linked!", description: "A pending request from this account was found and automatically approved." });
+          setLinkSending(false);
+          return;
+        }
+        if (existingLink.status === "approved") {
+          toast({ title: "Already Linked", description: "You're already linked to this account.", variant: "destructive" });
+          setLinkSending(false);
+          return;
+        }
+        // If denied, delete old and re-create
+        await supabase.from("account_links").delete().eq("id", existingLink.id);
       }
+
+      const { error } = await supabase.from("account_links").insert({
+        student_id: studentId,
+        parent_id: parentId,
+        status: "pending",
+      });
+      if (error) throw error;
 
       setLinkSent(true);
       toast({ title: "Link request sent!", description: "They will receive a notification to approve." });
