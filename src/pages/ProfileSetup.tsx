@@ -353,12 +353,13 @@ const ProfileSetup = () => {
 
     try {
       const normalizedEmail = linkEmail.toLowerCase().trim();
+      const expectedRole = isParent ? 'student' : 'parent';
       const { data: targetData, error: lookupError } = await supabase.functions.invoke("lookup-parent", {
-        body: { email: normalizedEmail },
+        body: { email: normalizedEmail, expected_role: expectedRole },
       });
 
-      if (lookupError || !targetData?.userId) {
-        toast({ title: "User not found", description: "No account found with that email address.", variant: "destructive" });
+      if (lookupError || !targetData?.found || !targetData?.user_id) {
+        toast({ title: "User not found", description: targetData?.message || "No account found with that email address.", variant: "destructive" });
         setLinkSending(false);
         return;
       }
