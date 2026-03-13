@@ -167,6 +167,22 @@ const ProfileSetup = () => {
       case "carSeats":
         if (isParent && carSeats === "") return { show, message: "This field is required" };
         break;
+      case "carColor":
+        if (isParent && !carColor.trim()) return { show, message: "This field is required" };
+        break;
+      case "licensePlate":
+        if (isParent && !licensePlate.trim()) return { show, message: "This field is required" };
+        break;
+      case "parentGuardianName":
+        if (!isParent && !parentGuardianName.trim()) return { show, message: "This field is required" };
+        break;
+      case "parentGuardianPhone":
+        if (!isParent && !parentGuardianPhone.trim()) return { show, message: "This field is required" };
+        if (!isParent && parentGuardianPhone.trim() && !isValidPhone(parentGuardianPhone)) return { show, message: "Phone must be at least 10 digits" };
+        break;
+      case "children":
+        if (isParent && (!children.length || !children.some(c => c.first_name.trim()))) return { show, message: "At least one child with a name is required" };
+        break;
     }
 
     return { show: false, message: "" };
@@ -185,8 +201,11 @@ const ProfileSetup = () => {
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
     if (!hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    if (isParent && (!carMake.trim() || !carModel.trim())) return false;
+    if (!isParent && !parentGuardianName.trim()) return false;
+    if (!isParent && (!parentGuardianPhone.trim() || !isValidPhone(parentGuardianPhone))) return false;
+    if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     if (isParent && carSeats === "") return false;
+    if (isParent && (!children.length || !children.some(c => c.first_name.trim()))) return false;
     return true;
   };
 
@@ -529,12 +548,14 @@ const ProfileSetup = () => {
                     <FieldErrorMessage error={getFieldError("gradeLevel")} />
                   </div>
                   <div>
-                    <Label>Parent/Guardian Name</Label>
-                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
+                    <RequiredLabel>Parent/Guardian Name</RequiredLabel>
+                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} onBlur={() => markTouched("parentGuardianName")} placeholder="Parent name" className={errorInputClass("parentGuardianName")} />
+                    <FieldErrorMessage error={getFieldError("parentGuardianName")} />
                   </div>
                   <div>
-                    <Label>Parent/Guardian Phone</Label>
-                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    <RequiredLabel>Parent/Guardian Phone</RequiredLabel>
+                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} onBlur={() => markTouched("parentGuardianPhone")} placeholder="(555) 123-4567" className={errorInputClass("parentGuardianPhone")} />
+                    <FieldErrorMessage error={getFieldError("parentGuardianPhone")} />
                   </div>
                   <div>
                     <Label>Parent/Guardian Email</Label>
@@ -587,12 +608,14 @@ const ProfileSetup = () => {
                       <FieldErrorMessage error={getFieldError("carModel")} />
                     </div>
                     <div>
-                      <Label htmlFor="carColor">Car Color</Label>
-                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
+                      <RequiredLabel htmlFor="carColor">Car Color</RequiredLabel>
+                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} onBlur={() => markTouched("carColor")} placeholder="e.g. Silver" className={errorInputClass("carColor")} />
+                      <FieldErrorMessage error={getFieldError("carColor")} />
                     </div>
                     <div>
-                      <Label htmlFor="licensePlate">License Plate</Label>
-                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
+                      <RequiredLabel htmlFor="licensePlate">License Plate</RequiredLabel>
+                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} onBlur={() => markTouched("licensePlate")} placeholder="e.g. ABC1234" className={errorInputClass("licensePlate")} />
+                      <FieldErrorMessage error={getFieldError("licensePlate")} />
                     </div>
                   </div>
                   <div>
@@ -620,7 +643,7 @@ const ProfileSetup = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Your Children
+                    <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -661,6 +684,7 @@ const ProfileSetup = () => {
                       </div>
                     </div>
                   ))}
+                  <FieldErrorMessage error={getFieldError("children")} />
                   <Button type="button" variant="outline" onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])} className="gap-2">
                     <Plus className="h-4 w-4" /> Add Child
                   </Button>
