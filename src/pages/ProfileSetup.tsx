@@ -509,119 +509,114 @@ const ProfileSetup = () => {
               </CardContent>
             </Card>
 
-            {/* Grade Level - ALL users */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5" /> Grade Level <span className="text-destructive">*</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Select value={gradeLevel} onValueChange={v => { setGradeLevel(v); markTouched("gradeLevel"); }}>
-                    <SelectTrigger className={hasError("gradeLevel") ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select grade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GRADE_LEVELS.map(g => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldErrorMessage error={getFieldError("gradeLevel")} />
-                  {isParent && (
-                    <p className="text-xs text-muted-foreground mt-1">Select the grade level most relevant to your carpooling needs</p>
-                  )}
-                </div>
+            {/* Student-only: Grade Level & contacts */}
+            {!isParent && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" /> Grade Level <span className="text-destructive">*</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Select value={gradeLevel} onValueChange={v => { setGradeLevel(v); markTouched("gradeLevel"); }}>
+                      <SelectTrigger className={hasError("gradeLevel") ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GRADE_LEVELS.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldErrorMessage error={getFieldError("gradeLevel")} />
+                  </div>
+                  <div>
+                    <Label>Parent/Guardian Name</Label>
+                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
+                  </div>
+                  <div>
+                    <Label>Parent/Guardian Phone</Label>
+                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
+                  </div>
+                  <div>
+                    <Label>Parent/Guardian Email</Label>
+                    <Input type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
+                  </div>
+                  <div>
+                    <Label>Emergency Contact Name</Label>
+                    <Input value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Emergency contact" />
+                  </div>
+                  <div>
+                    <Label>Emergency Contact Phone</Label>
+                    <Input type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                {/* Student-only: parent/guardian & emergency contacts */}
-                {!isParent && (
-                  <>
+            {/* Parent-only: Vehicle Information */}
+            {isParent && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Car className="h-5 w-5" /> Vehicle Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label>Parent/Guardian Name</Label>
-                      <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
+                      <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
+                      <Input
+                        id="carMake"
+                        value={carMake}
+                        onChange={e => setCarMake(e.target.value)}
+                        onBlur={() => markTouched("carMake")}
+                        placeholder="e.g. Toyota"
+                        className={errorInputClass("carMake")}
+                      />
+                      <FieldErrorMessage error={getFieldError("carMake")} />
                     </div>
                     <div>
-                      <Label>Parent/Guardian Phone</Label>
-                      <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
+                      <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
+                      <Input
+                        id="carModel"
+                        value={carModel}
+                        onChange={e => setCarModel(e.target.value)}
+                        onBlur={() => markTouched("carModel")}
+                        placeholder="e.g. Camry"
+                        className={errorInputClass("carModel")}
+                      />
+                      <FieldErrorMessage error={getFieldError("carModel")} />
                     </div>
                     <div>
-                      <Label>Parent/Guardian Email</Label>
-                      <Input type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
+                      <Label htmlFor="carColor">Car Color</Label>
+                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
                     </div>
                     <div>
-                      <Label>Emergency Contact Name</Label>
-                      <Input value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Emergency contact" />
+                      <Label htmlFor="licensePlate">License Plate</Label>
+                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
                     </div>
-                    <div>
-                      <Label>Emergency Contact Phone</Label>
-                      <Input type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Vehicle Information - ALL users */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Car className="h-5 w-5" /> Vehicle Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  </div>
                   <div>
-                    <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
+                    <RequiredLabel htmlFor="carSeats">Available Seats</RequiredLabel>
                     <Input
-                      id="carMake"
-                      value={carMake}
-                      onChange={e => setCarMake(e.target.value)}
-                      onBlur={() => markTouched("carMake")}
-                      placeholder="e.g. Toyota"
-                      className={errorInputClass("carMake")}
+                      id="carSeats"
+                      type="number"
+                      min="0"
+                      max="8"
+                      value={carSeats}
+                      onChange={e => setCarSeats(e.target.value)}
+                      onBlur={() => markTouched("carSeats")}
+                      placeholder="Number of available seats (0 if none)"
+                      className={errorInputClass("carSeats")}
                     />
-                    <FieldErrorMessage error={getFieldError("carMake")} />
+                    <FieldErrorMessage error={getFieldError("carSeats")} />
+                    <p className="text-xs text-muted-foreground mt-1">Enter 0 if you don't plan to offer rides</p>
                   </div>
-                  <div>
-                    <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
-                    <Input
-                      id="carModel"
-                      value={carModel}
-                      onChange={e => setCarModel(e.target.value)}
-                      onBlur={() => markTouched("carModel")}
-                      placeholder="e.g. Camry"
-                      className={errorInputClass("carModel")}
-                    />
-                    <FieldErrorMessage error={getFieldError("carModel")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="carColor">Car Color</Label>
-                    <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
-                  </div>
-                  <div>
-                    <Label htmlFor="licensePlate">License Plate</Label>
-                    <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
-                  </div>
-                </div>
-                <div>
-                  <RequiredLabel htmlFor="carSeats">Available Seats</RequiredLabel>
-                  <Input
-                    id="carSeats"
-                    type="number"
-                    min="0"
-                    max="8"
-                    value={carSeats}
-                    onChange={e => setCarSeats(e.target.value)}
-                    onBlur={() => markTouched("carSeats")}
-                    placeholder="Number of available seats (0 if none)"
-                    className={errorInputClass("carSeats")}
-                  />
-                  <FieldErrorMessage error={getFieldError("carSeats")} />
-                  <p className="text-xs text-muted-foreground mt-1">Enter 0 if you don't plan to offer rides</p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Parent-only: Children */}
             {isParent && (
