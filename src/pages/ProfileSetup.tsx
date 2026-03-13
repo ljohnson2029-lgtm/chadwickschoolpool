@@ -167,6 +167,22 @@ const ProfileSetup = () => {
       case "carSeats":
         if (isParent && carSeats === "") return { show, message: "This field is required" };
         break;
+      case "carColor":
+        if (isParent && !carColor.trim()) return { show, message: "This field is required" };
+        break;
+      case "licensePlate":
+        if (isParent && !licensePlate.trim()) return { show, message: "This field is required" };
+        break;
+      case "parentGuardianName":
+        if (!isParent && !parentGuardianName.trim()) return { show, message: "This field is required" };
+        break;
+      case "parentGuardianPhone":
+        if (!isParent && !parentGuardianPhone.trim()) return { show, message: "This field is required" };
+        if (!isParent && parentGuardianPhone.trim() && !isValidPhone(parentGuardianPhone)) return { show, message: "Phone must be at least 10 digits" };
+        break;
+      case "children":
+        if (isParent && (!children.length || !children.some(c => c.first_name.trim()))) return { show, message: "At least one child with a name is required" };
+        break;
     }
 
     return { show: false, message: "" };
