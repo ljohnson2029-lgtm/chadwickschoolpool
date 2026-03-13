@@ -30,6 +30,8 @@ import { format } from "date-fns";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
 import { TopConnections } from "@/components/TopConnections";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
+import type { FamilyRide } from "@/hooks/useLinkedParentRides";
 
 interface BroadcastRide {
   id: string;
@@ -440,6 +442,46 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── MY SCHEDULE (Week Calendar) ── */}
+        <Card className="rounded-lg shadow-sm mb-6 sm:mb-8">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                My Schedule
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/my-rides')} className="gap-1 text-xs h-8">
+                View All <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <WeekCalendar
+              rides={myBroadcastPosts.map((ride): FamilyRide => ({
+                id: ride.id,
+                type: ride.type,
+                ride_date: ride.ride_date,
+                ride_time: ride.ride_time,
+                pickup_location: ride.pickup_location,
+                dropoff_location: ride.dropoff_location,
+                pickup_latitude: null,
+                pickup_longitude: null,
+                dropoff_latitude: null,
+                dropoff_longitude: null,
+                seats_available: ride.seats_available ?? null,
+                seats_needed: ride.seats_needed ?? null,
+                status: 'active',
+                user_id: user.id,
+                parent_id: user.id,
+                parent_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile.username,
+                parent_email: '',
+                connected_parent_name: null,
+              }))}
+              loading={loading}
+            />
+          </CardContent>
+        </Card>
 
         {/* ── MAIN GRID (2 columns on desktop) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
