@@ -118,6 +118,7 @@ const ProfileSetup = () => {
       setCarColor(profile.car_color || "");
       setLicensePlate(profile.license_plate || "");
       setCarSeats(profile.car_seats !== null && profile.car_seats !== undefined ? String(profile.car_seats) : "");
+    }
   }, [profile, isParent]);
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
