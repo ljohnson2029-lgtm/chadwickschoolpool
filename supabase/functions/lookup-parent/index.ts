@@ -20,13 +20,13 @@ serve(async (req) => {
     }
 
     // Validate the token using service role client
-    const supabaseAuth = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(
@@ -35,7 +35,7 @@ serve(async (req) => {
       );
     }
 
-    const { email } = await req.json();
+    const { email, expected_role } = await req.json();
 
     if (!email || typeof email !== 'string') {
       return new Response(
@@ -46,16 +46,24 @@ serve(async (req) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Use service role to bypass RLS
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Prevent self-linking
+    const { data: callerData } = await supabase
+      .from('users')
+      .select('email')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (callerData && callerData.email.toLowerCase() === normalizedEmail) {
+      return new Response(
+        JSON.stringify({ found: false, message: 'You cannot link to your own account' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Find user by email
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('user_id')
+      .select('user_id, email, first_name, last_name')
       .eq('email', normalizedEmail)
       .maybeSingle();
 
@@ -68,31 +76,40 @@ serve(async (req) => {
     }
 
     if (!userData) {
+      console.log(`No user found for email: ${normalizedEmail}`);
       return new Response(
-        JSON.stringify({ found: false, message: 'No account found with this email' }),
+        JSON.stringify({ found: false, message: "No account found with this email. Make sure they've signed up first." }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if user has parent role
+    console.log(`Found user: ${userData.user_id} for email: ${normalizedEmail}`);
+
+    // Determine the expected role to validate
+    // If expected_role is provided, use it; otherwise default to 'parent' for backward compatibility
+    const roleToCheck = expected_role || 'parent';
+
+    // Check if user has the expected role
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userData.user_id)
-      .eq('role', 'parent')
+      .eq('role', roleToCheck)
       .maybeSingle();
 
     if (roleError) {
       console.error('Error checking role:', roleError);
       return new Response(
-        JSON.stringify({ error: 'Failed to verify role' }),
+        JSON.stringify({ error: 'Failed to verify account type' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!roleData) {
+      const roleLabel = roleToCheck === 'parent' ? 'parent' : 'student';
+      console.log(`User ${userData.user_id} does not have role: ${roleToCheck}`);
       return new Response(
-        JSON.stringify({ found: false, message: 'This account is not registered as a parent' }),
+        JSON.stringify({ found: false, message: `This account is not registered as a ${roleLabel}` }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
