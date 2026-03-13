@@ -680,18 +680,22 @@ const ProfileSetup = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {children.map((child, i) => {
-                    const partial = isChildPartial(child);
+                    const isFirstChild = i === 0;
+                    const partial = isFirstChild ? !isChildComplete(child) : isChildPartial(child);
                     return (
                       <div key={i} className={`border rounded-lg p-4 space-y-3 ${partial && attemptedSubmit ? "border-destructive" : ""}`}>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">
                             {child.first_name.trim() ? `${child.first_name} ${child.last_name}`.trim() : `Child ${i + 1}`}
+                            {isFirstChild && <span className="text-xs text-muted-foreground ml-2">(required)</span>}
                           </span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => {
-                            setChildren(children.filter((_, idx) => idx !== i));
-                          }}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isFirstChild && (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => {
+                              setChildren(children.filter((_, idx) => idx !== i));
+                            }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                         {partial && attemptedSubmit && (
                           <p className="text-sm text-destructive flex items-center gap-1">
