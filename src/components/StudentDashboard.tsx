@@ -18,7 +18,7 @@
  } from "lucide-react";
  import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
  import { LinkedParentsList } from "@/components/student/LinkedParentsList";
- import { FamilyRideCard } from "@/components/student/FamilyRideCard";
+ import { WeekCalendar } from "@/components/student/WeekCalendar";
  
  const StudentDashboard = () => {
    const { user, profile } = useAuth();
