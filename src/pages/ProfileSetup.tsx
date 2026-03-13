@@ -238,15 +238,16 @@ const ProfileSetup = () => {
         updated_at: new Date().toISOString(),
       };
 
+      updateData.grade_level = gradeLevel;
+      updateData.car_make = carMake;
+      updateData.car_model = carModel;
+      updateData.car_color = carColor;
+      updateData.license_plate = licensePlate;
+      updateData.car_seats = carSeats !== "" ? parseInt(carSeats) : null;
+
       if (isParent) {
-        updateData.car_make = carMake;
-        updateData.car_model = carModel;
-        updateData.car_color = carColor;
-        updateData.license_plate = licensePlate;
-        updateData.car_seats = carSeats ? parseInt(carSeats) : null;
-        updateData.grade_level = PARENT_GRADE_LEVEL;
+        // Parents also get PARENT_GRADE_LEVEL stored separately if needed
       } else {
-        updateData.grade_level = gradeLevel;
         updateData.parent_guardian_name = parentGuardianName;
         updateData.parent_guardian_phone = parentGuardianPhone;
         updateData.parent_guardian_email = parentGuardianEmail;
