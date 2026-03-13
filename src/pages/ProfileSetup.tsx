@@ -672,48 +672,94 @@ const ProfileSetup = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
+                    <Users className="h-5 w-5" /> Your Children
                   </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Adding children is optional, but if you add one, all 4 fields are required.
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {children.map((child, i) => (
-                    <div key={i} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Child {i + 1}</span>
-                        {children.length > 1 && (
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setChildren(children.filter((_, idx) => idx !== i))}>
+                  {children.length === 0 && (
+                    <div className="text-center py-6 space-y-2">
+                      <Users className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">
+                        No children added yet. You can add children now or later from your profile.
+                      </p>
+                    </div>
+                  )}
+                  {children.map((child, i) => {
+                    const partial = isChildPartial(child);
+                    return (
+                      <div key={i} className={`border rounded-lg p-4 space-y-3 ${partial && attemptedSubmit ? "border-destructive" : ""}`}>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">
+                            {child.first_name.trim() ? `${child.first_name} ${child.last_name}`.trim() : `Child ${i + 1}`}
+                          </span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => {
+                            setChildren(children.filter((_, idx) => idx !== i));
+                          }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
+                        </div>
+                        {partial && attemptedSubmit && (
+                          <p className="text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            Please complete all fields or remove this child
+                          </p>
                         )}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="flex items-center gap-1">First Name <span className="text-destructive">*</span></Label>
+                            <Input 
+                              value={child.first_name} 
+                              onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }} 
+                              onBlur={() => markChildTouched(i, "first_name")}
+                              className={childErrorInputClass(i, "first_name")}
+                              placeholder="First name"
+                            />
+                            <FieldErrorMessage error={getChildFieldError(i, "first_name")} />
+                          </div>
+                          <div>
+                            <Label className="flex items-center gap-1">Last Name <span className="text-destructive">*</span></Label>
+                            <Input 
+                              value={child.last_name} 
+                              onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }} 
+                              onBlur={() => markChildTouched(i, "last_name")}
+                              className={childErrorInputClass(i, "last_name")}
+                              placeholder="Last name"
+                            />
+                            <FieldErrorMessage error={getChildFieldError(i, "last_name")} />
+                          </div>
+                          <div>
+                            <Label className="flex items-center gap-1">Age <span className="text-destructive">*</span></Label>
+                            <Input 
+                              type="number" min="1" max="18" 
+                              value={child.age} 
+                              onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} 
+                              onBlur={() => markChildTouched(i, "age")}
+                              className={childErrorInputClass(i, "age")}
+                              placeholder="Age"
+                            />
+                            <FieldErrorMessage error={getChildFieldError(i, "age")} />
+                          </div>
+                          <div>
+                            <Label className="flex items-center gap-1">Grade <span className="text-destructive">*</span></Label>
+                            <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); markChildTouched(i, "grade_level"); }}>
+                              <SelectTrigger className={childFieldHasError(i, "grade_level") ? "border-destructive" : ""}>
+                                <SelectValue placeholder="Grade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {GRADE_LEVELS.map(g => (
+                                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FieldErrorMessage error={getChildFieldError(i, "grade_level")} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label>First Name</Label>
-                          <Input value={child.first_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }} />
-                        </div>
-                        <div>
-                          <Label>Last Name</Label>
-                          <Input value={child.last_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }} />
-                        </div>
-                        <div>
-                          <Label>Age</Label>
-                          <Input type="number" min="1" max="18" value={child.age} onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} />
-                        </div>
-                        <div>
-                          <Label>Grade</Label>
-                          <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); }}>
-                            <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
-                            <SelectContent>
-                              {GRADE_LEVELS.map(g => (
-                                <SelectItem key={g} value={g}>{g}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <FieldErrorMessage error={getFieldError("children")} />
+                    );
+                  })}
                   <Button type="button" variant="outline" onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])} className="gap-2">
                     <Plus className="h-4 w-4" /> Add Child
                   </Button>
