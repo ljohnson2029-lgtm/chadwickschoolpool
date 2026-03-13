@@ -606,12 +606,14 @@ const ProfileSetup = () => {
                       <FieldErrorMessage error={getFieldError("carModel")} />
                     </div>
                     <div>
-                      <Label htmlFor="carColor">Car Color</Label>
-                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
+                      <RequiredLabel htmlFor="carColor">Car Color</RequiredLabel>
+                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} onBlur={() => markTouched("carColor")} placeholder="e.g. Silver" className={errorInputClass("carColor")} />
+                      <FieldErrorMessage error={getFieldError("carColor")} />
                     </div>
                     <div>
-                      <Label htmlFor="licensePlate">License Plate</Label>
-                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
+                      <RequiredLabel htmlFor="licensePlate">License Plate</RequiredLabel>
+                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} onBlur={() => markTouched("licensePlate")} placeholder="e.g. ABC1234" className={errorInputClass("licensePlate")} />
+                      <FieldErrorMessage error={getFieldError("licensePlate")} />
                     </div>
                   </div>
                   <div>
