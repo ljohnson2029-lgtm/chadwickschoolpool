@@ -362,6 +362,7 @@ const ProfileSetup = () => {
   }
 
   const progressPercent = (step / totalSteps) * 100;
+  const step2Valid = isStep2Valid();
 
   return (
     <div className="min-h-screen bg-background">
