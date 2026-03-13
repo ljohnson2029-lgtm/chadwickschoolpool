@@ -101,53 +101,34 @@
            <LinkedParentsList parents={linkedParents} loading={loading} />
          </div>
  
-          {/* Section B: Scheduled Rides (from linked parents) */}
-         <div className="mb-8">
-           <div className="flex items-center justify-between mb-4">
-             <h2 className="text-xl font-semibold flex items-center gap-2">
-               <Car className="h-5 w-5" />
-                Scheduled Rides
-             </h2>
-             {linkedParents.length > 0 && familyRides.length > 0 && (
-               <Button variant="ghost" onClick={() => navigate('/family-carpools')} className="gap-2">
-                 View All
-                 <ArrowRight className="h-4 w-4" />
-               </Button>
-             )}
-           </div>
- 
-           {linkedParents.length === 0 ? (
-             <Card className="bg-muted/30">
-               <CardContent className="py-8 text-center">
-                 <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                 <p className="text-muted-foreground">
-                   Link to a parent account to see family carpools
-                 </p>
-               </CardContent>
-             </Card>
-           ) : loading ? (
-             <div className="space-y-3">
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-             </div>
-           ) : familyRides.length === 0 ? (
-             <Card className="border-dashed">
-               <CardContent className="py-8 text-center">
-                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                 <p className="text-muted-foreground">
-                    No scheduled rides yet
-                 </p>
-               </CardContent>
-             </Card>
-           ) : (
-             <div className="space-y-3">
-               {familyRides.slice(0, 5).map((ride) => (
-                 <FamilyRideCard key={ride.id} ride={ride} />
-               ))}
-             </div>
-           )}
-         </div>
+           {/* Section B: Scheduled Rides (week calendar) */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Car className="h-5 w-5" />
+                 Scheduled Rides
+              </h2>
+              {linkedParents.length > 0 && familyRides.length > 0 && (
+                <Button variant="ghost" onClick={() => navigate('/family-carpools')} className="gap-2">
+                  View All
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {linkedParents.length === 0 ? (
+              <Card className="bg-muted/30">
+                <CardContent className="py-8 text-center">
+                  <Link2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">
+                    Link to a parent account to see family carpools
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <WeekCalendar rides={familyRides} loading={loading} />
+            )}
+          </div>
  
          {/* Section C: Quick Actions */}
          <div>
