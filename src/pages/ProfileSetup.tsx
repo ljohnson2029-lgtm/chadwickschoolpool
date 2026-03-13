@@ -643,7 +643,7 @@ const ProfileSetup = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Your Children
+                    <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
