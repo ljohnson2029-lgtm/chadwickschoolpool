@@ -159,6 +159,12 @@ const ProfileSetup = () => {
       case "carModel":
         if (!carModel.trim()) return { show, message: "This field is required" };
         break;
+      case "carSeats":
+        if (carSeats === "") return { show, message: "This field is required" };
+        break;
+      case "gradeLevel":
+        if (!gradeLevel) return { show, message: "This field is required" };
+        break;
     }
 
     return { show: false, message: "" };
