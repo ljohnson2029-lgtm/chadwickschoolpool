@@ -78,7 +78,7 @@ const ProfileSetup = () => {
   const [carColor, setCarColor] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [carSeats, setCarSeats] = useState("");
-  const [children, setChildren] = useState<Child[]>([]);
+  const [children, setChildren] = useState<Child[]>([{ first_name: "", last_name: "", age: "", grade_level: "" }]);
   const [childTouched, setChildTouched] = useState<Record<string, boolean>>({});
 
   // Student fields
