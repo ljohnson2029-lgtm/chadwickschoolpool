@@ -206,6 +206,17 @@ const ProfileSetup = () => {
 
   /* ── Save profile (Step 2 → 3) ─────────────────── */
   const handleSaveProfile = async () => {
+    if (!isStep2Valid()) {
+      setAttemptedSubmit(true);
+      toast({
+        title: "Please complete all required fields",
+        description: "Fill every required field before continuing.",
+        variant: "destructive",
+      });
+      scrollToFirstError();
+      return;
+    }
+
     if (!user || !profile) return;
     setSaving(true);
 
