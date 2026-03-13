@@ -112,8 +112,12 @@ const ProfileSetup = () => {
       setHomeAddress(profile.home_address || "");
       setHomeLatitude(profile.home_latitude || null);
       setHomeLongitude(profile.home_longitude || null);
-      if (!isParent) setGradeLevel(profile.grade_level || "");
-    }
+      setGradeLevel(profile.grade_level || "");
+      setCarMake(profile.car_make || "");
+      setCarModel(profile.car_model || "");
+      setCarColor(profile.car_color || "");
+      setLicensePlate(profile.license_plate || "");
+      setCarSeats(profile.car_seats !== null && profile.car_seats !== undefined ? String(profile.car_seats) : "");
   }, [profile, isParent]);
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
