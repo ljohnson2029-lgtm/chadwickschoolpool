@@ -505,153 +505,171 @@ const ProfileSetup = () => {
               </CardContent>
             </Card>
 
-            {/* Student: Grade Level */}
-            {!isParent && (
+            {/* Grade Level - ALL users */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" /> Grade Level <span className="text-destructive">*</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Select value={gradeLevel} onValueChange={v => { setGradeLevel(v); markTouched("gradeLevel"); }}>
+                    <SelectTrigger className={hasError("gradeLevel") ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADE_LEVELS.map(g => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldErrorMessage error={getFieldError("gradeLevel")} />
+                  {isParent && (
+                    <p className="text-xs text-muted-foreground mt-1">Select the grade level most relevant to your carpooling needs</p>
+                  )}
+                </div>
+
+                {/* Student-only: parent/guardian & emergency contacts */}
+                {!isParent && (
+                  <>
+                    <div>
+                      <Label>Parent/Guardian Name</Label>
+                      <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
+                    </div>
+                    <div>
+                      <Label>Parent/Guardian Phone</Label>
+                      <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    </div>
+                    <div>
+                      <Label>Parent/Guardian Email</Label>
+                      <Input type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
+                    </div>
+                    <div>
+                      <Label>Emergency Contact Name</Label>
+                      <Input value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Emergency contact" />
+                    </div>
+                    <div>
+                      <Label>Emergency Contact Phone</Label>
+                      <Input type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Vehicle Information - ALL users */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="h-5 w-5" /> Vehicle Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
+                    <Input
+                      id="carMake"
+                      value={carMake}
+                      onChange={e => setCarMake(e.target.value)}
+                      onBlur={() => markTouched("carMake")}
+                      placeholder="e.g. Toyota"
+                      className={errorInputClass("carMake")}
+                    />
+                    <FieldErrorMessage error={getFieldError("carMake")} />
+                  </div>
+                  <div>
+                    <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
+                    <Input
+                      id="carModel"
+                      value={carModel}
+                      onChange={e => setCarModel(e.target.value)}
+                      onBlur={() => markTouched("carModel")}
+                      placeholder="e.g. Camry"
+                      className={errorInputClass("carModel")}
+                    />
+                    <FieldErrorMessage error={getFieldError("carModel")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="carColor">Car Color</Label>
+                    <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
+                  </div>
+                  <div>
+                    <Label htmlFor="licensePlate">License Plate</Label>
+                    <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
+                  </div>
+                </div>
+                <div>
+                  <RequiredLabel htmlFor="carSeats">Available Seats</RequiredLabel>
+                  <Input
+                    id="carSeats"
+                    type="number"
+                    min="0"
+                    max="8"
+                    value={carSeats}
+                    onChange={e => setCarSeats(e.target.value)}
+                    onBlur={() => markTouched("carSeats")}
+                    placeholder="Number of available seats (0 if none)"
+                    className={errorInputClass("carSeats")}
+                  />
+                  <FieldErrorMessage error={getFieldError("carSeats")} />
+                  <p className="text-xs text-muted-foreground mt-1">Enter 0 if you don't plan to offer rides</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Parent-only: Children */}
+            {isParent && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5" /> Grade Level <span className="text-destructive">*</span>
+                    <Users className="h-5 w-5" /> Your Children
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Select value={gradeLevel} onValueChange={v => { setGradeLevel(v); markTouched("gradeLevel"); }}>
-                      <SelectTrigger className={hasError("gradeLevel") ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GRADE_LEVELS.map(g => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldErrorMessage error={getFieldError("gradeLevel")} />
-                  </div>
-                  <div>
-                    <Label>Parent/Guardian Name</Label>
-                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
-                  </div>
-                  <div>
-                    <Label>Parent/Guardian Phone</Label>
-                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
-                  </div>
-                  <div>
-                    <Label>Parent/Guardian Email</Label>
-                    <Input type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
-                  </div>
-                  <div>
-                    <Label>Emergency Contact Name</Label>
-                    <Input value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Emergency contact" />
-                  </div>
-                  <div>
-                    <Label>Emergency Contact Phone</Label>
-                    <Input type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
-                  </div>
+                  {children.map((child, i) => (
+                    <div key={i} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Child {i + 1}</span>
+                        {children.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setChildren(children.filter((_, idx) => idx !== i))}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>First Name</Label>
+                          <Input value={child.first_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }} />
+                        </div>
+                        <div>
+                          <Label>Last Name</Label>
+                          <Input value={child.last_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }} />
+                        </div>
+                        <div>
+                          <Label>Age</Label>
+                          <Input type="number" min="1" max="18" value={child.age} onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} />
+                        </div>
+                        <div>
+                          <Label>Grade</Label>
+                          <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); }}>
+                            <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
+                            <SelectContent>
+                              {GRADE_LEVELS.map(g => (
+                                <SelectItem key={g} value={g}>{g}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])} className="gap-2">
+                    <Plus className="h-4 w-4" /> Add Child
+                  </Button>
                 </CardContent>
               </Card>
-            )}
-
-            {/* Parent: Car Info & Children */}
-            {isParent && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Car className="h-5 w-5" /> Vehicle Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
-                        <Input
-                          id="carMake"
-                          value={carMake}
-                          onChange={e => setCarMake(e.target.value)}
-                          onBlur={() => markTouched("carMake")}
-                          placeholder="e.g. Toyota"
-                          className={errorInputClass("carMake")}
-                        />
-                        <FieldErrorMessage error={getFieldError("carMake")} />
-                      </div>
-                      <div>
-                        <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
-                        <Input
-                          id="carModel"
-                          value={carModel}
-                          onChange={e => setCarModel(e.target.value)}
-                          onBlur={() => markTouched("carModel")}
-                          placeholder="e.g. Camry"
-                          className={errorInputClass("carModel")}
-                        />
-                        <FieldErrorMessage error={getFieldError("carModel")} />
-                      </div>
-                      <div>
-                        <Label htmlFor="carColor">Car Color</Label>
-                        <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g. Silver" />
-                      </div>
-                      <div>
-                        <Label htmlFor="licensePlate">License Plate</Label>
-                        <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g. ABC1234" />
-                      </div>
-                    </div>
-                    <div>
-                      <OptionalLabel htmlFor="carSeats">Available Seats</OptionalLabel>
-                      <Input id="carSeats" type="number" min="1" max="8" value={carSeats} onChange={e => setCarSeats(e.target.value)} placeholder="Number of seats (optional)" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" /> Your Children
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {children.map((child, i) => (
-                      <div key={i} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Child {i + 1}</span>
-                          {children.length > 1 && (
-                            <Button type="button" variant="ghost" size="sm" onClick={() => setChildren(children.filter((_, idx) => idx !== i))}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label>First Name</Label>
-                            <Input value={child.first_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }} />
-                          </div>
-                          <div>
-                            <Label>Last Name</Label>
-                            <Input value={child.last_name} onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }} />
-                          </div>
-                          <div>
-                            <Label>Age</Label>
-                            <Input type="number" min="1" max="18" value={child.age} onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} />
-                          </div>
-                          <div>
-                            <Label>Grade</Label>
-                            <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); }}>
-                              <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
-                              <SelectContent>
-                                {GRADE_LEVELS.map(g => (
-                                  <SelectItem key={g} value={g}>{g}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <Button type="button" variant="outline" onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])} className="gap-2">
-                      <Plus className="h-4 w-4" /> Add Child
-                    </Button>
-                  </CardContent>
-                </Card>
-              </>
             )}
 
             {/* Navigation */}
