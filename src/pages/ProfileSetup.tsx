@@ -322,7 +322,7 @@ const ProfileSetup = () => {
 
       if (isParent) {
         await supabase.from("children").delete().eq("user_id", user.id);
-        const validChildren = children.filter(c => c.first_name && c.age);
+        const validChildren = children.filter(c => isChildComplete(c));
         if (validChildren.length > 0) {
           await supabase.from("children").insert(
             validChildren.map(c => ({
