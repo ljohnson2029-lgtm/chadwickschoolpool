@@ -182,8 +182,9 @@ const ProfileSetup = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
     if (!hasSelectedAddress) return false;
-    if (!isParent && !gradeLevel) return false;
-    if (isParent && (!carMake.trim() || !carModel.trim())) return false;
+    if (!gradeLevel) return false;
+    if (!carMake.trim() || !carModel.trim()) return false;
+    if (carSeats === "") return false;
     return true;
   };
 
