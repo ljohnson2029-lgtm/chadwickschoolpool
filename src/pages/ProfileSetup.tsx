@@ -684,6 +684,7 @@ const ProfileSetup = () => {
                       </div>
                     </div>
                   ))}
+                  <FieldErrorMessage error={getFieldError("children")} />
                   <Button type="button" variant="outline" onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])} className="gap-2">
                     <Plus className="h-4 w-4" /> Add Child
                   </Button>
