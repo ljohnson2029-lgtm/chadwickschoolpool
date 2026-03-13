@@ -333,6 +333,18 @@ const ProfileSetup = () => {
 
   /* ── Complete onboarding ───────────────────────── */
   const handleFinish = async () => {
+    if (!isStep2Valid()) {
+      setStep(2);
+      setAttemptedSubmit(true);
+      toast({
+        title: "Please complete all required fields",
+        description: "Fill every required field before finishing signup.",
+        variant: "destructive",
+      });
+      scrollToFirstError();
+      return;
+    }
+
     if (!user) return;
     setSaving(true);
 
