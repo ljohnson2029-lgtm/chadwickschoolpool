@@ -672,21 +672,13 @@ const ProfileSetup = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Your Children
+                    <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Adding children is optional, but if you add one, all 4 fields are required.
+                    At least one child is required. Additional children are optional, but all 4 fields must be filled.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {children.length === 0 && (
-                    <div className="text-center py-6 space-y-2">
-                      <Users className="h-8 w-8 mx-auto text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">
-                        No children added yet. You can add children now or later from your profile.
-                      </p>
-                    </div>
-                  )}
                   {children.map((child, i) => {
                     const partial = isChildPartial(child);
                     return (
