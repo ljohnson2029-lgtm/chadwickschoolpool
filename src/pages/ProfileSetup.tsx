@@ -201,8 +201,11 @@ const ProfileSetup = () => {
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
     if (!hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    if (isParent && (!carMake.trim() || !carModel.trim())) return false;
+    if (!isParent && !parentGuardianName.trim()) return false;
+    if (!isParent && (!parentGuardianPhone.trim() || !isValidPhone(parentGuardianPhone))) return false;
+    if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     if (isParent && carSeats === "") return false;
+    if (isParent && (!children.length || !children.some(c => c.first_name.trim()))) return false;
     return true;
   };
 
