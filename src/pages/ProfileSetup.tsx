@@ -213,8 +213,6 @@ const ProfileSetup = () => {
   const markChildTouched = (childIndex: number, field: keyof Child) => 
     setChildTouched(prev => ({ ...prev, [`child-${childIndex}-${field}`]: true }));
 
-    return { show: false, message: "" };
-  };
 
   const hasError = (field: string) => {
     const err = getFieldError(field);
