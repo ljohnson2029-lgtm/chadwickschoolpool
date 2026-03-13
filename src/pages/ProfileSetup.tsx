@@ -474,7 +474,7 @@ const ProfileSetup = () => {
                     required
                   />
                 </div>
-                {homeLatitude && homeLongitude ? (
+                {hasSelectedAddress ? (
                   <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Address verified
                   </p>
