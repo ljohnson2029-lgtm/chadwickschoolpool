@@ -78,7 +78,7 @@ const ProfileSetup = () => {
   const [carColor, setCarColor] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [carSeats, setCarSeats] = useState("");
-  const [children, setChildren] = useState<Child[]>([]);
+  const [children, setChildren] = useState<Child[]>([{ first_name: "", last_name: "", age: "", grade_level: "" }]);
   const [childTouched, setChildTouched] = useState<Record<string, boolean>>({});
 
   // Student fields
@@ -195,8 +195,9 @@ const ProfileSetup = () => {
     const show = childTouched[key] || attemptedSubmit;
     const child = children[childIndex];
     if (!child) return { show: false, message: "" };
-    // Only validate if the child has at least one field filled (partial)
-    if (isChildEmpty(child)) return { show: false, message: "" };
+    // First child is always required; additional children only validate if partially filled
+    const isRequired = childIndex === 0;
+    if (!isRequired && isChildEmpty(child)) return { show: false, message: "" };
     const val = child[field];
     if (!val || !val.toString().trim()) return { show, message: "This field is required" };
     return { show: false, message: "" };
@@ -231,8 +232,9 @@ const ProfileSetup = () => {
     if (!isParent && (!parentGuardianPhone.trim() || !isValidPhone(parentGuardianPhone))) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     if (isParent && carSeats === "") return false;
-    // Children: optional to have zero, but any added child must be fully complete (no partial)
-    if (isParent && children.some(c => isChildPartial(c))) return false;
+    // First child must be fully complete; additional children must not be partial
+    if (isParent && (!children.length || !isChildComplete(children[0]))) return false;
+    if (isParent && children.slice(1).some(c => isChildPartial(c))) return false;
     return true;
   };
 
@@ -670,34 +672,30 @@ const ProfileSetup = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" /> Your Children
+                    <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Adding children is optional, but if you add one, all 4 fields are required.
+                    At least one child is required. Additional children are optional, but all 4 fields must be filled.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {children.length === 0 && (
-                    <div className="text-center py-6 space-y-2">
-                      <Users className="h-8 w-8 mx-auto text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">
-                        No children added yet. You can add children now or later from your profile.
-                      </p>
-                    </div>
-                  )}
                   {children.map((child, i) => {
-                    const partial = isChildPartial(child);
+                    const isFirstChild = i === 0;
+                    const partial = isFirstChild ? !isChildComplete(child) : isChildPartial(child);
                     return (
                       <div key={i} className={`border rounded-lg p-4 space-y-3 ${partial && attemptedSubmit ? "border-destructive" : ""}`}>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">
                             {child.first_name.trim() ? `${child.first_name} ${child.last_name}`.trim() : `Child ${i + 1}`}
+                            {isFirstChild && <span className="text-xs text-muted-foreground ml-2">(required)</span>}
                           </span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => {
-                            setChildren(children.filter((_, idx) => idx !== i));
-                          }}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {!isFirstChild && (
+                            <Button type="button" variant="ghost" size="sm" onClick={() => {
+                              setChildren(children.filter((_, idx) => idx !== i));
+                            }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                         {partial && attemptedSubmit && (
                           <p className="text-sm text-destructive flex items-center gap-1">
