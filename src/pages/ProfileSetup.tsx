@@ -548,12 +548,14 @@ const ProfileSetup = () => {
                     <FieldErrorMessage error={getFieldError("gradeLevel")} />
                   </div>
                   <div>
-                    <Label>Parent/Guardian Name</Label>
-                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Parent name" />
+                    <RequiredLabel>Parent/Guardian Name</RequiredLabel>
+                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} onBlur={() => markTouched("parentGuardianName")} placeholder="Parent name" className={errorInputClass("parentGuardianName")} />
+                    <FieldErrorMessage error={getFieldError("parentGuardianName")} />
                   </div>
                   <div>
-                    <Label>Parent/Guardian Phone</Label>
-                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
+                    <RequiredLabel>Parent/Guardian Phone</RequiredLabel>
+                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} onBlur={() => markTouched("parentGuardianPhone")} placeholder="(555) 123-4567" className={errorInputClass("parentGuardianPhone")} />
+                    <FieldErrorMessage error={getFieldError("parentGuardianPhone")} />
                   </div>
                   <div>
                     <Label>Parent/Guardian Email</Label>
