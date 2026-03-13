@@ -127,21 +127,28 @@ const ProfileSetup = () => {
 
   /* ── Field-level validation ─────────────────────── */
 
+  const hasSelectedAddress =
+    homeAddress.trim().length > 0 && homeLatitude !== null && homeLongitude !== null;
+
   const getFieldError = (field: string): FieldError => {
     const show = touched[field] || attemptedSubmit;
+
     switch (field) {
       case "firstName":
-        if (!isMinLength(firstName, 2)) return { show, message: "First name must be at least 2 characters" };
+        if (!firstName.trim()) return { show, message: "This field is required" };
+        if (!isMinLength(firstName, 2)) return { show, message: "Must be at least 2 characters" };
         break;
       case "lastName":
-        if (!isMinLength(lastName, 2)) return { show, message: "Last name must be at least 2 characters" };
+        if (!lastName.trim()) return { show, message: "This field is required" };
+        if (!isMinLength(lastName, 2)) return { show, message: "Must be at least 2 characters" };
         break;
       case "phone":
         if (!phoneNumber.trim()) return { show, message: "This field is required" };
         if (!isValidPhone(phoneNumber)) return { show, message: "Phone must be at least 10 digits" };
         break;
       case "address":
-        if (!homeAddress || !homeLatitude || !homeLongitude) return { show, message: "Please select an address from the dropdown" };
+        if (!homeAddress.trim()) return { show, message: "This field is required" };
+        if (!hasSelectedAddress) return { show, message: "Please select an address from the dropdown" };
         break;
       case "gradeLevel":
         if (!gradeLevel) return { show, message: "This field is required" };
@@ -153,6 +160,7 @@ const ProfileSetup = () => {
         if (!carModel.trim()) return { show, message: "This field is required" };
         break;
     }
+
     return { show: false, message: "" };
   };
 
@@ -167,22 +175,32 @@ const ProfileSetup = () => {
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
-    if (!homeAddress || !homeLatitude || !homeLongitude) return false;
+    if (!hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
     if (isParent && (!carMake.trim() || !carModel.trim())) return false;
     return true;
   };
 
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const firstError = formRef.current?.querySelector(".text-destructive.text-sm");
+      firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  };
+
   const handleAttemptContinue = () => {
     setAttemptedSubmit(true);
+
     if (!isStep2Valid()) {
-      // Scroll to first error
-      setTimeout(() => {
-        const firstError = formRef.current?.querySelector(".text-destructive.text-sm");
-        firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 50);
+      toast({
+        title: "Please complete all required fields",
+        description: "Fill every required field before continuing.",
+        variant: "destructive",
+      });
+      scrollToFirstError();
       return;
     }
+
     handleSaveProfile();
   };
 
