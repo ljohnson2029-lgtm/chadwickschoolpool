@@ -195,8 +195,9 @@ const ProfileSetup = () => {
     const show = childTouched[key] || attemptedSubmit;
     const child = children[childIndex];
     if (!child) return { show: false, message: "" };
-    // Only validate if the child has at least one field filled (partial)
-    if (isChildEmpty(child)) return { show: false, message: "" };
+    // First child is always required; additional children only validate if partially filled
+    const isRequired = childIndex === 0;
+    if (!isRequired && isChildEmpty(child)) return { show: false, message: "" };
     const val = child[field];
     if (!val || !val.toString().trim()) return { show, message: "This field is required" };
     return { show: false, message: "" };
