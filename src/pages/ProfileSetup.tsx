@@ -156,19 +156,16 @@ const ProfileSetup = () => {
         if (!hasSelectedAddress) return { show, message: "Please select an address from the dropdown" };
         break;
       case "gradeLevel":
-        if (!gradeLevel) return { show, message: "This field is required" };
+        if (!isParent && !gradeLevel) return { show, message: "This field is required" };
         break;
       case "carMake":
-        if (!carMake.trim()) return { show, message: "This field is required" };
+        if (isParent && !carMake.trim()) return { show, message: "This field is required" };
         break;
       case "carModel":
-        if (!carModel.trim()) return { show, message: "This field is required" };
+        if (isParent && !carModel.trim()) return { show, message: "This field is required" };
         break;
       case "carSeats":
-        if (carSeats === "") return { show, message: "This field is required" };
-        break;
-      case "gradeLevel":
-        if (!gradeLevel) return { show, message: "This field is required" };
+        if (isParent && carSeats === "") return { show, message: "This field is required" };
         break;
     }
 
