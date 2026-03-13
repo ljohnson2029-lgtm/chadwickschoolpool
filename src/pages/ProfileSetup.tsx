@@ -232,8 +232,9 @@ const ProfileSetup = () => {
     if (!isParent && (!parentGuardianPhone.trim() || !isValidPhone(parentGuardianPhone))) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     if (isParent && carSeats === "") return false;
-    // Children: optional to have zero, but any added child must be fully complete (no partial)
-    if (isParent && children.some(c => isChildPartial(c))) return false;
+    // First child must be fully complete; additional children must not be partial
+    if (isParent && (!children.length || !isChildComplete(children[0]))) return false;
+    if (isParent && children.slice(1).some(c => isChildPartial(c))) return false;
     return true;
   };
 
