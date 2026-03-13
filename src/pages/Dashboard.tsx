@@ -30,6 +30,8 @@ import { format } from "date-fns";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
 import { TopConnections } from "@/components/TopConnections";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
+import type { FamilyRide } from "@/hooks/useLinkedParentRides";
 
 interface BroadcastRide {
   id: string;
