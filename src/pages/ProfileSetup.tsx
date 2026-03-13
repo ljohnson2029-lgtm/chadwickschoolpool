@@ -374,7 +374,7 @@ const ProfileSetup = () => {
       } else {
         const { error } = await supabase.from("account_links").insert({
           student_id: user.id,
-          parent_id: targetData.userId,
+          parent_id: targetData.user_id,
           status: "pending",
         });
         if (error) throw error;
