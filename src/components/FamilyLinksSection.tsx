@@ -210,6 +210,7 @@ const FamilyLinksSection = () => {
           student_id: isStudent ? user?.id : targetUserId,
           parent_id: isStudent ? targetUserId : user?.id,
           status: 'pending',
+          requested_by: user?.id,
         })
         .select()
         .single();
