@@ -84,7 +84,7 @@ const FamilyLinksSection = () => {
     try {
       const { data: links, error } = await supabase
         .from('account_links')
-        .select('id, student_id, parent_id, status, created_at')
+        .select('id, student_id, parent_id, status, created_at, requested_by')
         .or(isStudent 
           ? `student_id.eq.${user?.id}`
           : `parent_id.eq.${user?.id}`
@@ -121,10 +121,13 @@ const FamilyLinksSection = () => {
           last_name: details?.last_name || '',
           status: link.status,
           created_at: link.created_at,
+          requested_by: link.requested_by,
         };
       }) || [];
 
-      setPendingRequests(formattedLinks.filter((l: LinkedAccount) => l.status === 'pending'));
+      const pending = formattedLinks.filter((l: LinkedAccount) => l.status === 'pending');
+      setIncomingRequests(pending.filter((l: LinkedAccount) => l.requested_by !== user?.id));
+      setOutgoingRequests(pending.filter((l: LinkedAccount) => l.requested_by === user?.id));
       setLinkedAccounts(formattedLinks.filter((l: LinkedAccount) => l.status === 'approved'));
     } catch (error) {
       console.error('Error fetching links:', error);
