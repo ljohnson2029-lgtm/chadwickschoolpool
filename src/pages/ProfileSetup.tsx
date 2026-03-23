@@ -377,10 +377,8 @@ const ProfileSetup = () => {
 
       if (existingLink) {
         if (existingLink.status === "pending") {
-          // Auto-approve if the other side already sent a request
-          await supabase.from("account_links").update({ status: "approved" }).eq("id", existingLink.id);
           setLinkSent(true);
-          toast({ title: "Linked!", description: "A pending request from this account was found and automatically approved." });
+          toast({ title: "Request Already Sent", description: "A pending link request already exists. Waiting for approval.", variant: "destructive" });
           setLinkSending(false);
           return;
         }

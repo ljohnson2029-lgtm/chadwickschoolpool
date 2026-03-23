@@ -219,7 +219,7 @@ const FamilyLinksSection = () => {
         newLink.id
       );
 
-      toast({ title: "Request Sent!", description: `Link request sent to ${email}` });
+      toast({ title: "Request Sent!", description: `Link request sent to ${email}. They must accept your request to complete the connection.` });
       setEmail("");
       fetchLinks();
     } catch (error) {
@@ -321,17 +321,17 @@ const FamilyLinksSection = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
-            {isStudent ? 'Link to Parent' : 'Link to Student'}
+            {isStudent ? 'Link to Parent' : 'Connect Your Child\'s Account'}
             <HelpTooltip content={
               isStudent
                 ? "Linking to your parent allows them to schedule rides for you"
-                : "Link a student account so you can manage their rides"
+                : "Enter your child's school email to let them view rides you've scheduled for them on their student account"
             } />
           </CardTitle>
           <CardDescription>
             {isStudent
               ? "Enter the email your parent used to register (not @chadwickschool.org)"
-              : "Enter the student's @chadwickschool.org email address"
+              : "If you want your child to be able to see the rides you've scheduled for them from their own account, enter their @chadwickschool.org email address here. They will need to accept your request."
             }
           </CardDescription>
         </CardHeader>
