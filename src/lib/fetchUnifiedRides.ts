@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { UnifiedRide } from "@/components/UnifiedRideCard";
+import type { UnifiedRide, ParticipantInfo } from "@/components/UnifiedRideCard";
 
 interface FetchResult {
   active: UnifiedRide[];
@@ -22,8 +22,24 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
   }, {} as Record<string, any>);
 }
 
-function toOtherParent(p: any) {
-  if (!p) return null;
+async function fetchChildrenForIds(ids: string[]): Promise<Record<string, { name: string; grade: string }[]>> {
+  if (ids.length === 0) return {};
+  const { data } = await supabase
+    .from('children')
+    .select('user_id, first_name, last_name, grade_level')
+    .in('user_id', ids);
+  
+  if (!data) return {};
+  return data.reduce((acc, c) => {
+    const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown';
+    const grade = c.grade_level || 'N/A';
+    if (!acc[c.user_id]) acc[c.user_id] = [];
+    acc[c.user_id].push({ name, grade });
+    return acc;
+  }, {} as Record<string, { name: string; grade: string }[]>);
+}
+
+function toParticipant(p: any, children: { name: string; grade: string }[]): ParticipantInfo {
   return {
     id: p.id,
     firstName: p.first_name,
@@ -31,12 +47,17 @@ function toOtherParent(p: any) {
     username: p.username,
     email: p.share_email ? p.email : null,
     phone: p.share_phone ? p.phone_number : null,
+    children: children || [],
   };
 }
 
 export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
+
+  // Fetch current user's children
+  const userChildrenMap = await fetchChildrenForIds([userId]);
+  const myChildren = userChildrenMap[userId] || [];
 
   // 1. Fetch ALL user's own rides (active + past)
   const { data: myRides } = await supabase
@@ -60,6 +81,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsNeeded: ride.seats_needed,
         isDriver: ride.type === 'offer',
         otherParent: null,
+        myChildren,
         originalData: ride,
       });
     }
@@ -74,12 +96,16 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
   if (joinedConvos) {
     const ownerIds = [...new Set(joinedConvos.map(c => c.rides?.user_id).filter(Boolean))] as string[];
-    const ownerProfiles = await fetchProfilesForIds(ownerIds);
+    const [ownerProfiles, ownerChildren] = await Promise.all([
+      fetchProfilesForIds(ownerIds),
+      fetchChildrenForIds(ownerIds),
+    ]);
 
     for (const conv of joinedConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
       const isHelpingWithRequest = ride.type === 'request';
+      const profile = ownerProfiles[ride.user_id];
       
       allRides.push({
         id: conv.id,
@@ -94,7 +120,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: isHelpingWithRequest,
-        otherParent: toOtherParent(ownerProfiles[ride.user_id]),
+        otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
+        myChildren,
         originalData: { conversation: conv, ride },
       });
     }
@@ -109,7 +136,10 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
   if (receivedConvos) {
     const joinerIds = [...new Set(receivedConvos.map(c => c.sender_id).filter(Boolean))] as string[];
-    const joinerProfiles = await fetchProfilesForIds(joinerIds);
+    const [joinerProfiles, joinerChildren] = await Promise.all([
+      fetchProfilesForIds(joinerIds),
+      fetchChildrenForIds(joinerIds),
+    ]);
 
     for (const conv of receivedConvos) {
       if (!conv.rides) continue;
@@ -117,10 +147,11 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
       const existingIdx = allRides.findIndex(r => r.source === 'posted' && r.id === ride.id);
       const joiner = joinerProfiles[conv.sender_id];
+      const participant = joiner ? toParticipant(joiner, joinerChildren[conv.sender_id] || []) : null;
 
       if (existingIdx !== -1) {
         allRides[existingIdx].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
-        allRides[existingIdx].otherParent = toOtherParent(joiner);
+        allRides[existingIdx].otherParent = participant;
       } else {
         allRides.push({
           id: conv.id,
@@ -135,7 +166,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           seatsAvailable: ride.seats_available,
           seatsNeeded: ride.seats_needed,
           isDriver: ride.type === 'offer',
-          otherParent: toOtherParent(joiner),
+          otherParent: participant,
+          myChildren,
           originalData: { conversation: conv, ride },
         });
       }
@@ -151,7 +183,10 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
   if (privateRequests) {
     const otherIds = [...new Set(privateRequests.map(r => r.sender_id === userId ? r.recipient_id : r.sender_id))];
-    const otherProfiles = await fetchProfilesForIds(otherIds);
+    const [otherProfiles, otherChildren] = await Promise.all([
+      fetchProfilesForIds(otherIds),
+      fetchChildrenForIds(otherIds),
+    ]);
 
     for (const req of privateRequests) {
       const isSender = req.sender_id === userId;
@@ -169,6 +204,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       }
 
       const isPast = req.ride_date < today;
+      const profile = otherProfiles[otherId];
 
       allRides.push({
         id: req.id,
@@ -183,7 +219,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: req.seats_offered,
         seatsNeeded: req.seats_needed,
         isDriver,
-        otherParent: toOtherParent(otherProfiles[otherId]),
+        otherParent: profile ? toParticipant(profile, otherChildren[otherId] || []) : null,
+        myChildren,
         originalData: req,
       });
     }
