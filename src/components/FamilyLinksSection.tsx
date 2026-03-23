@@ -29,6 +29,7 @@ interface LinkedAccount {
   last_name: string;
   status: string;
   created_at: string;
+  requested_by: string | null;
 }
 
 const FamilyLinksSection = () => {
