@@ -28,7 +28,7 @@ const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const AdminVerifiedEmails = lazy(() => import("./pages/AdminVerifiedEmails"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const FamilyLinks = lazy(() => import("./pages/FamilyLinks"));
-const MapDemo = lazy(() => import("./pages/MapDemo"));
+
 const MyPrivateRequests = lazy(() => import("./pages/MyPrivateRequests"));
 const Settings = lazy(() => import("./pages/Settings"));
 const FindRides = lazy(() => import("./pages/FindRides"));
