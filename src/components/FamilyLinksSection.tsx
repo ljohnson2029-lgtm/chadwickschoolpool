@@ -219,7 +219,7 @@ const FamilyLinksSection = () => {
         newLink.id
       );
 
-      toast({ title: "Request Sent!", description: `Link request sent to ${email}` });
+      toast({ title: "Request Sent!", description: `Link request sent to ${email}. They must accept your request to complete the connection.` });
       setEmail("");
       fetchLinks();
     } catch (error) {
