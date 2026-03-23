@@ -123,11 +123,12 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
 
   const driverName = ride.isDriver ? 'You' : getParentName(ride.otherParent);
   const driverPhone = ride.isDriver ? null : ride.otherParent?.phone;
-  const driverChildren = ride.isDriver ? (ride.myChildren || []) : (ride.otherParent?.children || []);
 
-  const passengerName = ride.isDriver ? getParentName(ride.otherParent) : 'You';
-  const passengerPhone = ride.isDriver ? ride.otherParent?.phone : null;
-  const passengerChildren = ride.isDriver ? (ride.otherParent?.children || []) : (ride.myChildren || []);
+  // Collect ALL students (children) riding as passengers
+  const allPassengerChildren: { name: string; grade: string }[] = [
+    ...(ride.myChildren || []),
+    ...(ride.otherParent?.children || []),
+  ];
 
   return (
     <Card className={`rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border ${isPast ? 'opacity-70' : ''}`}>
@@ -186,11 +187,8 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
           </div>
         </div>
 
-        {/* Participants Section */}
+        {/* Driver Section */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Participants</p>
-          
-          {/* Driver */}
           <div className="bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg p-3 space-y-1.5">
             <div className="flex items-center gap-2">
               <Car className="h-4 w-4 text-emerald-600" />
@@ -205,56 +203,32 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
                 </a>
               )}
             </div>
-            {driverChildren.length > 0 && (
-              <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                <GraduationCap className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                <span>
-                  {driverChildren.map((c, i) => (
-                    <span key={i}>
-                      {c.name}{formatGrade(c.grade) && ` (${formatGrade(c.grade)})`}
-                      {i < driverChildren.length - 1 ? ', ' : ''}
-                    </span>
-                  ))}
-                </span>
-              </div>
-            )}
           </div>
 
-          {/* Passenger */}
-          {ride.otherParent ? (
+          {/* Passengers Section - shows students/children */}
+          {allPassengerChildren.length > 0 ? (
             <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-3 space-y-1.5">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase">Passenger</span>
+                <GraduationCap className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase">Passengers</span>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-foreground">{passengerName}</span>
-                {passengerPhone && (
-                  <a href={`tel:${passengerPhone}`} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                    <Phone className="h-3 w-3" />
-                    {passengerPhone}
-                  </a>
-                )}
+              <div className="space-y-1">
+                {allPassengerChildren.map((child, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-sm text-foreground">
+                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Chadwick Student:</span>
+                    <span className="font-medium">{child.name}</span>
+                    {formatGrade(child.grade) && (
+                      <span className="text-muted-foreground text-xs">({formatGrade(child.grade)})</span>
+                    )}
+                  </div>
+                ))}
               </div>
-              {passengerChildren.length > 0 && (
-                <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                  <GraduationCap className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span>
-                    {passengerChildren.map((c, i) => (
-                      <span key={i}>
-                        {c.name}{formatGrade(c.grade) && ` (${formatGrade(c.grade)})`}
-                        {i < passengerChildren.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              )}
             </div>
           ) : (
             !isPast && (ride.status === 'posted-looking' || ride.status === 'posted-offering') && (
               <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border">
                 <p className="text-sm text-muted-foreground italic text-center">
-                  {ride.status === 'posted-looking' 
+                  {ride.status === 'posted-looking'
                     ? 'Waiting for a driver to respond…'
                     : 'No passengers yet — available for others to join'}
                 </p>
@@ -267,9 +241,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Users className="h-3.5 w-3.5" />
           <span>
-            {ride.seatsAvailable 
+            {ride.seatsAvailable
               ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
-              : ride.seatsNeeded 
+              : ride.seatsNeeded
                 ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
                 : '—'}
           </span>
