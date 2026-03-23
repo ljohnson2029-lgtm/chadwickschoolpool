@@ -38,7 +38,8 @@ const FamilyLinksSection = () => {
   
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingRequests, setPendingRequests] = useState<LinkedAccount[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<LinkedAccount[]>([]);
+  const [outgoingRequests, setOutgoingRequests] = useState<LinkedAccount[]>([]);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [isLoadingLinks, setIsLoadingLinks] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
