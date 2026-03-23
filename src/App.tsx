@@ -96,7 +96,7 @@ const AppRoutes = () => {
           <Route path="/linked-accounts" element={<FamilyLinks />} />
           <Route path="/student-linking" element={<FamilyLinks />} />
           <Route path="/parent-approvals" element={<FamilyLinks />} />
-          <Route path="/map" element={<MapDemo />} />
+          
           <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

@@ -305,11 +305,11 @@ const MyPrivateRequests = () => {
                   <Send className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-semibold mb-2">No Sent Requests</h3>
                   <p className="text-muted-foreground mb-4">
-                    You haven't sent any private requests yet. Find parents on the map to get started!
+                    You haven't sent any private requests yet. Find rides to get started!
                   </p>
-                  <Button onClick={() => navigate('/map/find-parents')} className="gap-2">
+                  <Button onClick={() => navigate('/find-rides')} className="gap-2">
                     <MapPin className="h-4 w-4" />
-                    Find Parents on Map
+                    Find Rides
                   </Button>
                 </CardContent>
               </Card>
