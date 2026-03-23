@@ -36,7 +36,7 @@ const TabNavigation = () => {
   const mainTabs = [
     { label: "Dashboard", path: "/dashboard", icon: Home },
     { label: "Family Carpools", path: "/family-carpools", icon: Calendar },
-    ...(!isStudent ? [{ label: "My Rides", path: "/my-rides", icon: Car }] : []),
+    { label: "My Rides", path: "/my-rides", icon: Car },
     { label: "Profile", path: "/profile", icon: User },
   ];
 
