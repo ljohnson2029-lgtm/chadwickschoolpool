@@ -395,6 +395,7 @@ const ProfileSetup = () => {
         student_id: studentId,
         parent_id: parentId,
         status: "pending",
+        requested_by: user.id,
       });
       if (error) throw error;
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.account_links ADD COLUMN requested_by uuid;
