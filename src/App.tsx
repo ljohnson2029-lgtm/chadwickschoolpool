@@ -28,7 +28,7 @@ const EmailVerification = lazy(() => import("./pages/EmailVerification"));
 const AdminVerifiedEmails = lazy(() => import("./pages/AdminVerifiedEmails"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const FamilyLinks = lazy(() => import("./pages/FamilyLinks"));
-const MapDemo = lazy(() => import("./pages/MapDemo"));
+
 const MyPrivateRequests = lazy(() => import("./pages/MyPrivateRequests"));
 const Settings = lazy(() => import("./pages/Settings"));
 const FindRides = lazy(() => import("./pages/FindRides"));
@@ -96,7 +96,7 @@ const AppRoutes = () => {
           <Route path="/linked-accounts" element={<FamilyLinks />} />
           <Route path="/student-linking" element={<FamilyLinks />} />
           <Route path="/parent-approvals" element={<FamilyLinks />} />
-          <Route path="/map" element={<MapDemo />} />
+          
           <Route path="/settings" element={<Settings />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

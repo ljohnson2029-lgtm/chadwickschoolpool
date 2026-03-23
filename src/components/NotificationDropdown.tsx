@@ -400,12 +400,12 @@ export const NotificationDropdown = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsOpen(false);
-                          navigate('/map');
+                          navigate('/my-rides');
                         }}
                         className="h-7 mt-2 gap-1 text-xs"
                       >
-                        <MapPin className="h-3 w-3" />
-                        View on Map
+                        <Car className="h-3 w-3" />
+                        View in My Rides
                       </Button>
                     )}
 
