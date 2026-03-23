@@ -58,6 +58,7 @@ export type Database = {
           created_at: string
           id: string
           parent_id: string
+          requested_by: string | null
           status: string
           student_id: string
           updated_at: string
@@ -66,6 +67,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id: string
+          requested_by?: string | null
           status?: string
           student_id: string
           updated_at?: string
@@ -74,6 +76,7 @@ export type Database = {
           created_at?: string
           id?: string
           parent_id?: string
+          requested_by?: string | null
           status?: string
           student_id?: string
           updated_at?: string
