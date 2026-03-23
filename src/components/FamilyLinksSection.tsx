@@ -367,24 +367,21 @@ const FamilyLinksSection = () => {
         </CardContent>
       </Card>
 
-      {/* Pending Requests */}
-      {pendingRequests.length > 0 && (
+      {/* Incoming Requests (requests I need to accept/decline) */}
+      {incomingRequests.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {isStudent ? 'Pending Requests' : 'Link Requests'}
-              <Badge variant="destructive">{pendingRequests.length}</Badge>
+              Incoming Link Requests
+              <Badge variant="destructive">{incomingRequests.length}</Badge>
             </CardTitle>
             <CardDescription>
-              {isStudent 
-                ? 'Requests you sent that are awaiting approval'
-                : 'Students waiting for your approval'
-              }
+              {isStudent ? 'Parents requesting to link to your account' : 'Students requesting to link to your account'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {pendingRequests.map((request) => (
+              {incomingRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
                   <div className="space-y-1">
                     <p className="font-semibold">{request.first_name} {request.last_name}</p>
@@ -394,21 +391,46 @@ const FamilyLinksSection = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {isStudent ? (
-                      <Button variant="ghost" size="sm" onClick={() => handleCancelRequest(request.id, request.user_id)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <>
-                        <Button variant="destructive" size="sm" onClick={() => handleDeny(request.id, request.user_id)} disabled={processingId === request.id}>
-                          {processingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserX className="mr-2 h-4 w-4" />Deny</>}
-                        </Button>
-                        <Button size="sm" onClick={() => handleApprove(request.id, `${request.first_name} ${request.last_name}`, request.user_id)} disabled={processingId === request.id} className="bg-green-600 hover:bg-green-700">
-                          {processingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserCheck className="mr-2 h-4 w-4" />Approve</>}
-                        </Button>
-                      </>
-                    )}
+                    <Button variant="destructive" size="sm" onClick={() => handleDeny(request.id, request.user_id)} disabled={processingId === request.id}>
+                      {processingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserX className="mr-2 h-4 w-4" />Decline</>}
+                    </Button>
+                    <Button size="sm" onClick={() => handleApprove(request.id, `${request.first_name} ${request.last_name}`, request.user_id)} disabled={processingId === request.id} className="bg-green-600 hover:bg-green-700">
+                      {processingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserCheck className="mr-2 h-4 w-4" />Accept</>}
+                    </Button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Outgoing Requests (requests I sent, waiting for response) */}
+      {outgoingRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Pending Outgoing Requests
+              <Badge variant="secondary">{outgoingRequests.length}</Badge>
+            </CardTitle>
+            <CardDescription>
+              Requests you sent that are waiting for approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {outgoingRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                  <div className="space-y-1">
+                    <p className="font-semibold">{request.first_name} {request.last_name}</p>
+                    <p className="text-sm text-muted-foreground">{request.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Sent {new Date(request.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleCancelRequest(request.id, request.user_id)}>
+                    <X className="mr-2 h-4 w-4" />Cancel
+                  </Button>
                 </div>
               ))}
             </div>
