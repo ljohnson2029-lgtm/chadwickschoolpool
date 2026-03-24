@@ -87,9 +87,7 @@ const MyRides = () => {
     const allParentIds = [...new Set(
       scheduleData.flatMap((r: any) => {
         const ids = [r.parent_id];
-        // If there's a connected parent, we need their user_id too
-        // The connected parent is the "other" parent in the ride
-        if (r.user_id && r.user_id !== r.parent_id) ids.push(r.user_id);
+        if (r.connected_parent_id) ids.push(r.connected_parent_id);
         return ids;
       }).filter(Boolean)
     )] as string[];
@@ -111,28 +109,28 @@ const MyRides = () => {
     const today = new Date().toISOString().split('T')[0];
     const rides: UnifiedRide[] = scheduleData.map((r: any) => {
       const isParentDriving = r.type === 'offer';
-      const connectedParentName = r.connected_parent_first_name && r.connected_parent_last_name
-        ? `${r.connected_parent_first_name} ${r.connected_parent_last_name}`
+      const hasConnection = Boolean(r.connected_parent_id);
+      const connectedParentName = r.connected_parent_first_name
+        ? `${r.connected_parent_first_name} ${r.connected_parent_last_name || ''}`.trim()
         : null;
 
-      // The "driver" parent's children and the "other" parent's children
-      const driverParentId = isParentDriving ? r.parent_id : (r.user_id !== r.parent_id ? r.user_id : null);
-      const passengerParentId = isParentDriving ? (r.user_id !== r.parent_id ? r.user_id : null) : r.parent_id;
-
-      // For student view: myChildren = driver's kids, otherParent.children = passenger's kids
-      // But we want ALL children shown as passengers, so put them all together
-      const driverChildren = driverParentId ? (childrenByParent[driverParentId] || []) : [];
-      const passengerChildren = passengerParentId ? (childrenByParent[passengerParentId] || []) : [];
-      // Combine: use myChildren for the linked parent's kids, otherParent.children for connected parent's kids
       const myKids = childrenByParent[r.parent_id] || [];
-      const otherParentId = r.user_id !== r.parent_id ? r.user_id : null;
-      const otherKids = otherParentId ? (childrenByParent[otherParentId] || []) : [];
+      const otherKids = r.connected_parent_id ? (childrenByParent[r.connected_parent_id] || []) : [];
+
+      // Determine student-facing status
+      let status: UnifiedRide['status'];
+      if (hasConnection) {
+        // Ride is connected - show as confirmed
+        status = isParentDriving ? 'posted-offering' : 'helping-out';
+      } else {
+        status = isParentDriving ? 'posted-offering' : 'posted-looking';
+      }
 
       return {
         id: r.id,
         source: 'posted' as const,
         rideType: r.type as 'request' | 'offer',
-        status: isParentDriving ? 'posted-offering' : 'posted-looking',
+        status,
         rideStatus: r.ride_date < today ? 'completed' : 'active',
         pickupLocation: r.pickup_location,
         dropoffLocation: r.dropoff_location,
@@ -141,21 +139,21 @@ const MyRides = () => {
         seatsAvailable: r.seats_available,
         seatsNeeded: r.seats_needed,
         isDriver: false,
-        otherParent: {
-          id: r.parent_id,
-          firstName: r.parent_first_name,
-          lastName: r.parent_last_name,
-          username: r.parent_email || '',
-          email: r.parent_email,
+        otherParent: hasConnection ? {
+          id: r.connected_parent_id || r.parent_id,
+          firstName: r.connected_parent_first_name || r.parent_first_name,
+          lastName: r.connected_parent_last_name || r.parent_last_name,
+          username: '',
+          email: null,
           phone: null,
           children: otherKids,
-        },
+        } : null,
         myChildren: myKids,
         originalData: r,
         _studentView: true,
         _driverName: isParentDriving
           ? `${r.parent_first_name || ''} ${r.parent_last_name || ''}`.trim()
-          : connectedParentName || 'Another Parent',
+          : connectedParentName || 'Waiting for driver',
       } as UnifiedRide & { _studentView?: boolean; _driverName?: string };
     });
 

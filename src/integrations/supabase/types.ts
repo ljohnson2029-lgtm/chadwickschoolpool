@@ -815,6 +815,7 @@ export type Database = {
         Args: { student_user_id: string }
         Returns: {
           connected_parent_first_name: string
+          connected_parent_id: string
           connected_parent_last_name: string
           dropoff_latitude: number
           dropoff_location: string
