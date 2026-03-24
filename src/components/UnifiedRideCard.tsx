@@ -45,6 +45,9 @@ export interface UnifiedRide {
   otherParent: ParticipantInfo | null;
   myChildren?: { name: string; grade: string }[];
   originalData: any;
+  _studentView?: boolean;
+  _driverName?: string;
+  _studentPassengerName?: string;
 }
 
 interface UnifiedRideCardProps {
@@ -121,14 +124,17 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
     </Badge>
   ) : null;
 
-  const driverName = ride.isDriver ? 'You' : getParentName(ride.otherParent);
+  const driverName = ride._driverName || (ride.isDriver ? 'You' : getParentName(ride.otherParent));
   const driverPhone = ride.isDriver ? null : ride.otherParent?.phone;
+  const currentStudentPassenger = ride._studentPassengerName?.trim().toLowerCase();
 
-  // Collect ALL students (children) riding as passengers
   const allPassengerChildren: { name: string; grade: string }[] = [
     ...(ride.myChildren || []),
     ...(ride.otherParent?.children || []),
-  ];
+  ].filter((child, index, array) => {
+    const key = `${child.name}-${child.grade}`.toLowerCase();
+    return index === array.findIndex((item) => `${item.name}-${item.grade}`.toLowerCase() === key);
+  });
 
   return (
     <Card className={`rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border ${isPast ? 'opacity-70' : ''}`}>
@@ -213,15 +219,22 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
                 <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase">Passengers</span>
               </div>
               <div className="space-y-1">
-                {allPassengerChildren.map((child, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-sm text-foreground">
-                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Chadwick Student:</span>
-                    <span className="font-medium">{child.name}</span>
-                    {formatGrade(child.grade) && (
-                      <span className="text-muted-foreground text-xs">({formatGrade(child.grade)})</span>
-                    )}
-                  </div>
-                ))}
+                {allPassengerChildren.map((child, i) => {
+                  const isCurrentStudent = currentStudentPassenger === child.name.trim().toLowerCase();
+
+                  return (
+                    <div key={i} className="flex items-center gap-1.5 text-sm text-foreground">
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Chadwick Student:</span>
+                      <span className="font-medium">{child.name}</span>
+                      {formatGrade(child.grade) && (
+                        <span className="text-muted-foreground text-xs">({formatGrade(child.grade)})</span>
+                      )}
+                      {isCurrentStudent && (
+                        <span className="text-xs text-muted-foreground">(you)</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
