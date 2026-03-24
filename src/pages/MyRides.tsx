@@ -107,6 +107,9 @@ const MyRides = () => {
     });
 
     const today = new Date().toISOString().split('T')[0];
+    const studentDisplayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.username || 'You';
+    const studentGrade = profile?.grade_level || 'N/A';
+
     const rides: UnifiedRide[] = scheduleData.map((r: any) => {
       const isParentDriving = r.type === 'offer';
       const hasConnection = Boolean(r.connected_parent_id);
@@ -114,13 +117,14 @@ const MyRides = () => {
         ? `${r.connected_parent_first_name} ${r.connected_parent_last_name || ''}`.trim()
         : null;
 
-      const myKids = childrenByParent[r.parent_id] || [];
+      const linkedParentKids = childrenByParent[r.parent_id] || [];
+      const myKids = linkedParentKids.length > 0
+        ? linkedParentKids
+        : [{ name: studentDisplayName, grade: studentGrade }];
       const otherKids = r.connected_parent_id ? (childrenByParent[r.connected_parent_id] || []) : [];
 
-      // Determine student-facing status
       let status: UnifiedRide['status'];
       if (hasConnection) {
-        // Ride is connected - show as confirmed
         status = isParentDriving ? 'posted-offering' : 'helping-out';
       } else {
         status = isParentDriving ? 'posted-offering' : 'posted-looking';
@@ -154,7 +158,8 @@ const MyRides = () => {
         _driverName: isParentDriving
           ? `${r.parent_first_name || ''} ${r.parent_last_name || ''}`.trim()
           : connectedParentName || 'Waiting for driver',
-      } as UnifiedRide & { _studentView?: boolean; _driverName?: string };
+        _studentPassengerName: studentDisplayName,
+      } as UnifiedRide & { _studentView?: boolean; _driverName?: string; _studentPassengerName?: string };
     });
 
     rides.sort((a, b) => {
