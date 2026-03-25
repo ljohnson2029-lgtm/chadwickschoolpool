@@ -584,10 +584,10 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
           <span>{formatTime(ride.ride_time)}</span>
         </div>
 
-        {/* Seats Available */}
+        {/* Seats */}
         {seatsCount != null && (
           <div className="text-sm">
-            <span className="font-medium">Seats Available: {seatsCount}</span>
+            <span className="font-medium">{ride.type === "request" ? "Seats Needed" : "Seats Available"}: {seatsCount}</span>
           </div>
         )}
 
