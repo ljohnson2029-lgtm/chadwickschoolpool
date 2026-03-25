@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil } from 'lucide-react';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil, UserPlus } from 'lucide-react';
 import { TopConnections } from '@/components/TopConnections';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -15,6 +15,14 @@ import FamilyLinksSection from "@/components/FamilyLinksSection";
 import { Separator } from "@/components/ui/separator";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
 
+interface LinkedParentInfo {
+  parent_id: string;
+  parent_email: string;
+  parent_first_name: string;
+  parent_last_name: string;
+  parent_phone: string | null;
+}
+
 const Profile = () => {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +30,8 @@ const Profile = () => {
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [linkedParents, setLinkedParents] = useState<LinkedParentInfo[]>([]);
+  const [loadingParents, setLoadingParents] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
