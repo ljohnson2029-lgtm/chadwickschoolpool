@@ -73,6 +73,9 @@ interface UnifiedRideCardProps {
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  if (ride.status === 'pending-approval') {
+    return { label: 'Pending - Awaiting Approval', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
   if (ride.source === 'posted' && ride.otherParent) {
     return ride.isDriver
       ? { label: "You're Driving", className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: Car }
