@@ -322,17 +322,21 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         .eq('user_id', respondingToRide.user_id)
         .single();
 
-      // Create the conversation with ACCEPTED status immediately (no pending)
+      // For ride offers: create as PENDING (needs owner approval)
+      // For ride requests: create as ACCEPTED immediately (instant help)
+      const isOffer = respondingToRide.type === 'offer';
+      const conversationStatus = isOffer ? 'pending' : 'accepted';
+
       const { error } = await supabase
         .from('ride_conversations')
         .insert({
           ride_id: respondingToRide.id,
           sender_id: user.id,
           recipient_id: respondingToRide.user_id,
-          status: 'accepted',
-          message: respondingToRide.type === 'request' 
-            ? `I can help with your ride request!`
-            : `I'd like to join your offered ride!`
+          status: conversationStatus,
+          message: isOffer
+            ? `I'd like to join your offered ride!`
+            : `I can help with your ride request!`
         });
 
       if (error) {
@@ -345,34 +349,48 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         return;
       }
 
-      // Send notification to ride owner about the connection
+      // Send notification to ride owner
+      const senderName = profile?.first_name
+        ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+        : 'Someone';
+      const rideDate = respondingToRide.ride_date;
+      const rideTime = respondingToRide.ride_time;
+
       try {
         await supabase.functions.invoke('create-notification', {
           body: {
             userId: respondingToRide.user_id,
-            type: 'ride_connected',
-            message: respondingToRide.type === 'request'
-              ? `${profile?.first_name || 'Someone'} is helping with your ride on ${respondingToRide.ride_date}! Contact them to coordinate.`
-              : `${profile?.first_name || 'Someone'} joined your ride on ${respondingToRide.ride_date}! Contact them to coordinate.`
+            type: isOffer ? 'ride_join_request' : 'ride_accepted',
+            message: isOffer
+              ? `🙋 ${senderName} has requested to join your ride on ${rideDate} at ${rideTime}`
+              : `${senderName} is helping with your ride on ${rideDate}! Contact them to coordinate.`
           }
         });
       } catch (notifError) {
         console.error('Error sending notification:', notifError);
       }
 
-      // Set contact info for success display
-      setRideOwnerContact({
-        firstName: ownerProfile?.first_name || ownerName,
-        lastName: ownerProfile?.last_name || '',
-        email: ownerProfile?.share_email !== false ? ownerUser?.email || null : null,
-        phone: ownerProfile?.share_phone ? ownerProfile.phone_number : null,
-      });
-      setShowSuccessInfo(true);
+      if (isOffer) {
+        // Pending flow - show request sent confirmation
+        toast({
+          title: "Request Sent! ✉️",
+          description: `Your request to join ${ownerName}'s ride has been sent. You'll be notified when they respond.`,
+        });
+      } else {
+        // Instant connection flow for ride requests
+        setRideOwnerContact({
+          firstName: ownerProfile?.first_name || ownerName,
+          lastName: ownerProfile?.last_name || '',
+          email: ownerProfile?.share_email !== false ? ownerUser?.email || null : null,
+          phone: ownerProfile?.share_phone ? ownerProfile.phone_number : null,
+        });
+        setShowSuccessInfo(true);
 
-      toast({
-        title: "You're connected! 🎉",
-        description: `Contact ${ownerName} to coordinate pickup details.`,
-      });
+        toast({
+          title: "You're connected! 🎉",
+          description: `Contact ${ownerName} to coordinate pickup details.`,
+        });
+      }
 
       // Refresh user responses to update button state
       await fetchUserResponses();
