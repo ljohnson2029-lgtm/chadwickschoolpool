@@ -58,9 +58,14 @@ const ProfileSetup = () => {
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
-  const isEditMode = profile?.profile_complete === true;
-  const [step, setStep] = useState(isEditMode ? 2 : 1);
+  const isEditMode = !!profile?.profile_complete;
+  const [step, setStep] = useState(1);
   const totalSteps = isEditMode ? 2 : 3;
+
+  // Start at step 2 for edit mode
+  useEffect(() => {
+    if (isEditMode && step === 1) setStep(2);
+  }, [isEditMode]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
