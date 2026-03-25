@@ -224,7 +224,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         if (parentIds.length > 0) {
           query = query.in('user_id', parentIds);
         } else {
-          // No linked parents, show no rides
           setRides([]);
           setLoading(false);
           return;
@@ -237,21 +236,44 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (error) throw error;
 
-      // Fetch profile data separately for each ride
-      const ridesWithProfiles = await Promise.all(
-        (data || []).map(async (ride) => {
-          const { data: profileData } = await (supabase as any)
-            .from("profiles")
-            .select("first_name, last_name, username, grade_level")
-            .eq("id", ride.user_id)
-            .maybeSingle();
+      const allRides = data || [];
+      const userIds = [...new Set(allRides.map((r: any) => r.user_id))];
 
-          return {
-            ...ride,
-            profiles: profileData,
-          };
-        })
-      );
+      // Fetch profiles, emails, and children in parallel
+      let profilesMap: Record<string, any> = {};
+      let emailsMap: Record<string, string> = {};
+      let childrenMap: Record<string, RideChild[]> = {};
+
+      if (userIds.length > 0) {
+        const [profilesResult, usersResult, childrenResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, first_name, last_name, username, grade_level, phone_number, share_phone, share_email")
+            .in("id", userIds),
+          supabase.from("users").select("user_id, email").in("user_id", userIds),
+          supabase.from("children").select("user_id, first_name, last_name, grade_level").in("user_id", userIds),
+        ]);
+
+        if (profilesResult.data) {
+          profilesResult.data.forEach(p => { profilesMap[p.id] = p; });
+        }
+        if (usersResult.data) {
+          usersResult.data.forEach(u => { emailsMap[u.user_id] = u.email; });
+        }
+        if (childrenResult.data) {
+          childrenResult.data.forEach(c => {
+            if (!childrenMap[c.user_id]) childrenMap[c.user_id] = [];
+            childrenMap[c.user_id].push({ first_name: c.first_name, last_name: c.last_name, grade_level: c.grade_level });
+          });
+        }
+      }
+
+      const ridesWithProfiles = allRides.map((ride: any) => ({
+        ...ride,
+        profiles: profilesMap[ride.user_id] || null,
+        userEmail: emailsMap[ride.user_id] || null,
+        children: childrenMap[ride.user_id] || [],
+      }));
 
       setRides(ridesWithProfiles as unknown as Ride[]);
     } catch (error) {
@@ -261,19 +283,15 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   const formatTime = (timeStr: string) => {
-    return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    } catch {
+      return timeStr;
+    }
   };
 
   // Get display name with proper fallbacks
