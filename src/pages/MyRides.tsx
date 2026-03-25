@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ const MyRides = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
+  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
 
   const isStudent = profile?.account_type === "student";
 
