@@ -288,6 +288,7 @@ const useMapRides = (userId: string | undefined) => {
 
       let profilesMap: Record<string, RideProfile> = {};
       let emailsMap: Record<string, string> = {};
+      let childrenMap: Record<string, RideChild[]> = {};
 
       if (userIds.length > 0) {
         const [profilesResult, usersResult, childrenResult] = await Promise.all([
