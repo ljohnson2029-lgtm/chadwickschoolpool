@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
 
 const Profile = () => {
-  const { user, profile, logout, loading, refreshProfile } = useAuth();
+  const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
@@ -48,10 +48,8 @@ const Profile = () => {
 
   const handleEditSave = useCallback(() => {
     setIsEditing(false);
-    // Refresh profile data
-    if (refreshProfile) refreshProfile();
-    else window.location.reload();
-  }, [refreshProfile]);
+    window.location.reload();
+  }, []);
 
   if (loading || !user || !profile) {
     return (
