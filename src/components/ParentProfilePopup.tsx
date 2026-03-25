@@ -158,7 +158,7 @@ const ParentProfilePopup = ({
           {/* Email */}
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            {profile.share_email && profile.email ? (
+            {profile.email ? (
               <a
                 href={`mailto:${profile.email}?subject=SchoolPool Carpool`}
                 className="text-muted-foreground hover:text-primary transition-colors truncate"
@@ -166,14 +166,14 @@ const ParentProfilePopup = ({
                 {profile.email}
               </a>
             ) : (
-              <span className="text-muted-foreground">Email not shared</span>
+              <span className="text-muted-foreground">No email on file</span>
             )}
           </div>
 
           {/* Phone */}
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            {profile.share_phone && profile.phone_number ? (
+            {profile.phone_number ? (
               <a
                 href={`tel:${profile.phone_number}`}
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -181,7 +181,7 @@ const ParentProfilePopup = ({
                 {profile.phone_number}
               </a>
             ) : (
-              <span className="text-muted-foreground">Phone not shared</span>
+              <span className="text-muted-foreground">No phone number on file</span>
             )}
           </div>
         </div>
