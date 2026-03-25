@@ -43,6 +43,28 @@ const Dashboard = () => {
     fetchUserEmail();
   }, [user, profile?.account_type]);
 
+  // Fetch rides for schedule
+  useEffect(() => {
+    if (!user || shouldUseStudentDashboard) {
+      setLoading(false);
+      return;
+    }
+    const fetchRides = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('transaction_type', 'broadcast')
+        .eq('status', 'active')
+        .gte('ride_date', new Date().toISOString().split('T')[0])
+        .order('ride_date', { ascending: true });
+      if (data) setMyRides(data);
+      setLoading(false);
+    };
+    fetchRides();
+  }, [user, shouldUseStudentDashboard]);
+
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
     return username.substring(0, 2).toUpperCase();
