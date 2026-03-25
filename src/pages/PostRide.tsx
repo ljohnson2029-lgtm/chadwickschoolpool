@@ -28,7 +28,7 @@ const PostRide = () => {
     if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
 
-  const handleSuccess = () => navigate('/find-rides');
+  const handleSuccess = () => navigate('/family-carpools');
 
   if (loading || !user || !profile) {
     return (
