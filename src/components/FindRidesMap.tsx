@@ -488,6 +488,33 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
   onClose,
   onRespond,
 }) => {
+  const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+
+  // Fetch children via edge function (bypasses RLS)
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-parent-profile', {
+          body: { parentId: ride.user_id },
+        });
+        if (!error && data?.profile?.linked_students) {
+          setFetchedChildren(data.profile.linked_students.map((s: any) => ({
+            name: `${s.first_name} ${s.last_name}`,
+            first_name: s.first_name,
+            last_name: s.last_name,
+            grade_level: s.grade_level,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching children for ride popup:', err);
+      }
+    };
+    fetchChildren();
+  }, [ride.user_id]);
+
+  // Use fetched children if client-side ones are empty (RLS blocked)
+  const displayChildren = (ride.children && ride.children.length > 0) ? ride.children : fetchedChildren;
+
   const formatTime = (timeStr: string): string => {
     try {
       return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString("en-US", {
