@@ -255,7 +255,7 @@ const ParentProfileForm = ({
   setCarColor,
   licensePlate,
   setLicensePlate,
-  carSeats,
+  
   children,
   onAddChild,
   onRemoveChild,
@@ -279,15 +279,6 @@ const ParentProfileForm = ({
     [carMake, carModel, carColor, licensePlate, setCarMake, setCarModel, setCarColor, setLicensePlate],
   );
 
-  const handleSeatsChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      if (val === "" || (/^\d+$/.test(val) && Number(val) >= 0 && Number(val) <= 8)) {
-        setCarSeats(val);
-      }
-    },
-    [setCarSeats],
-  );
 
   return (
     <>
