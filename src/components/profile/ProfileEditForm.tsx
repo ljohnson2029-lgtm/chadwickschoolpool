@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ interface ProfileEditFormProps {
 const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileEditFormProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   // Shared fields
   const [firstName, setFirstName] = useState(profile.first_name || "");
@@ -45,9 +46,29 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
     setHomeLongitude(lng);
   };
 
+  // Validation
+  const isValid = useMemo(() => {
+    if (!firstName.trim() || !lastName.trim()) return false;
+    if (isParent) {
+      if (!phoneNumber.trim()) return false;
+      if (!homeAddress.trim() || !homeLatitude || !homeLongitude) return false;
+      if (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim()) return false;
+    } else {
+      if (!gradeLevel) return false;
+    }
+    return true;
+  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent]);
+
+  const fieldError = (value: string) => attempted && !value.trim();
+  const addressError = attempted && isParent && (!homeAddress.trim() || !homeLatitude || !homeLongitude);
+  const gradeLevelError = attempted && !isParent && !gradeLevel;
+
+  const errorBorder = "border-destructive focus-visible:ring-destructive";
+
   const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+    setAttempted(true);
+    if (!isValid) {
+      toast({ title: "Please fill in all required fields", variant: "destructive" });
       return;
     }
 
@@ -61,13 +82,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
       };
 
       if (isParent) {
-        updateData.home_address = homeAddress || null;
+        updateData.home_address = homeAddress;
         updateData.home_latitude = homeLatitude;
         updateData.home_longitude = homeLongitude;
-        updateData.car_make = carMake || null;
-        updateData.car_model = carModel || null;
-        updateData.car_color = carColor || null;
-        updateData.license_plate = licensePlate || null;
+        updateData.car_make = carMake.trim();
+        updateData.car_model = carModel.trim();
+        updateData.car_color = carColor.trim();
+        updateData.license_plate = licensePlate.trim();
       } else {
         updateData.grade_level = gradeLevel || null;
       }
@@ -79,7 +100,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
 
       if (profileError) throw profileError;
 
-      // Also update users table
       await supabase
         .from("users")
         .update({
@@ -89,7 +109,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         })
         .eq("user_id", user.id);
 
-      toast({ title: "Profile updated!", description: "Your changes have been saved." });
+      toast({ title: "Profile updated successfully" });
       onSave();
     } catch (error: any) {
       toast({ title: "Error saving profile", description: error.message, variant: "destructive" });
@@ -97,6 +117,10 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
       setSaving(false);
     }
   };
+
+  const RequiredStar = () => <span className="text-destructive">*</span>;
+  const FieldError = ({ show }: { show: boolean }) =>
+    show ? <p className="text-xs text-destructive mt-1">This field is required</p> : null;
 
   return (
     <div className="space-y-6">
@@ -106,7 +130,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           <X className="mr-2 h-4 w-4" />
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || (attempted && !isValid)}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving..." : "Save Changes"}
         </Button>
@@ -123,17 +147,24 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
-              <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" />
+              <Label htmlFor="firstName">First Name <RequiredStar /></Label>
+              <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" className={fieldError(firstName) ? errorBorder : ""} />
+              <FieldError show={fieldError(firstName)} />
             </div>
             <div>
-              <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
-              <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" />
+              <Label htmlFor="lastName">Last Name <RequiredStar /></Label>
+              <Input id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" className={fieldError(lastName) ? errorBorder : ""} />
+              <FieldError show={fieldError(lastName)} />
             </div>
           </div>
           <div>
-            <Label htmlFor="phone"><Phone className="inline h-4 w-4 mr-1" />Phone Number</Label>
-            <Input id="phone" type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="(555) 123-4567" />
+            <Label htmlFor="phone">
+              <Phone className="inline h-4 w-4 mr-1" />
+              Phone Number {isParent && <RequiredStar />}
+            </Label>
+            <Input id="phone" type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="(555) 123-4567" className={isParent && fieldError(phoneNumber) ? errorBorder : ""} />
+            {isParent && <FieldError show={fieldError(phoneNumber)} />}
+            {!isParent && <p className="text-xs text-muted-foreground mt-1">Optional — not all students have a personal phone number</p>}
           </div>
         </CardContent>
       </Card>
@@ -144,7 +175,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Home className="h-5 w-5" />
-              Home Address
+              Home Address <RequiredStar />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -153,10 +184,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
               onAddressSelect={handleAddressSelect}
               placeholder="Start typing your address..."
               required
+              className={addressError ? errorBorder : ""}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Select from suggestions to enable map features
-            </p>
+            {addressError ? (
+              <p className="text-xs text-destructive mt-1">Please select an address from suggestions</p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">Select from suggestions to enable map features</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -173,20 +207,24 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="carMake">Make</Label>
-                <Input id="carMake" value={carMake} onChange={e => setCarMake(e.target.value)} placeholder="e.g., Toyota" />
+                <Label htmlFor="carMake">Make <RequiredStar /></Label>
+                <Input id="carMake" value={carMake} onChange={e => setCarMake(e.target.value)} placeholder="e.g., Toyota" className={fieldError(carMake) ? errorBorder : ""} />
+                <FieldError show={fieldError(carMake)} />
               </div>
               <div>
-                <Label htmlFor="carModel">Model</Label>
-                <Input id="carModel" value={carModel} onChange={e => setCarModel(e.target.value)} placeholder="e.g., Camry" />
+                <Label htmlFor="carModel">Model <RequiredStar /></Label>
+                <Input id="carModel" value={carModel} onChange={e => setCarModel(e.target.value)} placeholder="e.g., Camry" className={fieldError(carModel) ? errorBorder : ""} />
+                <FieldError show={fieldError(carModel)} />
               </div>
               <div>
-                <Label htmlFor="carColor">Color</Label>
-                <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g., Silver" />
+                <Label htmlFor="carColor">Color <RequiredStar /></Label>
+                <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g., Silver" className={fieldError(carColor) ? errorBorder : ""} />
+                <FieldError show={fieldError(carColor)} />
               </div>
               <div>
-                <Label htmlFor="licensePlate">License Plate</Label>
-                <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g., ABC1234" />
+                <Label htmlFor="licensePlate">License Plate <RequiredStar /></Label>
+                <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g., ABC1234" className={fieldError(licensePlate) ? errorBorder : ""} />
+                <FieldError show={fieldError(licensePlate)} />
               </div>
             </div>
           </CardContent>
@@ -203,9 +241,9 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Label htmlFor="gradeLevel">Grade Level</Label>
+            <Label htmlFor="gradeLevel">Grade Level <RequiredStar /></Label>
             <Select value={gradeLevel} onValueChange={setGradeLevel}>
-              <SelectTrigger className="mt-2">
+              <SelectTrigger className={`mt-2 ${gradeLevelError ? errorBorder : ""}`}>
                 <SelectValue placeholder="Select your grade level" />
               </SelectTrigger>
               <SelectContent>
@@ -214,6 +252,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
                 ))}
               </SelectContent>
             </Select>
+            <FieldError show={!!gradeLevelError} />
           </CardContent>
         </Card>
       )}
@@ -224,7 +263,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           <X className="mr-2 h-4 w-4" />
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || (attempted && !isValid)}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving..." : "Save Changes"}
         </Button>
