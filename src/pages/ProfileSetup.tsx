@@ -184,7 +184,7 @@ const ProfileSetup = () => {
         break;
       case "phone":
         if (!phoneNumber.trim()) return { show, message: "This field is required" };
-        if (!isValidPhone(phoneNumber)) return { show, message: "Phone must be at least 10 digits" };
+        if (!isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
         break;
       case "address":
         if (!homeAddress.trim()) return { show, message: "This field is required" };
