@@ -307,7 +307,7 @@ const MyRides = () => {
     setAcceptDeclineLoading(null);
   }, [user, profile]);
 
-
+  if (loading || !user || !profile) {
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4">
