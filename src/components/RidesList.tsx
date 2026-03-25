@@ -474,9 +474,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (hasPendingResponse) {
         return (
-          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" disabled size="sm">
-            <CheckCircle className="h-4 w-4" />
-            Connected!
+          <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600" disabled size="sm">
+            <Clock className="h-4 w-4" />
+            Request Pending
           </Button>
         );
       }
