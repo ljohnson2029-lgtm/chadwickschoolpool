@@ -155,6 +155,22 @@ const ParentProfilePopup = ({
       </CardHeader>
 
       <CardContent className="space-y-2 px-4 pb-4 pt-0">
+        {/* Children */}
+        {linkedStudents.length > 0 && (
+          <div className="space-y-1 py-2 border-t">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
+            {linkedStudents.map((child, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 text-sm">
+                <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{child.first_name} {child.last_name}</span>
+                {child.grade_level && (
+                  <span className="text-muted-foreground">• {child.grade_level}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2 py-2 border-t text-sm">
           {/* Email */}
           <div className="flex items-center gap-2">
