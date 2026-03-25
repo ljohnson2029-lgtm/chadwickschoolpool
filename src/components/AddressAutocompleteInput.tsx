@@ -20,8 +20,16 @@ interface AddressAutocompleteInputProps {
 /* ─── Constants ─────────────────────────────────────────────────── */
 
 const MIN_QUERY_LENGTH = 3;
-const DEBOUNCE_MS = 500;
+const DEBOUNCE_MS = 300;
 const MAX_RESULTS = 5;
+
+// Mapbox token (same one used elsewhere in the project)
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
+
+// Bias toward Palos Verdes / LA area (Chadwick School vicinity)
+const PROXIMITY_LNG = -118.3965;
+const PROXIMITY_LAT = 33.7455;
 
 /* ─── Component ─────────────────────────────────────────────────── */
 
@@ -75,7 +83,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
     };
   }, []);
 
-  /* ── Fetch suggestions ──────────────────────────────────── */
+  /* ── Fetch suggestions from Mapbox Geocoding API ────────── */
 
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query.trim() || query.length < MIN_QUERY_LENGTH) {
@@ -88,17 +96,18 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
     setFetchError(null);
 
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query,
-        )}&limit=${MAX_RESULTS}&addressdetails=1`,
-        {
-          headers: {
-            Accept: "application/json",
-            "User-Agent": "ChadwickCarpools/1.0",
-          },
-        },
-      );
+      const encoded = encodeURIComponent(query);
+      const url =
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json` +
+        `?access_token=${MAPBOX_TOKEN}` +
+        `&limit=${MAX_RESULTS}` +
+        `&proximity=${PROXIMITY_LNG},${PROXIMITY_LAT}` +
+        `&country=us` +
+        `&types=address,poi,place` +
+        `&autocomplete=true` +
+        `&fuzzyMatch=true`;
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Failed to fetch address suggestions");
@@ -106,9 +115,9 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
 
       const data = await response.json();
 
-      const formatted: AddressSuggestion[] = data.map((item: any) => ({
-        place_name: item.display_name,
-        center: [parseFloat(item.lon), parseFloat(item.lat)] as [number, number],
+      const formatted: AddressSuggestion[] = (data.features ?? []).map((f: any) => ({
+        place_name: f.place_name,
+        center: f.center as [number, number],
       }));
 
       setSuggestions(formatted);
@@ -301,7 +310,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
         >
           {suggestions.map((suggestion, index) => (
             <li
-              key={`${suggestion.center[0]}-${suggestion.center[1]}`}
+              key={`${suggestion.center[0]}-${suggestion.center[1]}-${index}`}
               id={`address-option-${index}`}
               role="option"
               aria-selected={index === activeIndex}
@@ -316,9 +325,9 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
             </li>
           ))}
 
-          {/* Attribution */}
+          {/* Attribution (required by Mapbox TOS) */}
           <li className="px-4 py-1.5 text-[10px] text-muted-foreground/60 text-right" aria-hidden="true">
-            Powered by OpenStreetMap
+            Powered by Mapbox
           </li>
         </ul>
       )}
