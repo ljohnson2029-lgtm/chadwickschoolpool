@@ -58,8 +58,14 @@ const ProfileSetup = () => {
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
 
+  const isEditMode = !!profile?.profile_complete;
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = isEditMode ? 2 : 3;
+
+  // Start at step 2 for edit mode
+  useEffect(() => {
+    if (isEditMode && step === 1) setStep(2);
+  }, [isEditMode]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
@@ -101,9 +107,7 @@ const ProfileSetup = () => {
     if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (profile?.profile_complete) navigate("/dashboard");
-  }, [profile, navigate]);
+  // No redirect for completed profiles - they may be editing
 
   useEffect(() => {
     if (profile) {
@@ -119,8 +123,37 @@ const ProfileSetup = () => {
       setCarColor(profile.car_color || "");
       setLicensePlate(profile.license_plate || "");
       setCarSeats(profile.car_seats !== null && profile.car_seats !== undefined ? String(profile.car_seats) : "");
+      
+      // Load student-specific fields
+      if (!isParent) {
+        setParentGuardianName(profile.parent_guardian_name || "");
+        setParentGuardianPhone(profile.parent_guardian_phone || "");
+        setParentGuardianEmail(profile.parent_guardian_email || "");
+        setEmergencyContactName(profile.emergency_contact_name || "");
+        setEmergencyContactPhone(profile.emergency_contact_phone || "");
+      }
     }
   }, [profile, isParent]);
+
+  // Load existing children for parent accounts
+  useEffect(() => {
+    const loadChildren = async () => {
+      if (!user || !isParent) return;
+      const { data } = await supabase
+        .from("children")
+        .select("*")
+        .eq("user_id", user.id);
+      if (data && data.length > 0) {
+        setChildren(data.map(c => ({
+          first_name: c.first_name || "",
+          last_name: c.last_name || "",
+          age: String(c.age),
+          grade_level: c.grade_level || "",
+        })));
+      }
+    };
+    loadChildren();
+  }, [user, isParent]);
 
   const markTouched = (field: string) => setTouched(prev => ({ ...prev, [field]: true }));
 
@@ -338,7 +371,12 @@ const ProfileSetup = () => {
         }
       }
 
-      setStep(3);
+      if (isEditMode) {
+        toast({ title: "Profile updated!", description: "Your changes have been saved." });
+        navigate("/profile");
+      } else {
+        setStep(3);
+      }
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -458,7 +496,7 @@ const ProfileSetup = () => {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
+          <h1 className="text-3xl font-bold mb-2">{isEditMode ? "Edit Your Profile" : "Complete Your Profile"}</h1>
           <p className="text-muted-foreground">
             Step {step} of {totalSteps}:{" "}
             {step === 1 && "Welcome"}
