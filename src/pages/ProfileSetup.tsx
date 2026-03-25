@@ -254,7 +254,8 @@ const ProfileSetup = () => {
   /* ── Step 2 validation ─────────────────────────── */
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
-    if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
+    if (isParent && (!phoneNumber.trim() || !isValidPhone(phoneNumber))) return false;
+    if (!isParent && phoneNumber.trim() && !isValidPhone(phoneNumber)) return false;
     if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
