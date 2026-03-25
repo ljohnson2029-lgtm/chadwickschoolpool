@@ -7,84 +7,110 @@ interface Country {
   dial: string;
   flag: string;
   name: string;
+  digitLength: number; // expected number of local digits
 }
 
 const COUNTRIES: Country[] = [
-  { code: "US", dial: "+1", flag: "🇺🇸", name: "United States" },
-  { code: "CA", dial: "+1", flag: "🇨🇦", name: "Canada" },
-  { code: "GB", dial: "+44", flag: "🇬🇧", name: "United Kingdom" },
-  { code: "AU", dial: "+61", flag: "🇦🇺", name: "Australia" },
-  { code: "DE", dial: "+49", flag: "🇩🇪", name: "Germany" },
-  { code: "FR", dial: "+33", flag: "🇫🇷", name: "France" },
-  { code: "IT", dial: "+39", flag: "🇮🇹", name: "Italy" },
-  { code: "ES", dial: "+34", flag: "🇪🇸", name: "Spain" },
-  { code: "MX", dial: "+52", flag: "🇲🇽", name: "Mexico" },
-  { code: "BR", dial: "+55", flag: "🇧🇷", name: "Brazil" },
-  { code: "AR", dial: "+54", flag: "🇦🇷", name: "Argentina" },
-  { code: "IN", dial: "+91", flag: "🇮🇳", name: "India" },
-  { code: "CN", dial: "+86", flag: "🇨🇳", name: "China" },
-  { code: "JP", dial: "+81", flag: "🇯🇵", name: "Japan" },
-  { code: "KR", dial: "+82", flag: "🇰🇷", name: "South Korea" },
-  { code: "SG", dial: "+65", flag: "🇸🇬", name: "Singapore" },
-  { code: "PH", dial: "+63", flag: "🇵🇭", name: "Philippines" },
-  { code: "TH", dial: "+66", flag: "🇹🇭", name: "Thailand" },
-  { code: "VN", dial: "+84", flag: "🇻🇳", name: "Vietnam" },
-  { code: "MY", dial: "+60", flag: "🇲🇾", name: "Malaysia" },
-  { code: "ID", dial: "+62", flag: "🇮🇩", name: "Indonesia" },
-  { code: "NZ", dial: "+64", flag: "🇳🇿", name: "New Zealand" },
-  { code: "ZA", dial: "+27", flag: "🇿🇦", name: "South Africa" },
-  { code: "NG", dial: "+234", flag: "🇳🇬", name: "Nigeria" },
-  { code: "EG", dial: "+20", flag: "🇪🇬", name: "Egypt" },
-  { code: "KE", dial: "+254", flag: "🇰🇪", name: "Kenya" },
-  { code: "AE", dial: "+971", flag: "🇦🇪", name: "United Arab Emirates" },
-  { code: "SA", dial: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
-  { code: "IL", dial: "+972", flag: "🇮🇱", name: "Israel" },
-  { code: "TR", dial: "+90", flag: "🇹🇷", name: "Turkey" },
-  { code: "RU", dial: "+7", flag: "🇷🇺", name: "Russia" },
-  { code: "PL", dial: "+48", flag: "🇵🇱", name: "Poland" },
-  { code: "NL", dial: "+31", flag: "🇳🇱", name: "Netherlands" },
-  { code: "SE", dial: "+46", flag: "🇸🇪", name: "Sweden" },
-  { code: "NO", dial: "+47", flag: "🇳🇴", name: "Norway" },
-  { code: "DK", dial: "+45", flag: "🇩🇰", name: "Denmark" },
-  { code: "FI", dial: "+358", flag: "🇫🇮", name: "Finland" },
-  { code: "CH", dial: "+41", flag: "🇨🇭", name: "Switzerland" },
-  { code: "AT", dial: "+43", flag: "🇦🇹", name: "Austria" },
-  { code: "BE", dial: "+32", flag: "🇧🇪", name: "Belgium" },
-  { code: "PT", dial: "+351", flag: "🇵🇹", name: "Portugal" },
-  { code: "IE", dial: "+353", flag: "🇮🇪", name: "Ireland" },
-  { code: "CL", dial: "+56", flag: "🇨🇱", name: "Chile" },
-  { code: "CO", dial: "+57", flag: "🇨🇴", name: "Colombia" },
-  { code: "PE", dial: "+51", flag: "🇵🇪", name: "Peru" },
-  { code: "TW", dial: "+886", flag: "🇹🇼", name: "Taiwan" },
-  { code: "HK", dial: "+852", flag: "🇭🇰", name: "Hong Kong" },
-  { code: "PK", dial: "+92", flag: "🇵🇰", name: "Pakistan" },
-  { code: "BD", dial: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "US", dial: "+1", flag: "🇺🇸", name: "United States", digitLength: 10 },
+  { code: "CA", dial: "+1", flag: "🇨🇦", name: "Canada", digitLength: 10 },
+  { code: "GB", dial: "+44", flag: "🇬🇧", name: "United Kingdom", digitLength: 10 },
+  { code: "AU", dial: "+61", flag: "🇦🇺", name: "Australia", digitLength: 9 },
+  { code: "DE", dial: "+49", flag: "🇩🇪", name: "Germany", digitLength: 11 },
+  { code: "FR", dial: "+33", flag: "🇫🇷", name: "France", digitLength: 9 },
+  { code: "IT", dial: "+39", flag: "🇮🇹", name: "Italy", digitLength: 10 },
+  { code: "ES", dial: "+34", flag: "🇪🇸", name: "Spain", digitLength: 9 },
+  { code: "MX", dial: "+52", flag: "🇲🇽", name: "Mexico", digitLength: 10 },
+  { code: "BR", dial: "+55", flag: "🇧🇷", name: "Brazil", digitLength: 11 },
+  { code: "AR", dial: "+54", flag: "🇦🇷", name: "Argentina", digitLength: 10 },
+  { code: "IN", dial: "+91", flag: "🇮🇳", name: "India", digitLength: 10 },
+  { code: "CN", dial: "+86", flag: "🇨🇳", name: "China", digitLength: 11 },
+  { code: "JP", dial: "+81", flag: "🇯🇵", name: "Japan", digitLength: 10 },
+  { code: "KR", dial: "+82", flag: "🇰🇷", name: "South Korea", digitLength: 10 },
+  { code: "SG", dial: "+65", flag: "🇸🇬", name: "Singapore", digitLength: 8 },
+  { code: "PH", dial: "+63", flag: "🇵🇭", name: "Philippines", digitLength: 10 },
+  { code: "TH", dial: "+66", flag: "🇹🇭", name: "Thailand", digitLength: 9 },
+  { code: "VN", dial: "+84", flag: "🇻🇳", name: "Vietnam", digitLength: 9 },
+  { code: "MY", dial: "+60", flag: "🇲🇾", name: "Malaysia", digitLength: 10 },
+  { code: "ID", dial: "+62", flag: "🇮🇩", name: "Indonesia", digitLength: 10 },
+  { code: "NZ", dial: "+64", flag: "🇳🇿", name: "New Zealand", digitLength: 9 },
+  { code: "ZA", dial: "+27", flag: "🇿🇦", name: "South Africa", digitLength: 9 },
+  { code: "NG", dial: "+234", flag: "🇳🇬", name: "Nigeria", digitLength: 10 },
+  { code: "EG", dial: "+20", flag: "🇪🇬", name: "Egypt", digitLength: 10 },
+  { code: "KE", dial: "+254", flag: "🇰🇪", name: "Kenya", digitLength: 9 },
+  { code: "AE", dial: "+971", flag: "🇦🇪", name: "United Arab Emirates", digitLength: 9 },
+  { code: "SA", dial: "+966", flag: "🇸🇦", name: "Saudi Arabia", digitLength: 9 },
+  { code: "IL", dial: "+972", flag: "🇮🇱", name: "Israel", digitLength: 9 },
+  { code: "TR", dial: "+90", flag: "🇹🇷", name: "Turkey", digitLength: 10 },
+  { code: "RU", dial: "+7", flag: "🇷🇺", name: "Russia", digitLength: 10 },
+  { code: "PL", dial: "+48", flag: "🇵🇱", name: "Poland", digitLength: 9 },
+  { code: "NL", dial: "+31", flag: "🇳🇱", name: "Netherlands", digitLength: 9 },
+  { code: "SE", dial: "+46", flag: "🇸🇪", name: "Sweden", digitLength: 9 },
+  { code: "NO", dial: "+47", flag: "🇳🇴", name: "Norway", digitLength: 8 },
+  { code: "DK", dial: "+45", flag: "🇩🇰", name: "Denmark", digitLength: 8 },
+  { code: "FI", dial: "+358", flag: "🇫🇮", name: "Finland", digitLength: 9 },
+  { code: "CH", dial: "+41", flag: "🇨🇭", name: "Switzerland", digitLength: 9 },
+  { code: "AT", dial: "+43", flag: "🇦🇹", name: "Austria", digitLength: 10 },
+  { code: "BE", dial: "+32", flag: "🇧🇪", name: "Belgium", digitLength: 9 },
+  { code: "PT", dial: "+351", flag: "🇵🇹", name: "Portugal", digitLength: 9 },
+  { code: "IE", dial: "+353", flag: "🇮🇪", name: "Ireland", digitLength: 9 },
+  { code: "CL", dial: "+56", flag: "🇨🇱", name: "Chile", digitLength: 9 },
+  { code: "CO", dial: "+57", flag: "🇨🇴", name: "Colombia", digitLength: 10 },
+  { code: "PE", dial: "+51", flag: "🇵🇪", name: "Peru", digitLength: 9 },
+  { code: "TW", dial: "+886", flag: "🇹🇼", name: "Taiwan", digitLength: 9 },
+  { code: "HK", dial: "+852", flag: "🇭🇰", name: "Hong Kong", digitLength: 8 },
+  { code: "PK", dial: "+92", flag: "🇵🇰", name: "Pakistan", digitLength: 10 },
+  { code: "BD", dial: "+880", flag: "🇧🇩", name: "Bangladesh", digitLength: 10 },
 ];
 
-/** Format digits into US-style dashes: 310-555-1234 */
-function formatUSNumber(digits: string): string {
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+/** Format digits with dashes for display */
+function formatNumber(digits: string, length: number): string {
+  // US/CA style: 310-555-1234
+  if (length === 10) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  // 8-digit: 1234-5678
+  if (length === 8) {
+    if (digits.length <= 4) return digits;
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  }
+  // 9-digit: 123-456-789
+  if (length === 9) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  // 11-digit: 123-4567-8901
+  if (length === 11) {
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  }
+  // Fallback
+  return digits;
 }
 
-/** Parse a stored value like "+13105551234" into { dialCode, digits } */
+function getCountryByCode(code: string): Country {
+  return COUNTRIES.find(c => c.code === code) || COUNTRIES[0];
+}
+
+/** Parse a stored value like "+13105551234" into { countryCode, digits } */
 function parseStoredValue(value: string): { countryCode: string; digits: string } {
   if (!value) return { countryCode: "US", digits: "" };
-
-  // Try to match a country dial code
-  for (const country of COUNTRIES) {
+  // Sort by dial length descending to match longest first (e.g. +852 before +8)
+  const sorted = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  for (const country of sorted) {
     if (value.startsWith(country.dial)) {
       return { countryCode: country.code, digits: value.slice(country.dial.length) };
     }
   }
-  // Fallback: strip non-digits
   return { countryCode: "US", digits: value.replace(/\D/g, "") };
 }
 
 interface PhoneNumberInputProps {
-  value: string; // stored as "+13105551234"
-  onChange: (fullNumber: string) => void; // emits "+13105551234"
+  value: string;
+  onChange: (fullNumber: string) => void;
   className?: string;
   disabled?: boolean;
   required?: boolean;
@@ -109,16 +135,14 @@ const PhoneNumberInput = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const country = COUNTRIES.find(c => c.code === selectedCountry) || COUNTRIES[0];
+  const country = getCountryByCode(selectedCountry);
 
-  // Sync from external value changes
   useEffect(() => {
     const p = parseStoredValue(value);
     setSelectedCountry(p.countryCode);
     setDigits(p.digits);
   }, [value]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -130,7 +154,6 @@ const PhoneNumberInput = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Focus search when dropdown opens
   useEffect(() => {
     if (dropdownOpen && searchRef.current) {
       searchRef.current.focus();
@@ -138,22 +161,25 @@ const PhoneNumberInput = ({
   }, [dropdownOpen]);
 
   const emitChange = (countryCode: string, rawDigits: string) => {
-    const c = COUNTRIES.find(cc => cc.code === countryCode) || COUNTRIES[0];
+    const c = getCountryByCode(countryCode);
     const full = rawDigits ? `${c.dial}${rawDigits}` : "";
     onChange(full);
   };
 
   const handleDigitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 10);
+    const raw = e.target.value.replace(/\D/g, "").slice(0, country.digitLength);
     setDigits(raw);
     emitChange(selectedCountry, raw);
   };
 
   const handleCountrySelect = (code: string) => {
+    const newCountry = getCountryByCode(code);
+    const trimmed = digits.slice(0, newCountry.digitLength);
     setSelectedCountry(code);
     setDropdownOpen(false);
     setSearch("");
-    emitChange(code, digits);
+    setDigits(trimmed);
+    emitChange(code, trimmed);
   };
 
   const filteredCountries = useMemo(() => {
@@ -164,11 +190,10 @@ const PhoneNumberInput = ({
     );
   }, [search]);
 
-  const displayValue = formatUSNumber(digits);
+  const displayValue = formatNumber(digits, country.digitLength);
 
   return (
     <div className={cn("flex items-stretch", className)} ref={dropdownRef}>
-      {/* Country selector */}
       <div className="relative">
         <button
           type="button"
@@ -225,7 +250,6 @@ const PhoneNumberInput = ({
         )}
       </div>
 
-      {/* Number input */}
       <input
         id={id}
         type="tel"
@@ -234,7 +258,7 @@ const PhoneNumberInput = ({
         onChange={handleDigitChange}
         onBlur={onBlur}
         disabled={disabled}
-        placeholder="310-555-1234"
+        placeholder={formatNumber("0".repeat(country.digitLength), country.digitLength).replace(/0/g, "X")}
         className={cn(
           "flex h-10 w-full rounded-r-md border border-input bg-background px-3 py-2 text-base ring-offset-background",
           "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -245,11 +269,12 @@ const PhoneNumberInput = ({
   );
 };
 
-/** Validate that a stored phone value has enough digits */
+/** Validate that a stored phone value has the exact required digit count for its country */
 export function isValidPhoneNumber(value: string): boolean {
   if (!value) return false;
-  const digits = value.replace(/\D/g, "");
-  return digits.length >= 10;
+  const parsed = parseStoredValue(value);
+  const country = getCountryByCode(parsed.countryCode);
+  return parsed.digits.length === country.digitLength;
 }
 
 export default PhoneNumberInput;
