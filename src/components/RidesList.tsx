@@ -447,6 +447,35 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const connection = isOwnRide ? getRideConnection(ride.id) : null;
     const hasConnection = !!connection;
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
+    const [showProfilePopup, setShowProfilePopup] = useState(false);
+    const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+
+    // Fetch children via edge function if client-side data is empty (RLS)
+    useEffect(() => {
+      if (ride.children && ride.children.length > 0) {
+        setFetchedChildren(ride.children);
+        return;
+      }
+      const fetchChildren = async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke('get-parent-profile', {
+            body: { parentId: ride.user_id },
+          });
+          if (!error && data?.profile?.linked_students) {
+            setFetchedChildren(data.profile.linked_students.map((s: any) => ({
+              first_name: s.first_name,
+              last_name: s.last_name,
+              grade_level: s.grade_level,
+            })));
+          }
+        } catch (err) {
+          console.error('Error fetching children:', err);
+        }
+      };
+      fetchChildren();
+    }, [ride.user_id, ride.children]);
+
+    const seatsCount = ride.type === "offer" ? ride.seats_available : ride.seats_needed;
 
     // Render action button based on state
     const renderActionButton = () => {
@@ -467,7 +496,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         );
       }
 
-      // If someone else already connected to this ride, show as full (even for students)
       if (rideIsFull) {
         return (
           <Button className="w-full gap-2" disabled variant="secondary" size="sm">
@@ -483,15 +511,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             <TooltipTrigger asChild>
               <Button className="w-full gap-2" disabled variant="secondary" size="sm">
                 {ride.type === 'request' ? (
-                  <>
-                    <Car className="h-4 w-4" />
-                    I Can Help!
-                  </>
+                  <><Car className="h-4 w-4" /> I Can Help!</>
                 ) : (
-                  <>
-                    <Hand className="h-4 w-4" />
-                    I Need This!
-                  </>
+                  <><Hand className="h-4 w-4" /> I Need This!</>
                 )}
               </Button>
             </TooltipTrigger>
@@ -529,7 +551,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         );
       }
 
-      // No existing response - show action button
       return (
         <Button 
           className="w-full gap-2"
@@ -537,15 +558,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           onClick={() => initiateRespondToRide(ride)}
         >
           {ride.type === 'request' ? (
-            <>
-              <Car className="h-4 w-4" />
-              I Can Help!
-            </>
+            <><Car className="h-4 w-4" /> I Can Help!</>
           ) : (
-            <>
-              <Hand className="h-4 w-4" />
-              I Need This!
-            </>
+            <><Hand className="h-4 w-4" /> I Need This!</>
           )}
         </Button>
       );
@@ -553,79 +568,98 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
     return (
       <Card className="hover:shadow-lg transition-shadow">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {/* Clickable user profile */}
-              <RideUserBadge
-                userId={ride.user_id}
-                firstName={ride.profiles?.first_name || null}
-                lastName={ride.profiles?.last_name || null}
-                username={getDisplayName(ride)}
-                gradeLevel={ride.profiles?.grade_level || null}
-                accountType="parent"
-                isCurrentUser={isOwnRide}
-                viewerIsStudent={userRole === 'student'}
-                variant="compact"
-              />
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={ride.type === "offer" ? "default" : "secondary"}>
-                  {ride.type === "offer" ? "Offering Ride" : "Requesting Ride"}
-                </Badge>
-                {ride.transaction_type === 'broadcast' && (
-                  <Badge className="gap-1 bg-purple-600 dark:bg-purple-700">
-                    <Radio className="h-3 w-3" />
-                    Public
-                  </Badge>
-                )}
-              </div>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold truncate">{getDisplayName(ride)}</h3>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Parent/Adult
+              </p>
             </div>
-            {ride.is_recurring && (
-              <Badge variant="outline">Recurring</Badge>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
+                {ride.type === "request" ? (
+                  <><Hand className="h-3 w-3 mr-1" /> Request</>
+                ) : (
+                  <><Car className="h-3 w-3 mr-1" /> Offer</>
+                )}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 mt-1 text-muted-foreground" />
-            <div className="text-sm">
-              <div className="font-medium">{ride.pickup_location}</div>
-              <div className="text-muted-foreground">to {ride.dropoff_location}</div>
+
+        <CardContent className="space-y-3 px-4 pb-4 pt-0">
+          {/* Route */}
+          <div className="text-sm space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Route</p>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">Pickup</p>
+              <p className="font-medium">{ride.pickup_location}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">Dropoff</p>
+              <p className="font-medium">{ride.dropoff_location}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              {formatDate(ride.ride_date)}
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              {formatTime(ride.ride_time)}
-            </div>
-          </div>
-
+          {/* Date */}
           <div className="flex items-center gap-2 text-sm">
-            <Users className="w-4 h-4 text-muted-foreground" />
-            {rideIsFull
-              ? 'Ride Full'
-              : ride.type === "offer"
-                ? `${ride.seats_available} seats available`
-                : `${ride.seats_needed} seats needed`}
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span>{format(new Date(ride.ride_date + 'T00:00:00'), "EEEE, MMMM d, yyyy")}</span>
           </div>
 
-          {ride.route_details && (
-            <div className="text-sm text-muted-foreground pt-2 border-t">
-              {ride.route_details}
+          {/* Time */}
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span>{formatTime(ride.ride_time)}</span>
+          </div>
+
+          {/* Seats Available */}
+          {seatsCount != null && (
+            <div className="text-sm">
+              <span className="font-medium">Seats Available: {seatsCount}</span>
             </div>
           )}
 
-          {ride.is_recurring && ride.recurring_days && (
-            <div className="text-sm pt-2 border-t">
-              <span className="text-muted-foreground">Repeats: </span>
-              {ride.recurring_days.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(", ")}
+          {/* Children */}
+          {fetchedChildren.length > 0 && (
+            <div className="border-t pt-2">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
+              {fetchedChildren.map((child, idx) => (
+                <div key={idx} className="text-sm flex items-center gap-1.5">
+                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{child.first_name} {child.last_name}</span>
+                  {child.grade_level && (
+                    <span className="text-muted-foreground">• {child.grade_level}</span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
+
+          {/* View Profile Button */}
+          <div className="border-t pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={() => setShowProfilePopup(!showProfilePopup)}
+            >
+              View
+            </Button>
+            {showProfilePopup && (
+              <div className="mt-2">
+                <ParentProfilePopup
+                  parentId={ride.user_id}
+                  distance={0}
+                  onClose={() => setShowProfilePopup(false)}
+                  onRequestRide={() => {}}
+                  onOfferRide={() => {}}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Show connection info for user's own confirmed rides */}
           {isOwnRide && hasConnection && connection && (
@@ -635,23 +669,14 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
               </p>
               <div className="flex flex-wrap gap-2 text-sm">
                 {connection.sender_email && (
-                  <a 
-                    href={`mailto:${connection.sender_email}`}
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
+                  <a href={`mailto:${connection.sender_email}`} className="text-primary hover:underline flex items-center gap-1">
                     📧 {connection.sender_email}
                   </a>
                 )}
                 {connection.sender_phone && (
-                  <a 
-                    href={`tel:${connection.sender_phone}`}
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
+                  <a href={`tel:${connection.sender_phone}`} className="text-primary hover:underline flex items-center gap-1">
                     📞 {connection.sender_phone}
                   </a>
-                )}
-                {!connection.sender_email && !connection.sender_phone && (
-                  <span className="text-muted-foreground text-xs">Contact info not shared</span>
                 )}
               </div>
             </div>
