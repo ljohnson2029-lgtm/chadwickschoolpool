@@ -199,7 +199,7 @@ const Profile = () => {
                     </div>
                   )}
 
-                  {profile.home_address ? (
+                  {isParent && profile.home_address ? (
                     <div className="flex items-start gap-3">
                       <Home className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div className="flex-1">
@@ -207,7 +207,7 @@ const Profile = () => {
                         <p className="font-medium">{profile.home_address}</p>
                       </div>
                     </div>
-                  ) : (
+                  ) : isParent && !profile.home_address ? (
                     <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                       <Home className="h-5 w-5 text-yellow-600 mt-0.5" />
                       <div className="flex-1">
@@ -220,7 +220,7 @@ const Profile = () => {
                         </Button>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {profile.grade_level && profile.grade_level !== 'Parent/Adult' && (
                     <div className="flex items-center gap-3">

@@ -249,7 +249,7 @@ const ProfileSetup = () => {
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
-    if (!hasSelectedAddress) return false;
+    if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     
@@ -303,13 +303,13 @@ const ProfileSetup = () => {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone_number: phoneNumber.trim(),
-        home_address: homeAddress,
-        home_latitude: homeLatitude,
-        home_longitude: homeLongitude,
         updated_at: new Date().toISOString(),
       };
 
       if (isParent) {
+        updateData.home_address = homeAddress;
+        updateData.home_latitude = homeLatitude;
+        updateData.home_longitude = homeLongitude;
         updateData.grade_level = PARENT_GRADE_LEVEL;
         updateData.car_make = carMake;
         updateData.car_model = carModel;
@@ -569,31 +569,33 @@ const ProfileSetup = () => {
               </CardContent>
             </Card>
 
-            {/* Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="h-5 w-5" /> Home Address <span className="text-destructive">*</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={hasError("address") ? "[&_input]:border-destructive" : ""}>
-                  <AddressAutocompleteInput
-                    value={homeAddress}
-                    onAddressSelect={handleAddressSelect}
-                    placeholder="Enter your home address"
-                    required
-                  />
-                </div>
-                {hasSelectedAddress ? (
-                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Address verified
-                  </p>
-                ) : (
-                  <FieldErrorMessage error={getFieldError("address")} />
-                )}
-              </CardContent>
-            </Card>
+            {/* Address - Parents only */}
+            {isParent && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="h-5 w-5" /> Home Address <span className="text-destructive">*</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={hasError("address") ? "[&_input]:border-destructive" : ""}>
+                    <AddressAutocompleteInput
+                      value={homeAddress}
+                      onAddressSelect={handleAddressSelect}
+                      placeholder="Enter your home address"
+                      required
+                    />
+                  </div>
+                  {hasSelectedAddress ? (
+                    <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Address verified
+                    </p>
+                  ) : (
+                    <FieldErrorMessage error={getFieldError("address")} />
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Student-only: Grade Level & contacts */}
             {!isParent && (

@@ -57,13 +57,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone_number: phoneNumber.trim() || null,
-        home_address: homeAddress || null,
-        home_latitude: homeLatitude,
-        home_longitude: homeLongitude,
         updated_at: new Date().toISOString(),
       };
 
       if (isParent) {
+        updateData.home_address = homeAddress || null;
+        updateData.home_latitude = homeLatitude;
+        updateData.home_longitude = homeLongitude;
         updateData.car_make = carMake || null;
         updateData.car_model = carModel || null;
         updateData.car_color = carColor || null;
@@ -138,26 +138,28 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         </CardContent>
       </Card>
 
-      {/* Address */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Home className="h-5 w-5" />
-            Home Address
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AddressAutocompleteInput
-            value={homeAddress}
-            onAddressSelect={handleAddressSelect}
-            placeholder="Start typing your address..."
-            required
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Select from suggestions to enable map features
-          </p>
-        </CardContent>
-      </Card>
+      {/* Address - Parents only */}
+      {isParent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5" />
+              Home Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddressAutocompleteInput
+              value={homeAddress}
+              onAddressSelect={handleAddressSelect}
+              placeholder="Start typing your address..."
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Select from suggestions to enable map features
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Parent-specific: Vehicle */}
       {isParent && (
