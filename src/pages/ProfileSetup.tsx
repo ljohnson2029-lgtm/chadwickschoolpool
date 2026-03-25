@@ -183,8 +183,13 @@ const ProfileSetup = () => {
         if (!isMinLength(lastName, 2)) return { show, message: "Must be at least 2 characters" };
         break;
       case "phone":
-        if (!phoneNumber.trim()) return { show, message: "This field is required" };
-        if (!isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        if (isParent) {
+          if (!phoneNumber.trim()) return { show, message: "This field is required" };
+          if (!isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        } else {
+          // Optional for students, but validate format if entered
+          if (phoneNumber.trim() && !isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        }
         break;
       case "address":
         if (!homeAddress.trim()) return { show, message: "This field is required" };
@@ -249,7 +254,8 @@ const ProfileSetup = () => {
   /* ── Step 2 validation ─────────────────────────── */
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
-    if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
+    if (isParent && (!phoneNumber.trim() || !isValidPhone(phoneNumber))) return false;
+    if (!isParent && phoneNumber.trim() && !isValidPhone(phoneNumber)) return false;
     if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
@@ -555,7 +561,11 @@ const ProfileSetup = () => {
                   <Input value={user.email || ""} disabled className="bg-muted" />
                 </div>
                 <div>
-                  <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
+                  {isParent ? (
+                    <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
+                  ) : (
+                    <OptionalLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</OptionalLabel>
+                  )}
                   <PhoneNumberInput
                     id="phone"
                     value={phoneNumber}
