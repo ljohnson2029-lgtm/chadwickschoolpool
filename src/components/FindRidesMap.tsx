@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
