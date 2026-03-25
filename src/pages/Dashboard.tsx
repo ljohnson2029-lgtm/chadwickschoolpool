@@ -19,6 +19,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { showTour, completeTour } = useOnboardingTour();
   const [isUserStudent, setIsUserStudent] = useState(false);
+  const [myRides, setMyRides] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
 
