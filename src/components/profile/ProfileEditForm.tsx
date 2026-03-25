@@ -288,6 +288,102 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         </Card>
       )}
 
+      {/* Parent-specific: My Children */}
+      {isParent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                My Children
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Child
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {children.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No children added. Click "Add Child" to add your children.
+              </p>
+            ) : (
+              children.map((child, i) => {
+                const incomplete = attempted && !isChildComplete(child);
+                return (
+                  <div key={child.id ?? i} className={`border rounded-lg p-4 space-y-3 ${incomplete ? "border-destructive" : ""}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        {child.first_name.trim() ? `${child.first_name} ${child.last_name}`.trim() : `Child ${i + 1}`}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChildren(children.filter((_, idx) => idx !== i))}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    {incomplete && (
+                      <p className="text-xs text-destructive">All fields are required for each child</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>First Name <RequiredStar /></Label>
+                        <Input
+                          value={child.first_name}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }}
+                          placeholder="First name"
+                          className={incomplete && !child.first_name.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Last Name <RequiredStar /></Label>
+                        <Input
+                          value={child.last_name}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }}
+                          placeholder="Last name"
+                          className={incomplete && !child.last_name.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Age <RequiredStar /></Label>
+                        <Input
+                          type="number" min="1" max="18"
+                          value={child.age}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }}
+                          placeholder="Age"
+                          className={incomplete && !child.age.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Grade <RequiredStar /></Label>
+                        <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); }}>
+                          <SelectTrigger className={incomplete && !child.grade_level ? errorBorder : ""}>
+                            <SelectValue placeholder="Grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GRADE_LEVELS.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Student-specific: Grade */}
       {!isParent && (
         <Card>
