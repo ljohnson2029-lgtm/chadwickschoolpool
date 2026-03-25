@@ -293,15 +293,23 @@ const FamilyLinksSection = () => {
     if (!account) return;
 
     try {
-      await supabase.from('account_links').delete().eq('id', unlinkingId);
+      const { error: deleteError } = await supabase.from('account_links').delete().eq('id', unlinkingId);
+      if (deleteError) throw deleteError;
+
+      // Send notification (best-effort, don't fail the unlink if this errors)
       const userName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'A user';
-      await createNotification(
-        account.user_id,
-        isStudent ? 'student_unlinked' : 'unlinked_by_parent',
-        isStudent 
-          ? NotificationMessages.studentUnlinked(userName)
-          : NotificationMessages.unlinkedByParent(userName)
-      );
+      try {
+        await createNotification(
+          account.user_id,
+          isStudent ? 'student_unlinked' : 'unlinked_by_parent',
+          isStudent 
+            ? NotificationMessages.studentUnlinked(userName)
+            : NotificationMessages.unlinkedByParent(userName)
+        );
+      } catch (notifErr) {
+        console.warn('Failed to send unlink notification:', notifErr);
+      }
+
       toast({ title: "Unlinked", description: `You have been unlinked from ${account.first_name} ${account.last_name}` });
       fetchLinks();
     } catch (error) {
