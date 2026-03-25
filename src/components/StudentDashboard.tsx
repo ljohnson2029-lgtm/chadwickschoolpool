@@ -1,24 +1,19 @@
- import { useNavigate } from "react-router-dom";
- import { useAuth } from "@/contexts/AuthContext";
- import { DashboardLayout } from "@/components/DashboardLayout";
- import { Card, CardContent } from "@/components/ui/card";
- import { Badge } from "@/components/ui/badge";
- import { Button } from "@/components/ui/button";
- import { Skeleton } from "@/components/ui/skeleton";
- import { SkeletonListItem, SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
- import { 
-   GraduationCap,
-   Users,
-   Calendar,
-   Car,
-   User,
-   Link2,
-   ArrowRight,
-   Radio
- } from "lucide-react";
- import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
- import { LinkedParentsList } from "@/components/student/LinkedParentsList";
- import { WeekCalendar } from "@/components/student/WeekCalendar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
+import { 
+  GraduationCap,
+  Car,
+  Link2,
+  ArrowRight,
+} from "lucide-react";
+import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
  
  const StudentDashboard = () => {
    const { user, profile } = useAuth();
