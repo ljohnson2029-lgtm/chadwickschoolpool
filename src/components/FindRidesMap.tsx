@@ -290,12 +290,13 @@ const useMapRides = (userId: string | undefined) => {
       let emailsMap: Record<string, string> = {};
 
       if (userIds.length > 0) {
-        const [profilesResult, usersResult] = await Promise.all([
+        const [profilesResult, usersResult, childrenResult] = await Promise.all([
           supabase
             .from("profiles")
             .select("id, first_name, last_name, username, phone_number, share_phone, share_email")
             .in("id", userIds),
           supabase.from("users").select("user_id, email").in("user_id", userIds),
+          supabase.from("children").select("user_id, name, first_name, last_name, grade_level").in("user_id", userIds),
         ]);
 
         if (profilesResult.data) {
@@ -317,6 +318,13 @@ const useMapRides = (userId: string | undefined) => {
             {} as Record<string, string>,
           );
         }
+
+        if (childrenResult.data) {
+          childrenResult.data.forEach((c) => {
+            if (!childrenMap[c.user_id]) childrenMap[c.user_id] = [];
+            childrenMap[c.user_id].push(c);
+          });
+        }
       }
 
       const combinedRides: Ride[] = ridesWithLocation.map((ride) => ({
@@ -324,6 +332,7 @@ const useMapRides = (userId: string | undefined) => {
         profile: profilesMap[ride.user_id] || null,
         userEmail: emailsMap[ride.user_id] || null,
         hasAcceptedConnection: (ride as any).is_fulfilled === true,
+        children: childrenMap[ride.user_id] || [],
       }));
 
       setRides(combinedRides);
