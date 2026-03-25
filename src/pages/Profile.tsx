@@ -263,11 +263,6 @@ const Profile = () => {
                           Plate: {profile.license_plate}
                         </p>
                       )}
-                      {profile.car_seats != null && (
-                        <p className="text-sm text-muted-foreground">
-                          {profile.car_seats} seats available
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

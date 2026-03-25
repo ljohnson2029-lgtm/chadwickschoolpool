@@ -32,8 +32,6 @@ interface ParentProfileFormProps {
   setCarColor: (value: string) => void;
   licensePlate: string;
   setLicensePlate: (value: string) => void;
-  carSeats: string;
-  setCarSeats: (value: string) => void;
   children: Child[];
   onAddChild: () => void;
   onRemoveChild: (index: number) => void;
@@ -46,24 +44,22 @@ interface CompletenessBarProps {
   homeAddress: string;
   carMake: string;
   carModel: string;
-  carSeats: string;
   children: Child[];
 }
 
-const useCompleteness = ({ homeAddress, carMake, carModel, carSeats, children }: CompletenessBarProps) => {
+const useCompleteness = ({ homeAddress, carMake, carModel, children }: CompletenessBarProps) => {
   return useMemo(() => {
     const checks = [
       homeAddress.length > 0,
       carMake.length > 0,
       carModel.length > 0,
-      carSeats.length > 0,
       children.length > 0,
       children.length > 0 && children.every((c) => c.first_name.length > 0),
       children.length > 0 && children.every((c) => c.grade_level.length > 0),
     ];
     const filled = checks.filter(Boolean).length;
     return Math.round((filled / checks.length) * 100);
-  }, [homeAddress, carMake, carModel, carSeats, children]);
+  }, [homeAddress, carMake, carModel, children]);
 };
 
 const CompletenessBar = (props: CompletenessBarProps) => {
@@ -260,7 +256,6 @@ const ParentProfileForm = ({
   licensePlate,
   setLicensePlate,
   carSeats,
-  setCarSeats,
   children,
   onAddChild,
   onRemoveChild,
@@ -301,7 +296,6 @@ const ParentProfileForm = ({
         homeAddress={homeAddress}
         carMake={carMake}
         carModel={carModel}
-        carSeats={carSeats}
         children={children}
       />
 
@@ -381,20 +375,6 @@ const ParentProfileForm = ({
             {vehicleFields.map((field) => (
               <VehicleField key={field.id} {...field} />
             ))}
-          </div>
-          <div className="max-w-xs">
-            <Label htmlFor="carSeats">Available Seats for Carpooling</Label>
-            <Input
-              id="carSeats"
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="8"
-              value={carSeats}
-              onChange={handleSeatsChange}
-              placeholder="1–8"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Passenger seats available (excluding the driver)</p>
           </div>
         </CardContent>
       </Card>

@@ -369,12 +369,6 @@ const PublicProfile = () => {
                     <p className="font-medium">
                       {profile.car_make} {profile.car_model}
                     </p>
-                    {profile.car_seats && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {profile.car_seats} seats available for carpool
-                      </p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
