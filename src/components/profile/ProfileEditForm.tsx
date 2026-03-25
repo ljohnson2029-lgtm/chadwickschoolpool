@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, X, User, Phone, Home, Car, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
@@ -50,7 +51,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
   const isValid = useMemo(() => {
     if (!firstName.trim() || !lastName.trim()) return false;
     if (isParent) {
-      if (!phoneNumber.trim()) return false;
+      if (!isValidPhoneNumber(phoneNumber)) return false;
       if (!homeAddress.trim() || !homeLatitude || !homeLongitude) return false;
       if (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim()) return false;
     } else {
@@ -162,7 +163,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
               <Phone className="inline h-4 w-4 mr-1" />
               Phone Number {isParent && <RequiredStar />}
             </Label>
-            <Input id="phone" type="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="(555) 123-4567" className={isParent && fieldError(phoneNumber) ? errorBorder : ""} />
+            <PhoneNumberInput id="phone" value={phoneNumber} onChange={setPhoneNumber} className={isParent && fieldError(phoneNumber) ? errorBorder : ""} />
             {isParent && <FieldError show={fieldError(phoneNumber)} />}
             {!isParent && <p className="text-xs text-muted-foreground mt-1">Optional — not all students have a personal phone number</p>}
           </div>
