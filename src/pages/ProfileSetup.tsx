@@ -561,7 +561,11 @@ const ProfileSetup = () => {
                   <Input value={user.email || ""} disabled className="bg-muted" />
                 </div>
                 <div>
-                  <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
+                  {isParent ? (
+                    <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
+                  ) : (
+                    <OptionalLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</OptionalLabel>
+                  )}
                   <PhoneNumberInput
                     id="phone"
                     value={phoneNumber}
