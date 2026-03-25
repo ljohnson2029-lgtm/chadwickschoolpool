@@ -8,6 +8,7 @@ import {
   MapPin, 
   Users, 
   Phone,
+  Mail,
   X,
   Car,
   HandHelping,
@@ -15,7 +16,10 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
-  GraduationCap
+  GraduationCap,
+  Loader2,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -127,7 +131,7 @@ export const UnifiedRideCardSkeleton = () => (
   </Card>
 );
 
-export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
