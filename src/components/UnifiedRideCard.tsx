@@ -272,6 +272,75 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           )}
         </div>
 
+        {/* Pending Join Requests - for ride owner */}
+        {!isPast && ride.pendingRequests && ride.pendingRequests.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 gap-1">
+                <Users className="h-3 w-3" />
+                {ride.pendingRequests.length} Pending Join Request{ride.pendingRequests.length > 1 ? 's' : ''}
+              </Badge>
+            </div>
+            {ride.pendingRequests.map((req) => (
+              <div key={req.conversationId} className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 border border-amber-200/50 dark:border-amber-800/50">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{req.requesterName}</p>
+                  {req.requesterEmail && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Mail className="h-3 w-3" />
+                      <span>{req.requesterEmail}</span>
+                    </div>
+                  )}
+                  {req.requesterPhone && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Phone className="h-3 w-3" />
+                      <span>{req.requesterPhone}</span>
+                    </div>
+                  )}
+                  {req.children.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      {req.children.map((child, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-xs">
+                          <GraduationCap className="h-3 w-3 text-blue-600" />
+                          <span className="font-medium">{child.name}</span>
+                          {formatGrade(child.grade) && (
+                            <span className="text-muted-foreground">({formatGrade(child.grade)})</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    className="flex-1 gap-1"
+                    onClick={() => onAcceptRequest?.(req.conversationId)}
+                    disabled={acceptDeclineLoading === req.conversationId}
+                  >
+                    {acceptDeclineLoading === req.conversationId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-3.5 w-3.5" />
+                    )}
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 gap-1 text-destructive hover:bg-destructive/10"
+                    onClick={() => onDeclineRequest?.(req.conversationId)}
+                    disabled={acceptDeclineLoading === req.conversationId}
+                  >
+                    <UserX className="h-3.5 w-3.5" />
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Seats Info */}
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Users className="h-3.5 w-3.5" />
