@@ -511,13 +511,6 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
             <p className="text-xs text-muted-foreground">Parent/Adult</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Seats in top right */}
-            {seatsCount != null && (
-              <Badge variant="outline" className="text-xs gap-1 font-semibold">
-                <Users className="h-3 w-3" />
-                {seatsCount}
-              </Badge>
-            )}
             <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
               {ride.type === "request" ? (
                 <><Hand className="h-3 w-3 mr-1" /> Request</>
@@ -540,12 +533,15 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
 
       <CardContent className="space-y-3 px-4 pb-4 pt-0">
         {/* Route */}
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+        <div className="text-sm space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Route</p>
           <div>
-            <span className="font-medium">{ride.pickup_location}</span>
-            <span className="mx-1.5 text-muted-foreground">→</span>
-            <span className="font-medium">{ride.dropoff_location}</span>
+            <p className="text-xs font-semibold text-muted-foreground">Pickup</p>
+            <p className="font-medium">{ride.pickup_location}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">Dropoff</p>
+            <p className="font-medium">{ride.dropoff_location}</p>
           </div>
         </div>
 
@@ -560,6 +556,13 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span>{formatTime(ride.ride_time)}</span>
         </div>
+
+        {/* Seats Available */}
+        {seatsCount != null && (
+          <div className="text-sm">
+            <span className="font-medium">Seats Available: {seatsCount}</span>
+          </div>
+        )}
 
         {/* Children */}
         {ride.children && ride.children.length > 0 && (
