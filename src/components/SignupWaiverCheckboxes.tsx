@@ -54,7 +54,7 @@ const SignupWaiverCheckboxes = ({
             <Shield className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
             <span>
               I understand SchoolPool does not provide insurance coverage. I am responsible 
-              for ensuring my personal auto insurance covers carpooling activities.
+               for ensuring my personal auto insurance covers carpooling activities. <span className="text-destructive">*</span>
             </span>
           </Label>
         </div>
@@ -77,10 +77,10 @@ const SignupWaiverCheckboxes = ({
             <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
             <span>
               I agree to follow all traffic laws and{" "}
-              <Link to="/safety" className="text-primary hover:underline" target="_blank">
-                safety guidelines
-              </Link>{" "}
-              when participating in carpools.
+               <Link to="/safety" className="text-primary hover:underline" target="_blank">
+                 safety guidelines
+               </Link>{" "}
+               when participating in carpools. <span className="text-destructive">*</span>
             </span>
           </Label>
         </div>
@@ -103,7 +103,7 @@ const SignupWaiverCheckboxes = ({
             <Scale className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
             <span>
               I release SchoolPool from any liability related to carpool activities and 
-              understand that I assume all risks associated with carpooling.
+               understand that I assume all risks associated with carpooling. <span className="text-destructive">*</span>
             </span>
           </Label>
         </div>
