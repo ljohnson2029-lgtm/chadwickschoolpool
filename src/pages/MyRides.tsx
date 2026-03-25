@@ -382,6 +382,9 @@ const MyRides = () => {
               ride={ride}
               onCancel={!isStudent && !isPast ? () => handleCancelRide(ride) : undefined}
               isPast={isPast}
+              onAcceptRequest={!isStudent ? handleAcceptRequest : undefined}
+              onDeclineRequest={!isStudent ? handleDeclineRequest : undefined}
+              acceptDeclineLoading={acceptDeclineLoading}
             />
           ))}
         </div>
