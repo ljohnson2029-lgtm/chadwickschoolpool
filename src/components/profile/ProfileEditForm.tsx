@@ -49,11 +49,38 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
   // Student fields
   const [gradeLevel, setGradeLevel] = useState(profile.grade_level || "");
 
+  // Children (parent only)
+  const [children, setChildren] = useState<EditChild[]>([]);
+
+  // Load existing children
+  useEffect(() => {
+    if (!isParent) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("children")
+        .select("*")
+        .eq("user_id", user.id);
+      if (data && data.length > 0) {
+        setChildren(data.map(c => ({
+          id: c.id,
+          first_name: c.first_name || "",
+          last_name: c.last_name || "",
+          age: String(c.age),
+          grade_level: c.grade_level || "",
+        })));
+      }
+    };
+    load();
+  }, [user.id, isParent]);
+
   const handleAddressSelect = (address: string, lat: number, lng: number) => {
     setHomeAddress(address);
     setHomeLatitude(lat);
     setHomeLongitude(lng);
   };
+
+  const isChildComplete = (c: EditChild) =>
+    c.first_name.trim().length > 0 && c.last_name.trim().length > 0 && c.age.trim().length > 0 && c.grade_level.length > 0;
 
   // Validation
   const isValid = useMemo(() => {
