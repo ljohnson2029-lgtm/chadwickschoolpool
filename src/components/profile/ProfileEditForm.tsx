@@ -1,15 +1,23 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Phone, Home, Car, GraduationCap } from "lucide-react";
+import { Save, X, User, Phone, Home, Car, GraduationCap, Users, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
+
+interface EditChild {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  age: string;
+  grade_level: string;
+}
 
 interface ProfileEditFormProps {
   user: { id: string; email?: string };
