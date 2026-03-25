@@ -7,11 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { MapPin, Calendar, Clock, Users, User, Map, Radio, Car, Hand, CheckCircle, Loader2, X } from "lucide-react";
-import RideUserBadge from "./RideUserBadge";
+import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap } from "lucide-react";
 import { InstantJoinRideDialog, InstantOfferRideDialog } from "./ConfirmDialogs";
+import ParentProfilePopup from "./ParentProfilePopup";
 import { useToast } from "@/hooks/use-toast";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
+import { format } from "date-fns";
+
+interface RideChild {
+  first_name: string;
+  last_name: string;
+  grade_level: string | null;
+}
 
 interface Ride {
   id: string;
@@ -33,7 +40,12 @@ interface Ride {
     last_name: string | null;
     username: string;
     grade_level: string | null;
+    phone_number?: string | null;
+    share_phone?: boolean | null;
+    share_email?: boolean | null;
   } | null;
+  userEmail?: string;
+  children?: RideChild[];
 }
 
 interface RideResponse {
