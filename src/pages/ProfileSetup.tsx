@@ -107,20 +107,7 @@ const ProfileSetup = () => {
     if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
 
-  // Check if this is an edit (coming from profile page) vs initial onboarding
-  const isEditing = profile?.profile_complete === true;
-
-  useEffect(() => {
-    // Only redirect if profile is complete AND user navigated here directly (not from edit button)
-    // We check the referrer or use a flag to allow editing
-    if (profile?.profile_complete && !window.location.search.includes('edit=true')) {
-      // If they got here without the edit flag, check if they came from the profile page
-      const fromProfile = document.referrer.includes('/profile');
-      if (!fromProfile) {
-        navigate("/dashboard");
-      }
-    }
-  }, [profile, navigate]);
+  // No redirect for completed profiles - they may be editing
 
   useEffect(() => {
     if (profile) {
