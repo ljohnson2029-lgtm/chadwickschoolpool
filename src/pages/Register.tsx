@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
-import PhoneNumberInput from "@/components/PhoneNumberInput";
+import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import Navigation from "@/components/Navigation";
 import SignupWaiverCheckboxes from "@/components/SignupWaiverCheckboxes";
 
@@ -38,6 +38,7 @@ const Register = () => {
   const [insuranceAgreed, setInsuranceAgreed] = useState(false);
   const [safetyAgreed, setSafetyAgreed] = useState(false);
   const [liabilityAgreed, setLiabilityAgreed] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -179,6 +180,28 @@ const Register = () => {
 
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate phone for parent accounts
+    if (!isStudentEmail) {
+      if (!phoneNumber.trim()) {
+        setPhoneError("This field is required");
+        toast({
+          title: "Phone number required",
+          description: "Please enter your phone number to create a parent account.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!isValidPhoneNumber(phoneNumber)) {
+        setPhoneError("Please enter a complete phone number");
+        toast({
+          title: "Invalid phone number",
+          description: "Please enter a valid, complete phone number.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     // Validate waivers are agreed (only for parent accounts)
     if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
@@ -662,13 +685,19 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Optional)</Label>
+                <Label htmlFor="phone">
+                  Phone Number {isStudentEmail ? "(Optional)" : <><span className="text-destructive">*</span></>}
+                </Label>
                 <PhoneNumberInput
                   id="phone"
                   value={phoneNumber}
-                  onChange={setPhoneNumber}
+                  onChange={(val) => { setPhoneNumber(val); setPhoneError(""); }}
                   disabled={loading}
+                  className={phoneError ? "[&_input]:border-destructive" : ""}
                 />
+                {phoneError && (
+                  <p className="text-sm text-destructive">{phoneError}</p>
+                )}
               </div>
 
               {isStudentEmail && (
