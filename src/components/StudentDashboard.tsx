@@ -120,8 +120,8 @@
               <WeekCalendar rides={familyRides} loading={loading} />
             )}
           </div>
- 
-     </DashboardLayout>
+        </div>
+      </DashboardLayout>
    );
  };
  
