@@ -2,20 +2,25 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
-import { Car, Hand, Map as MapIcon } from "lucide-react";
+import { Car, Hand, Map as MapIcon, Calendar, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
+import type { FamilyRide } from "@/hooks/useLinkedParentRides";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { showTour, completeTour } = useOnboardingTour();
   const [isUserStudent, setIsUserStudent] = useState(false);
+  const [myRides, setMyRides] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
 
@@ -37,6 +42,28 @@ const Dashboard = () => {
     };
     fetchUserEmail();
   }, [user, profile?.account_type]);
+
+  // Fetch rides for schedule
+  useEffect(() => {
+    if (!user || shouldUseStudentDashboard) {
+      setLoading(false);
+      return;
+    }
+    const fetchRides = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('transaction_type', 'broadcast')
+        .eq('status', 'active')
+        .gte('ride_date', new Date().toISOString().split('T')[0])
+        .order('ride_date', { ascending: true });
+      if (data) setMyRides(data);
+      setLoading(false);
+    };
+    fetchRides();
+  }, [user, shouldUseStudentDashboard]);
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -128,6 +155,46 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── MY SCHEDULE (Week Calendar) ── */}
+        <Card className="rounded-lg shadow-sm mt-6 sm:mt-8">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                My Schedule
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/my-rides')} className="gap-1 text-xs h-8">
+                View All <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <WeekCalendar
+              rides={myRides.map((ride): FamilyRide => ({
+                id: ride.id,
+                type: ride.type,
+                ride_date: ride.ride_date,
+                ride_time: ride.ride_time,
+                pickup_location: ride.pickup_location,
+                dropoff_location: ride.dropoff_location,
+                pickup_latitude: null,
+                pickup_longitude: null,
+                dropoff_latitude: null,
+                dropoff_longitude: null,
+                seats_available: ride.seats_available ?? null,
+                seats_needed: ride.seats_needed ?? null,
+                status: 'active',
+                user_id: user.id,
+                parent_id: user.id,
+                parent_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile.username,
+                parent_email: '',
+                connected_parent_name: null,
+              }))}
+              loading={loading}
+            />
+          </CardContent>
+        </Card>
 
       </div>
     </DashboardLayout>
