@@ -39,6 +39,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   onAddressSelect,
   placeholder = "Enter your home address",
   required = false,
+  className: externalClassName,
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -266,7 +267,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           required={required}
-          className={`pr-16 ${inputBorderClass}`}
+          className={`pr-16 ${inputBorderClass} ${externalClassName || ""}`}
           role="combobox"
           aria-expanded={showSuggestions && suggestions.length > 0}
           aria-controls={listboxId}
