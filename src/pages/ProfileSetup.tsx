@@ -83,7 +83,7 @@ const ProfileSetup = () => {
   const [carModel, setCarModel] = useState("");
   const [carColor, setCarColor] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
-  const [carSeats, setCarSeats] = useState("");
+  
   const [children, setChildren] = useState<Child[]>([{ first_name: "", last_name: "", age: "", grade_level: "" }]);
   const [childTouched, setChildTouched] = useState<Record<string, boolean>>({});
 
@@ -122,7 +122,7 @@ const ProfileSetup = () => {
       setCarModel(profile.car_model || "");
       setCarColor(profile.car_color || "");
       setLicensePlate(profile.license_plate || "");
-      setCarSeats(profile.car_seats !== null && profile.car_seats !== undefined ? String(profile.car_seats) : "");
+      
       
       // Load student-specific fields
       if (!isParent) {
