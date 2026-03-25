@@ -53,7 +53,7 @@ const Profile = () => {
   // Fetch linked parents for student accounts
   useEffect(() => {
     const fetchLinkedParents = async () => {
-      if (!user || userRole !== 'student') return;
+      if (!user || profile?.account_type !== 'student') return;
       setLoadingParents(true);
       try {
         const { data } = await supabase.rpc('get_linked_parents', { student_user_id: user.id });
@@ -82,7 +82,7 @@ const Profile = () => {
       }
     };
     fetchLinkedParents();
-  }, [user, userRole]);
+  }, [user, profile?.account_type]);
 
   const handleLogout = async () => {
     setSigningOut(true);
@@ -298,15 +298,15 @@ const Profile = () => {
                                 <p className="font-medium">{parent.parent_email}</p>
                               </div>
                             </div>
-                            {parent.parent_phone && (
-                              <div className="flex items-center gap-3">
-                                <Phone className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <p className="text-sm text-muted-foreground">Phone</p>
-                                  <p className="font-medium">{parent.parent_phone}</p>
-                                </div>
+                            <div className="flex items-center gap-3">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Phone</p>
+                                <p className="font-medium">
+                                  {parent.parent_phone || <span className="text-muted-foreground italic">No phone number on file</span>}
+                                </p>
                               </div>
-                            )}
+                            </div>
                           </div>
                         ))}
                         <p className="text-xs text-muted-foreground">
@@ -342,8 +342,8 @@ const Profile = () => {
                 <FamilyLinksSection />
               </div>
 
-              {/* Frequent Carpool Partners */}
-              <TopConnections limit={3} variant="profile" />
+              {/* Frequent Carpool Partners - parents only */}
+              {isParent && <TopConnections limit={3} variant="profile" />}
             </>
           )}
         </div>
