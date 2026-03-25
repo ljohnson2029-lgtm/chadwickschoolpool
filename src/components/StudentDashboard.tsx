@@ -121,45 +121,6 @@
             )}
           </div>
  
-         {/* Section C: Quick Actions */}
-         <div>
-           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-             {/* Find Rides */}
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/find-rides')}>
-               <CardContent className="py-6 text-center">
-                 <Radio className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">Find Rides</p>
-                 <p className="text-sm text-muted-foreground">Browse available rides</p>
-               </CardContent>
-             </Card>
- 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-carpools')}>
-               <CardContent className="py-6 text-center">
-                 <Calendar className="h-8 w-8 mx-auto mb-3 text-primary" />
-                  <p className="font-medium">View Scheduled Rides</p>
-                  <p className="text-sm text-muted-foreground">All linked-parent rides</p>
-               </CardContent>
-             </Card>
-             
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-links')}>
-               <CardContent className="py-6 text-center">
-                 <Link2 className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">Manage Linked Parents</p>
-                 <p className="text-sm text-muted-foreground">Add or remove links</p>
-               </CardContent>
-             </Card>
-             
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/profile')}>
-               <CardContent className="py-6 text-center">
-                 <User className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">View Profile</p>
-                 <p className="text-sm text-muted-foreground">Your account</p>
-               </CardContent>
-             </Card>
-           </div>
-         </div>
-       </div>
      </DashboardLayout>
    );
  };
