@@ -513,7 +513,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 {ride.type === 'request' ? (
                   <><Car className="h-4 w-4" /> I Can Help!</>
                 ) : (
-                  <><Hand className="h-4 w-4" /> I Need This!</>
+                  <><Hand className="h-4 w-4" /> Request to Join</>
                 )}
               </Button>
             </TooltipTrigger>
@@ -560,7 +560,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           {ride.type === 'request' ? (
             <><Car className="h-4 w-4" /> I Can Help!</>
           ) : (
-            <><Hand className="h-4 w-4" /> I Need This!</>
+            <><Hand className="h-4 w-4" /> Request to Join</>
           )}
         </Button>
       );
