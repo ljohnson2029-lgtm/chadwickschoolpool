@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { UnifiedRide, ParticipantInfo } from "@/components/UnifiedRideCard";
+import type { UnifiedRide, ParticipantInfo, PendingJoinRequest } from "@/components/UnifiedRideCard";
 
 interface FetchResult {
   active: UnifiedRide[];
@@ -65,6 +65,45 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     .select('*')
     .eq('user_id', userId);
 
+  // 1b. Fetch pending join requests for user's own rides
+  const { data: pendingConvos } = await supabase
+    .from('ride_conversations')
+    .select('id, ride_id, sender_id, message, created_at, status')
+    .eq('recipient_id', userId)
+    .eq('status', 'pending');
+
+  // Build pending requests map: ride_id -> PendingJoinRequest[]
+  const pendingByRide: Record<string, PendingJoinRequest[]> = {};
+  if (pendingConvos && pendingConvos.length > 0) {
+    const requesterIds = [...new Set(pendingConvos.map(c => c.sender_id))];
+    const [requesterProfiles, requesterChildren] = await Promise.all([
+      fetchProfilesForIds(requesterIds),
+      fetchChildrenForIds(requesterIds),
+    ]);
+
+    for (const conv of pendingConvos) {
+      const profile = requesterProfiles[conv.sender_id];
+      const children = requesterChildren[conv.sender_id] || [];
+      const name = profile
+        ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.username
+        : 'Unknown';
+
+      const req: PendingJoinRequest = {
+        conversationId: conv.id,
+        requesterId: conv.sender_id,
+        requesterName: name,
+        requesterEmail: profile?.email || null,
+        requesterPhone: profile?.phone_number || null,
+        children,
+        message: conv.message,
+        requestedAt: conv.created_at || '',
+      };
+
+      if (!pendingByRide[conv.ride_id]) pendingByRide[conv.ride_id] = [];
+      pendingByRide[conv.ride_id].push(req);
+    }
+  }
+
   if (myRides) {
     for (const ride of myRides) {
       allRides.push({
@@ -83,11 +122,12 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         otherParent: null,
         myChildren,
         originalData: ride,
+        pendingRequests: pendingByRide[ride.id] || [],
       });
     }
   }
 
-  // 2. Fetch conversations where user joined someone's ride
+  // 2. Fetch conversations where user joined someone's ride (accepted)
   const { data: joinedConvos } = await supabase
     .from('ride_conversations')
     .select('*, rides(*)')
@@ -127,7 +167,46 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // 2b. Conversations where someone joined the user's ride
+  // 2b. Fetch PENDING conversations where user requested to join (awaiting approval)
+  const { data: pendingSentConvos } = await supabase
+    .from('ride_conversations')
+    .select('*, rides(*)')
+    .eq('sender_id', userId)
+    .eq('status', 'pending');
+
+  if (pendingSentConvos) {
+    const ownerIds = [...new Set(pendingSentConvos.map(c => c.rides?.user_id).filter(Boolean))] as string[];
+    const [ownerProfiles, ownerChildren] = await Promise.all([
+      fetchProfilesForIds(ownerIds),
+      fetchChildrenForIds(ownerIds),
+    ]);
+
+    for (const conv of pendingSentConvos) {
+      if (!conv.rides) continue;
+      const ride = conv.rides;
+      const profile = ownerProfiles[ride.user_id];
+      
+      allRides.push({
+        id: conv.id,
+        source: 'conversation',
+        rideType: ride.type as 'request' | 'offer',
+        status: 'pending-approval',
+        rideStatus: (ride.status as UnifiedRide['rideStatus']) || 'active',
+        pickupLocation: ride.pickup_location,
+        dropoffLocation: ride.dropoff_location,
+        rideDate: ride.ride_date,
+        rideTime: ride.ride_time,
+        seatsAvailable: ride.seats_available,
+        seatsNeeded: ride.seats_needed,
+        isDriver: false,
+        otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
+        myChildren,
+        originalData: { conversation: conv, ride },
+      });
+    }
+  }
+
+  // 2c. Conversations where someone joined the user's ride (accepted)
   const { data: receivedConvos } = await supabase
     .from('ride_conversations')
     .select('*, rides(*)')
