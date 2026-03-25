@@ -688,6 +688,9 @@ const ProfileSetup = () => {
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" /> Your Children <span className="text-destructive">*</span>
                   </CardTitle>
+                  <p className="text-sm font-semibold text-foreground">
+                    Add All Children That Attend Chadwick School
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     At least one child is required. Additional children are optional, but all 4 fields must be filled.
                   </p>

@@ -1,15 +1,23 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Phone, Home, Car, GraduationCap } from "lucide-react";
+import { Save, X, User, Phone, Home, Car, GraduationCap, Users, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
+
+interface EditChild {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  age: string;
+  grade_level: string;
+}
 
 interface ProfileEditFormProps {
   user: { id: string; email?: string };
@@ -41,11 +49,38 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
   // Student fields
   const [gradeLevel, setGradeLevel] = useState(profile.grade_level || "");
 
+  // Children (parent only)
+  const [children, setChildren] = useState<EditChild[]>([]);
+
+  // Load existing children
+  useEffect(() => {
+    if (!isParent) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("children")
+        .select("*")
+        .eq("user_id", user.id);
+      if (data && data.length > 0) {
+        setChildren(data.map(c => ({
+          id: c.id,
+          first_name: c.first_name || "",
+          last_name: c.last_name || "",
+          age: String(c.age),
+          grade_level: c.grade_level || "",
+        })));
+      }
+    };
+    load();
+  }, [user.id, isParent]);
+
   const handleAddressSelect = (address: string, lat: number, lng: number) => {
     setHomeAddress(address);
     setHomeLatitude(lat);
     setHomeLongitude(lng);
   };
+
+  const isChildComplete = (c: EditChild) =>
+    c.first_name.trim().length > 0 && c.last_name.trim().length > 0 && c.age.trim().length > 0 && c.grade_level.length > 0;
 
   // Validation
   const isValid = useMemo(() => {
@@ -54,11 +89,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
       if (!isValidPhoneNumber(phoneNumber)) return false;
       if (!homeAddress.trim() || !homeLatitude || !homeLongitude) return false;
       if (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim()) return false;
+      // All children must be complete
+      if (children.length > 0 && !children.every(isChildComplete)) return false;
     } else {
       if (!gradeLevel) return false;
     }
     return true;
-  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent]);
+  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent, children]);
 
   const fieldError = (value: string) => attempted && !value.trim();
   const addressError = attempted && isParent && (!homeAddress.trim() || !homeLatitude || !homeLongitude);
@@ -109,6 +146,25 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           phone_number: phoneNumber.trim() || null,
         })
         .eq("user_id", user.id);
+
+      // Save children for parent accounts
+      if (isParent) {
+        await supabase.from("children").delete().eq("user_id", user.id);
+        const validChildren = children.filter(isChildComplete);
+        if (validChildren.length > 0) {
+          await supabase.from("children").insert(
+            validChildren.map(c => ({
+              user_id: user.id,
+              name: `${c.first_name} ${c.last_name}`.trim(),
+              first_name: c.first_name.trim(),
+              last_name: c.last_name.trim(),
+              age: parseInt(c.age),
+              school: c.grade_level || "",
+              grade_level: c.grade_level || null,
+            }))
+          );
+        }
+      }
 
       toast({ title: "Profile updated successfully" });
       onSave();
@@ -228,6 +284,102 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
                 <FieldError show={fieldError(licensePlate)} />
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Parent-specific: My Children */}
+      {isParent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                My Children
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setChildren([...children, { first_name: "", last_name: "", age: "", grade_level: "" }])}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Child
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {children.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No children added. Click "Add Child" to add your children.
+              </p>
+            ) : (
+              children.map((child, i) => {
+                const incomplete = attempted && !isChildComplete(child);
+                return (
+                  <div key={child.id ?? i} className={`border rounded-lg p-4 space-y-3 ${incomplete ? "border-destructive" : ""}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        {child.first_name.trim() ? `${child.first_name} ${child.last_name}`.trim() : `Child ${i + 1}`}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChildren(children.filter((_, idx) => idx !== i))}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    {incomplete && (
+                      <p className="text-xs text-destructive">All fields are required for each child</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>First Name <RequiredStar /></Label>
+                        <Input
+                          value={child.first_name}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], first_name: e.target.value }; setChildren(u); }}
+                          placeholder="First name"
+                          className={incomplete && !child.first_name.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Last Name <RequiredStar /></Label>
+                        <Input
+                          value={child.last_name}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], last_name: e.target.value }; setChildren(u); }}
+                          placeholder="Last name"
+                          className={incomplete && !child.last_name.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Age <RequiredStar /></Label>
+                        <Input
+                          type="number" min="1" max="18"
+                          value={child.age}
+                          onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }}
+                          placeholder="Age"
+                          className={incomplete && !child.age.trim() ? errorBorder : ""}
+                        />
+                      </div>
+                      <div>
+                        <Label>Grade <RequiredStar /></Label>
+                        <Select value={child.grade_level} onValueChange={v => { const u = [...children]; u[i] = { ...u[i], grade_level: v }; setChildren(u); }}>
+                          <SelectTrigger className={incomplete && !child.grade_level ? errorBorder : ""}>
+                            <SelectValue placeholder="Grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GRADE_LEVELS.map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </CardContent>
         </Card>
       )}
