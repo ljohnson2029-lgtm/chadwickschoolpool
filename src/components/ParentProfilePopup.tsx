@@ -153,7 +153,7 @@ const ParentProfilePopup = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 px-4 pb-4 pt-0">
+      <CardContent className="space-y-2 px-4 pb-4 pt-0">
         <div className="space-y-2 py-2 border-t text-sm">
           {/* Email */}
           <div className="flex items-center gap-2">
@@ -184,28 +184,6 @@ const ParentProfilePopup = ({
               <span className="text-muted-foreground">Phone not shared</span>
             )}
           </div>
-        </div>
-
-        {/* Linked Students */}
-        <div className="border-t pt-2">
-          <p className="text-xs font-medium text-muted-foreground mb-1.5">
-            {linkedStudents.length === 1 ? 'Linked Student' : 'Linked Students'}
-          </p>
-          {linkedStudents.length > 0 ? (
-            <div className="space-y-1">
-              {linkedStudents.map((student, idx) => (
-                <div key={idx} className="text-sm flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{student.first_name} {student.last_name}</span>
-                  {student.grade_level && (
-                    <span className="text-muted-foreground">• {student.grade_level}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No students linked</p>
-          )}
         </div>
       </CardContent>
     </Card>
