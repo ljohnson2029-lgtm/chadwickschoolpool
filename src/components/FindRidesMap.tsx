@@ -490,7 +490,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
 }) => {
   const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
 
-  // Fetch children via edge function (bypasses RLS)
+  // Fetch children from children table via edge function (bypasses RLS)
   useEffect(() => {
     const fetchChildren = async () => {
       try {

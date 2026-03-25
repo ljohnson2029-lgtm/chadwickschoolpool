@@ -70,6 +70,7 @@ const ParentProfilePopup = ({
       });
 
       setLinkedStudents(data.profile.linked_students || []);
+
     } catch (err) {
       console.error('Error fetching parent profile:', err);
       setError(true);
