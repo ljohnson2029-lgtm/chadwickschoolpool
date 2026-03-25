@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ const MyRides = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
+  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
 
   const isStudent = profile?.account_type === "student";
 
@@ -219,6 +220,93 @@ const MyRides = () => {
     setRideToDelete(null);
   };
 
+  const handleAcceptRequest = useCallback(async (conversationId: string) => {
+    setAcceptDeclineLoading(conversationId);
+    try {
+      // Update conversation status to accepted
+      const { error } = await supabase
+        .from('ride_conversations')
+        .update({ status: 'accepted' })
+        .eq('id', conversationId);
+      if (error) throw error;
+
+      // Get the conversation to send notification
+      const { data: conv } = await supabase
+        .from('ride_conversations')
+        .select('sender_id, ride_id, rides(ride_date, ride_time)')
+        .eq('id', conversationId)
+        .single();
+
+      if (conv) {
+        const senderName = profile?.first_name
+          ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+          : 'The ride owner';
+        const rideData = conv.rides as any;
+        
+        try {
+          await supabase.functions.invoke('create-notification', {
+            body: {
+              userId: conv.sender_id,
+              type: 'ride_join_accepted',
+              message: `✅ ${senderName} accepted your request to join the ride on ${rideData?.ride_date || 'upcoming'} at ${rideData?.ride_time || ''}`,
+            }
+          });
+        } catch (notifErr) {
+          console.warn('Failed to send acceptance notification:', notifErr);
+        }
+      }
+
+      toast.success('Request accepted! The parent has been added to your ride.');
+      loadRides();
+    } catch (err: any) {
+      toast.error('Failed to accept request: ' + err.message);
+    }
+    setAcceptDeclineLoading(null);
+  }, [user, profile]);
+
+  const handleDeclineRequest = useCallback(async (conversationId: string) => {
+    setAcceptDeclineLoading(conversationId);
+    try {
+      // Update conversation status to declined
+      const { data: conv } = await supabase
+        .from('ride_conversations')
+        .select('sender_id, ride_id, rides(ride_date, ride_time)')
+        .eq('id', conversationId)
+        .single();
+
+      const { error } = await supabase
+        .from('ride_conversations')
+        .update({ status: 'declined' })
+        .eq('id', conversationId);
+      if (error) throw error;
+
+      if (conv) {
+        const senderName = profile?.first_name
+          ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+          : 'The ride owner';
+        const rideData = conv.rides as any;
+        
+        try {
+          await supabase.functions.invoke('create-notification', {
+            body: {
+              userId: conv.sender_id,
+              type: 'ride_join_declined',
+              message: `❌ ${senderName} declined your request to join the ride on ${rideData?.ride_date || 'upcoming'}`,
+            }
+          });
+        } catch (notifErr) {
+          console.warn('Failed to send decline notification:', notifErr);
+        }
+      }
+
+      toast.success('Request declined.');
+      loadRides();
+    } catch (err: any) {
+      toast.error('Failed to decline request: ' + err.message);
+    }
+    setAcceptDeclineLoading(null);
+  }, [user, profile]);
+
   if (loading || !user || !profile) {
     return (
       <DashboardLayout>
@@ -294,6 +382,9 @@ const MyRides = () => {
               ride={ride}
               onCancel={!isStudent && !isPast ? () => handleCancelRide(ride) : undefined}
               isPast={isPast}
+              onAcceptRequest={!isStudent ? handleAcceptRequest : undefined}
+              onDeclineRequest={!isStudent ? handleDeclineRequest : undefined}
+              acceptDeclineLoading={acceptDeclineLoading}
             />
           ))}
         </div>

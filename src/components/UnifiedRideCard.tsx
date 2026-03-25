@@ -8,6 +8,7 @@ import {
   MapPin, 
   Users, 
   Phone,
+  Mail,
   X,
   Car,
   HandHelping,
@@ -15,7 +16,10 @@ import {
   CheckCircle,
   ArrowRight,
   Star,
-  GraduationCap
+  GraduationCap,
+  Loader2,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -29,11 +33,22 @@ export interface ParticipantInfo {
   children: { name: string; grade: string }[];
 }
 
+export interface PendingJoinRequest {
+  conversationId: string;
+  requesterId: string;
+  requesterName: string;
+  requesterEmail: string | null;
+  requesterPhone: string | null;
+  children: { name: string; grade: string }[];
+  message: string | null;
+  requestedAt: string;
+}
+
 export interface UnifiedRide {
   id: string;
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
-  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed';
+  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
   pickupLocation: string;
   dropoffLocation: string;
@@ -48,6 +63,7 @@ export interface UnifiedRide {
   _studentView?: boolean;
   _driverName?: string;
   _studentPassengerName?: string;
+  pendingRequests?: PendingJoinRequest[];
 }
 
 interface UnifiedRideCardProps {
@@ -55,9 +71,15 @@ interface UnifiedRideCardProps {
   onCancel?: () => void;
   isPast?: boolean;
   topConnectionIds?: string[];
+  onAcceptRequest?: (conversationId: string) => void;
+  onDeclineRequest?: (conversationId: string) => void;
+  acceptDeclineLoading?: string | null;
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  if (ride.status === 'pending-approval') {
+    return { label: 'Pending - Awaiting Approval', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
   if (ride.source === 'posted' && ride.otherParent) {
     return ride.isDriver
       ? { label: "You're Driving", className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800', icon: Car }
@@ -109,7 +131,7 @@ export const UnifiedRideCardSkeleton = () => (
   </Card>
 );
 
-export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
@@ -249,6 +271,75 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds }: Un
             )
           )}
         </div>
+
+        {/* Pending Join Requests - for ride owner */}
+        {!isPast && ride.pendingRequests && ride.pendingRequests.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 gap-1">
+                <Users className="h-3 w-3" />
+                {ride.pendingRequests.length} Pending Join Request{ride.pendingRequests.length > 1 ? 's' : ''}
+              </Badge>
+            </div>
+            {ride.pendingRequests.map((req) => (
+              <div key={req.conversationId} className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 border border-amber-200/50 dark:border-amber-800/50">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">{req.requesterName}</p>
+                  {req.requesterEmail && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Mail className="h-3 w-3" />
+                      <span>{req.requesterEmail}</span>
+                    </div>
+                  )}
+                  {req.requesterPhone && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Phone className="h-3 w-3" />
+                      <span>{req.requesterPhone}</span>
+                    </div>
+                  )}
+                  {req.children.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      {req.children.map((child, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-xs">
+                          <GraduationCap className="h-3 w-3 text-blue-600" />
+                          <span className="font-medium">{child.name}</span>
+                          {formatGrade(child.grade) && (
+                            <span className="text-muted-foreground">({formatGrade(child.grade)})</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    className="flex-1 gap-1"
+                    onClick={() => onAcceptRequest?.(req.conversationId)}
+                    disabled={acceptDeclineLoading === req.conversationId}
+                  >
+                    {acceptDeclineLoading === req.conversationId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-3.5 w-3.5" />
+                    )}
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 gap-1 text-destructive hover:bg-destructive/10"
+                    onClick={() => onDeclineRequest?.(req.conversationId)}
+                    disabled={acceptDeclineLoading === req.conversationId}
+                  >
+                    <UserX className="h-3.5 w-3.5" />
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Seats Info */}
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
