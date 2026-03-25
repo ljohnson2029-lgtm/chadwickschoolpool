@@ -3,20 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GraduationCap } from "lucide-react";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
-import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 
 interface StudentProfileFormProps {
   gradeLevel: string;
   setGradeLevel: (value: string) => void;
-  homeAddress: string;
-  onAddressSelect: (address: string, lat: number, lng: number) => void;
 }
 
 const StudentProfileForm = ({
   gradeLevel,
   setGradeLevel,
-  homeAddress,
-  onAddressSelect,
 }: StudentProfileFormProps) => {
   return (
     <>
@@ -47,18 +42,6 @@ const StudentProfileForm = ({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="homeAddress">Home Address</Label>
-            <AddressAutocompleteInput
-              value={homeAddress}
-              onAddressSelect={onAddressSelect}
-              placeholder="Start typing your address..."
-              required
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Select from suggestions to enable map features
-            </p>
-          </div>
         </CardContent>
       </Card>
     </>
