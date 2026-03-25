@@ -29,11 +29,22 @@ export interface ParticipantInfo {
   children: { name: string; grade: string }[];
 }
 
+export interface PendingJoinRequest {
+  conversationId: string;
+  requesterId: string;
+  requesterName: string;
+  requesterEmail: string | null;
+  requesterPhone: string | null;
+  children: { name: string; grade: string }[];
+  message: string | null;
+  requestedAt: string;
+}
+
 export interface UnifiedRide {
   id: string;
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
-  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed';
+  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
   pickupLocation: string;
   dropoffLocation: string;
@@ -48,6 +59,7 @@ export interface UnifiedRide {
   _studentView?: boolean;
   _driverName?: string;
   _studentPassengerName?: string;
+  pendingRequests?: PendingJoinRequest[];
 }
 
 interface UnifiedRideCardProps {
@@ -55,6 +67,9 @@ interface UnifiedRideCardProps {
   onCancel?: () => void;
   isPast?: boolean;
   topConnectionIds?: string[];
+  onAcceptRequest?: (conversationId: string) => void;
+  onDeclineRequest?: (conversationId: string) => void;
+  acceptDeclineLoading?: string | null;
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
