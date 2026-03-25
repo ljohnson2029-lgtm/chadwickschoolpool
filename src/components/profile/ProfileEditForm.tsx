@@ -35,7 +35,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
   const [carModel, setCarModel] = useState(profile.car_model || "");
   const [carColor, setCarColor] = useState(profile.car_color || "");
   const [licensePlate, setLicensePlate] = useState(profile.license_plate || "");
-  const [carSeats, setCarSeats] = useState(profile.car_seats != null ? String(profile.car_seats) : "");
 
   // Student fields
   const [gradeLevel, setGradeLevel] = useState(profile.grade_level || "");
@@ -69,7 +68,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         updateData.car_model = carModel || null;
         updateData.car_color = carColor || null;
         updateData.license_plate = licensePlate || null;
-        updateData.car_seats = carSeats !== "" ? parseInt(carSeats) : null;
       } else {
         updateData.grade_level = gradeLevel || null;
       }
@@ -188,23 +186,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
                 <Label htmlFor="licensePlate">License Plate</Label>
                 <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g., ABC1234" />
               </div>
-            </div>
-            <div className="max-w-xs">
-              <Label htmlFor="carSeats">Available Seats</Label>
-              <Input
-                id="carSeats"
-                type="number"
-                min="0"
-                max="8"
-                value={carSeats}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val === "" || (/^\d+$/.test(val) && Number(val) >= 0 && Number(val) <= 8)) {
-                    setCarSeats(val);
-                  }
-                }}
-                placeholder="1-8"
-              />
             </div>
           </CardContent>
         </Card>
