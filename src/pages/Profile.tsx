@@ -273,6 +273,64 @@ const Profile = () => {
                 </Card>
               )}
 
+              {/* Linked Parent Info (students only) */}
+              {isChild && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Linked Parent Contact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingParents ? (
+                      <p className="text-sm text-muted-foreground">Loading...</p>
+                    ) : linkedParents.length > 0 ? (
+                      <div className="space-y-4">
+                        {linkedParents.map((parent) => (
+                          <div key={parent.parent_id} className="space-y-2 p-3 rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-3">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Parent Name</p>
+                                <p className="font-medium">{parent.parent_first_name} {parent.parent_last_name}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Email</p>
+                                <p className="font-medium">{parent.parent_email}</p>
+                              </div>
+                            </div>
+                            {parent.parent_phone && (
+                              <div className="flex items-center gap-3">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Phone</p>
+                                  <p className="font-medium">{parent.parent_phone}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground">
+                          This information is pulled automatically from your linked parent's account.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground mb-3">No parent linked yet.</p>
+                        <Button variant="outline" onClick={() => navigate('/family-links')} className="gap-2">
+                          <UserPlus className="h-4 w-4" />
+                          Link to Parent Account
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Family Links Section */}
               <Separator />
               <div>
