@@ -570,8 +570,18 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold truncate">{getDisplayName(ride)}</h3>
+          <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold truncate">{getDisplayName(ride)}</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-xs flex-shrink-0"
+                  onClick={() => setShowProfilePopup(!showProfilePopup)}
+                >
+                  View
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Users className="h-3 w-3" />
                 Parent/Adult
@@ -587,6 +597,19 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
               </Badge>
             </div>
           </div>
+
+          {/* Profile Popup */}
+          {showProfilePopup && (
+            <div className="mt-2">
+              <ParentProfilePopup
+                parentId={ride.user_id}
+                distance={0}
+                onClose={() => setShowProfilePopup(false)}
+                onRequestRide={() => {}}
+                onOfferRide={() => {}}
+              />
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-3 px-4 pb-4 pt-0">
@@ -637,29 +660,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
               ))}
             </div>
           )}
-
-          {/* View Profile Button */}
-          <div className="border-t pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-2"
-              onClick={() => setShowProfilePopup(!showProfilePopup)}
-            >
-              View
-            </Button>
-            {showProfilePopup && (
-              <div className="mt-2">
-                <ParentProfilePopup
-                  parentId={ride.user_id}
-                  distance={0}
-                  onClose={() => setShowProfilePopup(false)}
-                  onRequestRide={() => {}}
-                  onOfferRide={() => {}}
-                />
-              </div>
-            )}
-          </div>
 
           {/* Show connection info for user's own confirmed rides */}
           {isOwnRide && hasConnection && connection && (
