@@ -30,6 +30,13 @@ interface RideProfile {
   share_email?: boolean | null;
 }
 
+interface RideChild {
+  name: string;
+  first_name: string;
+  last_name: string;
+  grade_level: string | null;
+}
+
 interface Ride {
   id: string;
   type: "request" | "offer";
@@ -48,6 +55,7 @@ interface Ride {
   profile?: RideProfile;
   userEmail?: string;
   hasAcceptedConnection?: boolean;
+  children?: RideChild[];
 }
 
 interface RideResponse {
