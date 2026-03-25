@@ -25,47 +25,19 @@ import { WeekCalendar } from "@/components/student/WeekCalendar";
    if (!user || !profile) {
      return (
        <DashboardLayout>
-         <div className="container mx-auto px-4 py-8 max-w-5xl">
-           {/* Header skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-9 w-64 mb-2" />
-             <Skeleton className="h-6 w-32" />
-           </div>
- 
-           {/* Linked Parents skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-7 w-40 mb-4" />
-             <div className="grid gap-4 sm:grid-cols-2">
-               <SkeletonListItem />
-               <SkeletonListItem />
-             </div>
-           </div>
- 
-           {/* Family Carpools skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-7 w-40 mb-4" />
-             <div className="space-y-3">
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-             </div>
-           </div>
- 
-           {/* Quick Actions skeleton */}
-           <div>
-             <Skeleton className="h-7 w-32 mb-4" />
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-               {[1, 2, 3].map((i) => (
-                 <Card key={i}>
-                   <CardContent className="py-6 text-center">
-                     <Skeleton className="h-8 w-8 mx-auto mb-3 rounded" />
-                     <Skeleton className="h-4 w-32 mx-auto mb-2" />
-                     <Skeleton className="h-3 w-24 mx-auto" />
-                   </CardContent>
-                 </Card>
-               ))}
-             </div>
-           </div>
+          <div className="container mx-auto px-4 py-8 max-w-5xl">
+            <div className="mb-8">
+              <Skeleton className="h-9 w-64 mb-2" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+            <div className="mb-8">
+              <Skeleton className="h-7 w-40 mb-4" />
+              <div className="space-y-3">
+                <SkeletonCarpoolItem />
+                <SkeletonCarpoolItem />
+                <SkeletonCarpoolItem />
+              </div>
+            </div>
          </div>
        </DashboardLayout>
      );
