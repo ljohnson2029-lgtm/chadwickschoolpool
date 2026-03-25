@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
+import PhoneNumberInput from "@/components/PhoneNumberInput";
 import Navigation from "@/components/Navigation";
 import SignupWaiverCheckboxes from "@/components/SignupWaiverCheckboxes";
 
@@ -662,11 +663,10 @@ const Register = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number (Optional)</Label>
-                <Input
+                <PhoneNumberInput
                   id="phone"
-                  type="tel"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  onChange={setPhoneNumber}
                   disabled={loading}
                 />
               </div>

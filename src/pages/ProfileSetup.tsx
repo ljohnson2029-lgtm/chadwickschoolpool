@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle } from "lucide-react";
+import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 
 interface Child {
   first_name: string;
@@ -22,7 +23,7 @@ interface Child {
 
 /* ── Validation helpers ──────────────────────────── */
 
-const isValidPhone = (phone: string) => phone.replace(/\D/g, "").length >= 10;
+const isValidPhone = (phone: string) => isValidPhoneNumber(phone);
 const isMinLength = (val: string, min: number) => val.trim().length >= min;
 
 interface FieldError {
@@ -555,13 +556,11 @@ const ProfileSetup = () => {
                 </div>
                 <div>
                   <RequiredLabel htmlFor="phone" icon={<Phone className="h-3.5 w-3.5" />}>Phone Number</RequiredLabel>
-                  <Input
+                  <PhoneNumberInput
                     id="phone"
-                    type="tel"
                     value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
+                    onChange={setPhoneNumber}
                     onBlur={() => markTouched("phone")}
-                    placeholder="(555) 123-4567"
                     className={errorInputClass("phone")}
                   />
                   <FieldErrorMessage error={getFieldError("phone")} />
