@@ -92,16 +92,7 @@
            </div>
          </div>
  
-         {/* Section A: Linked Parents */}
-         <div className="mb-8">
-           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-             <Users className="h-5 w-5" />
-             Linked Parents
-           </h2>
-           <LinkedParentsList parents={linkedParents} loading={loading} />
-         </div>
- 
-           {/* Section B: Scheduled Rides (week calendar) */}
+          {/* Schedule */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold flex items-center gap-2">
