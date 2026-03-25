@@ -1,24 +1,19 @@
- import { useNavigate } from "react-router-dom";
- import { useAuth } from "@/contexts/AuthContext";
- import { DashboardLayout } from "@/components/DashboardLayout";
- import { Card, CardContent } from "@/components/ui/card";
- import { Badge } from "@/components/ui/badge";
- import { Button } from "@/components/ui/button";
- import { Skeleton } from "@/components/ui/skeleton";
- import { SkeletonListItem, SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
- import { 
-   GraduationCap,
-   Users,
-   Calendar,
-   Car,
-   User,
-   Link2,
-   ArrowRight,
-   Radio
- } from "lucide-react";
- import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
- import { LinkedParentsList } from "@/components/student/LinkedParentsList";
- import { WeekCalendar } from "@/components/student/WeekCalendar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
+import { 
+  GraduationCap,
+  Car,
+  Link2,
+  ArrowRight,
+} from "lucide-react";
+import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
  
  const StudentDashboard = () => {
    const { user, profile } = useAuth();
@@ -30,47 +25,19 @@
    if (!user || !profile) {
      return (
        <DashboardLayout>
-         <div className="container mx-auto px-4 py-8 max-w-5xl">
-           {/* Header skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-9 w-64 mb-2" />
-             <Skeleton className="h-6 w-32" />
-           </div>
- 
-           {/* Linked Parents skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-7 w-40 mb-4" />
-             <div className="grid gap-4 sm:grid-cols-2">
-               <SkeletonListItem />
-               <SkeletonListItem />
-             </div>
-           </div>
- 
-           {/* Family Carpools skeleton */}
-           <div className="mb-8">
-             <Skeleton className="h-7 w-40 mb-4" />
-             <div className="space-y-3">
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-               <SkeletonCarpoolItem />
-             </div>
-           </div>
- 
-           {/* Quick Actions skeleton */}
-           <div>
-             <Skeleton className="h-7 w-32 mb-4" />
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-               {[1, 2, 3].map((i) => (
-                 <Card key={i}>
-                   <CardContent className="py-6 text-center">
-                     <Skeleton className="h-8 w-8 mx-auto mb-3 rounded" />
-                     <Skeleton className="h-4 w-32 mx-auto mb-2" />
-                     <Skeleton className="h-3 w-24 mx-auto" />
-                   </CardContent>
-                 </Card>
-               ))}
-             </div>
-           </div>
+          <div className="container mx-auto px-4 py-8 max-w-5xl">
+            <div className="mb-8">
+              <Skeleton className="h-9 w-64 mb-2" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+            <div className="mb-8">
+              <Skeleton className="h-7 w-40 mb-4" />
+              <div className="space-y-3">
+                <SkeletonCarpoolItem />
+                <SkeletonCarpoolItem />
+                <SkeletonCarpoolItem />
+              </div>
+            </div>
          </div>
        </DashboardLayout>
      );
@@ -92,16 +59,7 @@
            </div>
          </div>
  
-         {/* Section A: Linked Parents */}
-         <div className="mb-8">
-           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-             <Users className="h-5 w-5" />
-             Linked Parents
-           </h2>
-           <LinkedParentsList parents={linkedParents} loading={loading} />
-         </div>
- 
-           {/* Section B: Scheduled Rides (week calendar) */}
+          {/* Schedule */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -129,47 +87,8 @@
               <WeekCalendar rides={familyRides} loading={loading} />
             )}
           </div>
- 
-         {/* Section C: Quick Actions */}
-         <div>
-           <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-             {/* Find Rides */}
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/find-rides')}>
-               <CardContent className="py-6 text-center">
-                 <Radio className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">Find Rides</p>
-                 <p className="text-sm text-muted-foreground">Browse available rides</p>
-               </CardContent>
-             </Card>
- 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-carpools')}>
-               <CardContent className="py-6 text-center">
-                 <Calendar className="h-8 w-8 mx-auto mb-3 text-primary" />
-                  <p className="font-medium">View Scheduled Rides</p>
-                  <p className="text-sm text-muted-foreground">All linked-parent rides</p>
-               </CardContent>
-             </Card>
-             
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/family-links')}>
-               <CardContent className="py-6 text-center">
-                 <Link2 className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">Manage Linked Parents</p>
-                 <p className="text-sm text-muted-foreground">Add or remove links</p>
-               </CardContent>
-             </Card>
-             
-             <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/profile')}>
-               <CardContent className="py-6 text-center">
-                 <User className="h-8 w-8 mx-auto mb-3 text-primary" />
-                 <p className="font-medium">View Profile</p>
-                 <p className="text-sm text-muted-foreground">Your account</p>
-               </CardContent>
-             </Card>
-           </div>
-         </div>
-       </div>
-     </DashboardLayout>
+        </div>
+      </DashboardLayout>
    );
  };
  
