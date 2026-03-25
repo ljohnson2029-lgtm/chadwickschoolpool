@@ -644,7 +644,7 @@ const Register = () => {
             <form onSubmit={handleAccountCreation} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="firstName"
                     value={firstName}
@@ -654,7 +654,7 @@ const Register = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="lastName"
                     value={lastName}
@@ -666,7 +666,7 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
                 <Input
                   id="username"
                   value={username}
@@ -713,7 +713,7 @@ const Register = () => {
 
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                 <Input
                   id="password"
                   type="password"
@@ -728,7 +728,7 @@ const Register = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -757,6 +757,7 @@ const Register = () => {
                 className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 loading={loading}
                 loadingText="Creating Account..."
+                disabled={loading || !firstName.trim() || !lastName.trim() || !username.trim() || !password || !confirmPassword || (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) || (!isStudentEmail && (!phoneNumber.trim() || !isValidPhoneNumber(phoneNumber)))}
               >
                 Create Account
                 <UserPlus className="ml-2 h-4 w-4" />
