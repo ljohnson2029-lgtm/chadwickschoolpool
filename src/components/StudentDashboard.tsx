@@ -11,6 +11,9 @@ import {
   Car,
   Link2,
   ArrowRight,
+  Calendar,
+  Users,
+  User,
 } from "lucide-react";
 import { useLinkedParentRides } from "@/hooks/useLinkedParentRides";
 import { WeekCalendar } from "@/components/student/WeekCalendar";
