@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil } from 'lucide-react';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil, UserPlus } from 'lucide-react';
 import { TopConnections } from '@/components/TopConnections';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -15,6 +15,14 @@ import FamilyLinksSection from "@/components/FamilyLinksSection";
 import { Separator } from "@/components/ui/separator";
 import ProfileEditForm from "@/components/profile/ProfileEditForm";
 
+interface LinkedParentInfo {
+  parent_id: string;
+  parent_email: string;
+  parent_first_name: string;
+  parent_last_name: string;
+  parent_phone: string | null;
+}
+
 const Profile = () => {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +30,8 @@ const Profile = () => {
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [linkedParents, setLinkedParents] = useState<LinkedParentInfo[]>([]);
+  const [loadingParents, setLoadingParents] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -39,6 +49,40 @@ const Profile = () => {
     };
     fetchUserRole();
   }, [user]);
+
+  // Fetch linked parents for student accounts
+  useEffect(() => {
+    const fetchLinkedParents = async () => {
+      if (!user || userRole !== 'student') return;
+      setLoadingParents(true);
+      try {
+        const { data } = await supabase.rpc('get_linked_parents', { student_user_id: user.id });
+        if (data && data.length > 0) {
+          // Fetch phone numbers from profiles
+          const parentIds = data.map((p: any) => p.parent_id);
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, phone_number')
+            .in('id', parentIds);
+          
+          const phoneMap = new Map(profiles?.map(p => [p.id, p.phone_number]) || []);
+          
+          setLinkedParents(data.map((p: any) => ({
+            parent_id: p.parent_id,
+            parent_email: p.parent_email,
+            parent_first_name: p.parent_first_name,
+            parent_last_name: p.parent_last_name,
+            parent_phone: phoneMap.get(p.parent_id) || null,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching linked parents:', err);
+      } finally {
+        setLoadingParents(false);
+      }
+    };
+    fetchLinkedParents();
+  }, [user, userRole]);
 
   const handleLogout = async () => {
     setSigningOut(true);
@@ -225,6 +269,64 @@ const Profile = () => {
                         </p>
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Linked Parent Info (students only) */}
+              {isChild && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Linked Parent Contact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingParents ? (
+                      <p className="text-sm text-muted-foreground">Loading...</p>
+                    ) : linkedParents.length > 0 ? (
+                      <div className="space-y-4">
+                        {linkedParents.map((parent) => (
+                          <div key={parent.parent_id} className="space-y-2 p-3 rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-3">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Parent Name</p>
+                                <p className="font-medium">{parent.parent_first_name} {parent.parent_last_name}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Email</p>
+                                <p className="font-medium">{parent.parent_email}</p>
+                              </div>
+                            </div>
+                            {parent.parent_phone && (
+                              <div className="flex items-center gap-3">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Phone</p>
+                                  <p className="font-medium">{parent.parent_phone}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground">
+                          This information is pulled automatically from your linked parent's account.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground mb-3">No parent linked yet.</p>
+                        <Button variant="outline" onClick={() => navigate('/family-links')} className="gap-2">
+                          <UserPlus className="h-4 w-4" />
+                          Link to Parent Account
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

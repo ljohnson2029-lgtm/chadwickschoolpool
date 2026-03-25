@@ -207,13 +207,6 @@ const ProfileSetup = () => {
       case "licensePlate":
         if (isParent && !licensePlate.trim()) return { show, message: "This field is required" };
         break;
-      case "parentGuardianName":
-        if (!isParent && !parentGuardianName.trim()) return { show, message: "This field is required" };
-        break;
-      case "parentGuardianPhone":
-        if (!isParent && !parentGuardianPhone.trim()) return { show, message: "This field is required" };
-        if (!isParent && parentGuardianPhone.trim() && !isValidPhone(parentGuardianPhone)) return { show, message: "Phone must be at least 10 digits" };
-        break;
     }
 
     return { show: false, message: "" };
@@ -261,8 +254,6 @@ const ProfileSetup = () => {
     if (!phoneNumber.trim() || !isValidPhone(phoneNumber)) return false;
     if (!hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    if (!isParent && !parentGuardianName.trim()) return false;
-    if (!isParent && (!parentGuardianPhone.trim() || !isValidPhone(parentGuardianPhone))) return false;
     if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
     if (isParent && carSeats === "") return false;
     // First child must be fully complete; additional children must not be partial
@@ -330,11 +321,6 @@ const ProfileSetup = () => {
         updateData.car_seats = carSeats !== "" ? parseInt(carSeats) : null;
       } else {
         updateData.grade_level = gradeLevel;
-        updateData.parent_guardian_name = parentGuardianName;
-        updateData.parent_guardian_phone = parentGuardianPhone;
-        updateData.parent_guardian_email = parentGuardianEmail;
-        updateData.emergency_contact_name = emergencyContactName;
-        updateData.emergency_contact_phone = emergencyContactPhone;
       }
 
       const { error: profileError } = await supabase
@@ -633,28 +619,6 @@ const ProfileSetup = () => {
                       </SelectContent>
                     </Select>
                     <FieldErrorMessage error={getFieldError("gradeLevel")} />
-                  </div>
-                  <div>
-                    <RequiredLabel>Parent/Guardian Name</RequiredLabel>
-                    <Input value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} onBlur={() => markTouched("parentGuardianName")} placeholder="Parent name" className={errorInputClass("parentGuardianName")} />
-                    <FieldErrorMessage error={getFieldError("parentGuardianName")} />
-                  </div>
-                  <div>
-                    <RequiredLabel>Parent/Guardian Phone</RequiredLabel>
-                    <Input type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} onBlur={() => markTouched("parentGuardianPhone")} placeholder="(555) 123-4567" className={errorInputClass("parentGuardianPhone")} />
-                    <FieldErrorMessage error={getFieldError("parentGuardianPhone")} />
-                  </div>
-                  <div>
-                    <Label>Parent/Guardian Email</Label>
-                    <Input type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
-                  </div>
-                  <div>
-                    <Label>Emergency Contact Name</Label>
-                    <Input value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Emergency contact" />
-                  </div>
-                  <div>
-                    <Label>Emergency Contact Phone</Label>
-                    <Input type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
                   </div>
                 </CardContent>
               </Card>

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Phone, Home, Car, GraduationCap, AlertTriangle } from "lucide-react";
+import { Save, X, User, Phone, Home, Car, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
@@ -39,11 +39,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
 
   // Student fields
   const [gradeLevel, setGradeLevel] = useState(profile.grade_level || "");
-  const [parentGuardianName, setParentGuardianName] = useState(profile.parent_guardian_name || "");
-  const [parentGuardianPhone, setParentGuardianPhone] = useState(profile.parent_guardian_phone || "");
-  const [parentGuardianEmail, setParentGuardianEmail] = useState(profile.parent_guardian_email || "");
-  const [emergencyContactName, setEmergencyContactName] = useState(profile.emergency_contact_name || "");
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState(profile.emergency_contact_phone || "");
 
   const handleAddressSelect = (address: string, lat: number, lng: number) => {
     setHomeAddress(address);
@@ -77,11 +72,6 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         updateData.car_seats = carSeats !== "" ? parseInt(carSeats) : null;
       } else {
         updateData.grade_level = gradeLevel || null;
-        updateData.parent_guardian_name = parentGuardianName || null;
-        updateData.parent_guardian_phone = parentGuardianPhone || null;
-        updateData.parent_guardian_email = parentGuardianEmail || null;
-        updateData.emergency_contact_name = emergencyContactName || null;
-        updateData.emergency_contact_phone = emergencyContactPhone || null;
       }
 
       const { error: profileError } = await supabase
@@ -220,77 +210,29 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         </Card>
       )}
 
-      {/* Student-specific: Grade & Guardian */}
+      {/* Student-specific: Grade */}
       {!isParent && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Academic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Label htmlFor="gradeLevel">Grade Level</Label>
-              <Select value={gradeLevel} onValueChange={setGradeLevel}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select your grade level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADE_LEVELS.map(grade => (
-                    <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                Parent/Guardian Contact
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="pgName">Parent/Guardian Name</Label>
-                <Input id="pgName" value={parentGuardianName} onChange={e => setParentGuardianName(e.target.value)} placeholder="Full name" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="pgPhone">Phone Number</Label>
-                  <Input id="pgPhone" type="tel" value={parentGuardianPhone} onChange={e => setParentGuardianPhone(e.target.value)} placeholder="(555) 123-4567" />
-                </div>
-                <div>
-                  <Label htmlFor="pgEmail">Email</Label>
-                  <Input id="pgEmail" type="email" value={parentGuardianEmail} onChange={e => setParentGuardianEmail(e.target.value)} placeholder="parent@email.com" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Emergency Contact
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ecName">Contact Name</Label>
-                  <Input id="ecName" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} placeholder="Full name" />
-                </div>
-                <div>
-                  <Label htmlFor="ecPhone">Contact Phone</Label>
-                  <Input id="ecPhone" type="tel" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} placeholder="(555) 123-4567" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Academic Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Label htmlFor="gradeLevel">Grade Level</Label>
+            <Select value={gradeLevel} onValueChange={setGradeLevel}>
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Select your grade level" />
+              </SelectTrigger>
+              <SelectContent>
+                {GRADE_LEVELS.map(grade => (
+                  <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
       )}
 
       {/* Save/Cancel buttons at bottom too */}
