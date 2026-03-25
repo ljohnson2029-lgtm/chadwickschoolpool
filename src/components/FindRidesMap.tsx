@@ -538,13 +538,20 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
             <p className="text-xs text-muted-foreground">Parent/Adult</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
-              {ride.type === "request" ? (
-                <><Hand className="h-3 w-3 mr-1" /> Request</>
-              ) : (
-                <><Car className="h-3 w-3 mr-1" /> Offer</>
-              )}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
+                  {ride.type === "request" ? (
+                    <><Hand className="h-3 w-3 mr-1" /> Ride Request</>
+                  ) : (
+                    <><Car className="h-3 w-3 mr-1" /> Ride Offer</>
+                  )}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{ride.type === "request" ? "This parent is requesting help from someone to fulfill this route" : "This parent is offering to drive others along this route"}</p>
+              </TooltipContent>
+            </Tooltip>
             <Button
               variant="ghost"
               size="icon"
