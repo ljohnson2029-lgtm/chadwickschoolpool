@@ -67,45 +67,17 @@ serve(async (req) => {
       .eq("user_id", parentId)
       .single();
 
-    // Fetch linked students with details via children table
+    // Fetch children from the children table (parent's profile children)
     const { data: childrenData } = await supabase
       .from("children")
       .select("first_name, last_name, grade_level")
       .eq("user_id", parentId);
 
-    // Also check account_links for linked student profiles
-    const { data: linksData } = await supabase
-      .from("account_links")
-      .select("student_id")
-      .eq("parent_id", parentId)
-      .eq("status", "approved");
-
-    let linkedStudentProfiles: Array<{ first_name: string; last_name: string; grade_level: string | null }> = [];
-
-    if (linksData && linksData.length > 0) {
-      const studentIds = linksData.map(l => l.student_id);
-      const { data: studentProfiles } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, grade_level")
-        .in("id", studentIds);
-      
-      if (studentProfiles) {
-        linkedStudentProfiles = studentProfiles.map(s => ({
-          first_name: s.first_name || "Unknown",
-          last_name: s.last_name || "",
-          grade_level: s.grade_level,
-        }));
-      }
-    }
-
-    // Combine children from both sources, preferring children table entries
-    const linkedStudents = childrenData && childrenData.length > 0
-      ? childrenData.map(c => ({
-          first_name: c.first_name || "Unknown",
-          last_name: c.last_name || "",
-          grade_level: c.grade_level,
-        }))
-      : linkedStudentProfiles;
+    const linkedStudents = (childrenData || []).map(c => ({
+      first_name: c.first_name || "Unknown",
+      last_name: c.last_name || "",
+      grade_level: c.grade_level,
+    }));
 
     return new Response(
       JSON.stringify({

@@ -450,7 +450,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
 
-    // Fetch children via edge function if client-side data is empty (RLS)
+    // Fetch children from children table via edge function if client-side data is empty (RLS)
     useEffect(() => {
       if (ride.children && ride.children.length > 0) {
         setFetchedChildren(ride.children);
