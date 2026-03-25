@@ -15,6 +15,7 @@ interface AddressAutocompleteInputProps {
   onAddressSelect: (address: string, latitude: number, longitude: number) => void;
   placeholder?: string;
   required?: boolean;
+  className?: string;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────── */
