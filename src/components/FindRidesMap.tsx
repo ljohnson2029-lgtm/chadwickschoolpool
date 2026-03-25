@@ -499,92 +499,102 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
     }
   };
 
+  const seatsCount = ride.type === "offer" ? ride.seats_available : ride.seats_needed;
+
   return (
     <Card className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-background/95 backdrop-blur-sm shadow-xl z-50">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <RideUserBadge
-              userId={ride.user_id}
-              firstName={ride.profile?.first_name || null}
-              lastName={ride.profile?.last_name || null}
-              username={getDisplayName(ride)}
-              accountType="parent"
-              email={ride.userEmail}
-              phoneNumber={ride.profile?.phone_number}
-              shareEmail={ride.profile?.share_email ?? false}
-              sharePhone={ride.profile?.share_phone ?? false}
-              isCurrentUser={ride.user_id === currentUserId}
-              viewerIsStudent={isStudent}
-              variant="full"
-              showViewButton
-              distance={0}
-            />
+            {/* Parent Name */}
+            <h3 className="text-base font-bold truncate">{getDisplayName(ride)}</h3>
+            <p className="text-xs text-muted-foreground">Parent/Adult</p>
           </div>
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Seats in top right */}
+            {seatsCount != null && (
+              <Badge variant="outline" className="text-xs gap-1 font-semibold">
+                <Users className="h-3 w-3" />
+                {seatsCount}
+              </Badge>
+            )}
+            <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
+              {ride.type === "request" ? (
+                <><Hand className="h-3 w-3 mr-1" /> Request</>
+              ) : (
+                <><Car className="h-3 w-3 mr-1" /> Offer</>
+              )}
+            </Badge>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full"
+              className="h-7 w-7"
               onClick={onClose}
               aria-label="Close ride details"
             >
               <X className="h-4 w-4" />
             </Button>
-            <Badge className={ride.type === "request" ? "bg-red-500" : "bg-green-500"}>
-              {ride.type === "request" ? (
-                <>
-                  <Hand className="h-3 w-3 mr-1" /> Request
-                </>
-              ) : (
-                <>
-                  <Car className="h-3 w-3 mr-1" /> Offer
-                </>
-              )}
-            </Badge>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          {/* Route */}
-          <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-            <div className="text-sm">
-              <div className="font-medium">{ride.pickup_location}</div>
-              <div className="text-muted-foreground">to {ride.dropoff_location}</div>
-            </div>
+      <CardContent className="space-y-3 px-4 pb-4 pt-0">
+        {/* Route */}
+        <div className="flex items-start gap-2 text-sm">
+          <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+          <div>
+            <span className="font-medium">{ride.pickup_location}</span>
+            <span className="mx-1.5 text-muted-foreground">→</span>
+            <span className="font-medium">{ride.dropoff_location}</span>
           </div>
+        </div>
 
-          {/* Date & Time */}
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              {format(new Date(ride.ride_date), "MMM d, yyyy")}
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              {formatTime(ride.ride_time)}
-            </div>
+        {/* Date */}
+        <div className="flex items-center gap-2 text-sm">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span>{format(new Date(ride.ride_date + 'T00:00:00'), "EEEE, MMMM d, yyyy")}</span>
+        </div>
+
+        {/* Time */}
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span>{formatTime(ride.ride_time)}</span>
+        </div>
+
+        {/* Children */}
+        {ride.children && ride.children.length > 0 && (
+          <div className="border-t pt-2">
+            <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
+            {ride.children.map((child, idx) => (
+              <div key={idx} className="text-sm flex items-center gap-1.5">
+                <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{child.first_name} {child.last_name}</span>
+                {child.grade_level && (
+                  <span className="text-muted-foreground">• {child.grade_level}</span>
+                )}
+              </div>
+            ))}
           </div>
+        )}
 
-          {/* Seats / Status */}
-          <div className="flex items-center gap-2 text-sm">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            {ride.hasAcceptedConnection ? (
-              <span className="text-amber-600 font-medium">
-                {ride.user_id === currentUserId ? "Ride Connected" : "Ride Full"}
-              </span>
-            ) : ride.type === "offer" ? (
-              `${ride.seats_available} seats available`
-            ) : (
-              `${ride.seats_needed} seats needed`
-            )}
-          </div>
-
-          {/* Route details */}
-          {ride.route_details && <p className="text-sm text-muted-foreground pt-2 border-t">{ride.route_details}</p>}
+        {/* View Profile Button */}
+        <div className="border-t pt-2">
+          <RideUserBadge
+            userId={ride.user_id}
+            firstName={ride.profile?.first_name || null}
+            lastName={ride.profile?.last_name || null}
+            username={getDisplayName(ride)}
+            accountType="parent"
+            email={ride.userEmail}
+            phoneNumber={ride.profile?.phone_number}
+            shareEmail={ride.profile?.share_email ?? false}
+            sharePhone={ride.profile?.share_phone ?? false}
+            isCurrentUser={ride.user_id === currentUserId}
+            viewerIsStudent={isStudent}
+            variant="compact"
+            showViewButton
+            distance={0}
+          />
         </div>
 
         {/* Action */}

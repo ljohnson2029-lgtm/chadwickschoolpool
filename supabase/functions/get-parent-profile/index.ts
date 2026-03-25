@@ -18,7 +18,6 @@ serve(async (req) => {
       );
     }
 
-    // Extract the JWT token and verify with service role
     const token = authHeader.replace("Bearer ", "");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -26,7 +25,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify the JWT by getting the user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
@@ -37,7 +35,6 @@ serve(async (req) => {
       );
     }
 
-    // Get the parent ID from the request body
     const { parentId } = await req.json();
     
     if (!parentId) {
@@ -63,28 +60,60 @@ serve(async (req) => {
       );
     }
 
-    // Fetch user email from users table
-    const { data: userData, error: userError } = await supabase
+    // Fetch user email
+    const { data: userData } = await supabase
       .from("users")
       .select("email")
       .eq("user_id", parentId)
       .single();
 
-    // Fetch linked students count
+    // Fetch linked students with details via children table
+    const { data: childrenData } = await supabase
+      .from("children")
+      .select("first_name, last_name, grade_level")
+      .eq("user_id", parentId);
+
+    // Also check account_links for linked student profiles
     const { data: linksData } = await supabase
-      .from("student_parent_links")
-      .select("id")
+      .from("account_links")
+      .select("student_id")
       .eq("parent_id", parentId)
       .eq("status", "approved");
 
-    const linkedStudentsCount = linksData?.length || 0;
+    let linkedStudentProfiles: Array<{ first_name: string; last_name: string; grade_level: string | null }> = [];
+
+    if (linksData && linksData.length > 0) {
+      const studentIds = linksData.map(l => l.student_id);
+      const { data: studentProfiles } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, grade_level")
+        .in("id", studentIds);
+      
+      if (studentProfiles) {
+        linkedStudentProfiles = studentProfiles.map(s => ({
+          first_name: s.first_name || "Unknown",
+          last_name: s.last_name || "",
+          grade_level: s.grade_level,
+        }));
+      }
+    }
+
+    // Combine children from both sources, preferring children table entries
+    const linkedStudents = childrenData && childrenData.length > 0
+      ? childrenData.map(c => ({
+          first_name: c.first_name || "Unknown",
+          last_name: c.last_name || "",
+          grade_level: c.grade_level,
+        }))
+      : linkedStudentProfiles;
 
     return new Response(
       JSON.stringify({
         profile: {
           ...profileData,
           email: userData?.email || null,
-          linked_students_count: linkedStudentsCount,
+          linked_students_count: linkedStudents.length,
+          linked_students: linkedStudents,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
