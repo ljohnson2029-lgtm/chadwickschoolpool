@@ -2,14 +2,17 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
-import { Car, Hand, Map as MapIcon } from "lucide-react";
+import { Car, Hand, Map as MapIcon, Calendar, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
+import { WeekCalendar } from "@/components/student/WeekCalendar";
+import type { FamilyRide } from "@/hooks/useLinkedParentRides";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
