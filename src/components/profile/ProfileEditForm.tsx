@@ -89,11 +89,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
       if (!isValidPhoneNumber(phoneNumber)) return false;
       if (!homeAddress.trim() || !homeLatitude || !homeLongitude) return false;
       if (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim()) return false;
+      // All children must be complete
+      if (children.length > 0 && !children.every(isChildComplete)) return false;
     } else {
       if (!gradeLevel) return false;
     }
     return true;
-  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent]);
+  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent, children]);
 
   const fieldError = (value: string) => attempted && !value.trim();
   const addressError = attempted && isParent && (!homeAddress.trim() || !homeLatitude || !homeLongitude);
@@ -144,6 +146,25 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
           phone_number: phoneNumber.trim() || null,
         })
         .eq("user_id", user.id);
+
+      // Save children for parent accounts
+      if (isParent) {
+        await supabase.from("children").delete().eq("user_id", user.id);
+        const validChildren = children.filter(isChildComplete);
+        if (validChildren.length > 0) {
+          await supabase.from("children").insert(
+            validChildren.map(c => ({
+              user_id: user.id,
+              name: `${c.first_name} ${c.last_name}`.trim(),
+              first_name: c.first_name.trim(),
+              last_name: c.last_name.trim(),
+              age: parseInt(c.age),
+              school: c.grade_level || "",
+              grade_level: c.grade_level || null,
+            }))
+          );
+        }
+      }
 
       toast({ title: "Profile updated successfully" });
       onSave();
