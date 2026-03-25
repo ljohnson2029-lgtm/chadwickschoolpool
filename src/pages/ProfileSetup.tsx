@@ -183,8 +183,13 @@ const ProfileSetup = () => {
         if (!isMinLength(lastName, 2)) return { show, message: "Must be at least 2 characters" };
         break;
       case "phone":
-        if (!phoneNumber.trim()) return { show, message: "This field is required" };
-        if (!isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        if (isParent) {
+          if (!phoneNumber.trim()) return { show, message: "This field is required" };
+          if (!isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        } else {
+          // Optional for students, but validate format if entered
+          if (phoneNumber.trim() && !isValidPhone(phoneNumber)) return { show, message: "Please enter a complete phone number" };
+        }
         break;
       case "address":
         if (!homeAddress.trim()) return { show, message: "This field is required" };
