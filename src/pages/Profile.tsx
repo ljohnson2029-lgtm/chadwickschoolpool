@@ -50,6 +50,40 @@ const Profile = () => {
     fetchUserRole();
   }, [user]);
 
+  // Fetch linked parents for student accounts
+  useEffect(() => {
+    const fetchLinkedParents = async () => {
+      if (!user || userRole !== 'student') return;
+      setLoadingParents(true);
+      try {
+        const { data } = await supabase.rpc('get_linked_parents', { student_user_id: user.id });
+        if (data && data.length > 0) {
+          // Fetch phone numbers from profiles
+          const parentIds = data.map((p: any) => p.parent_id);
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, phone_number')
+            .in('id', parentIds);
+          
+          const phoneMap = new Map(profiles?.map(p => [p.id, p.phone_number]) || []);
+          
+          setLinkedParents(data.map((p: any) => ({
+            parent_id: p.parent_id,
+            parent_email: p.parent_email,
+            parent_first_name: p.parent_first_name,
+            parent_last_name: p.parent_last_name,
+            parent_phone: phoneMap.get(p.parent_id) || null,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching linked parents:', err);
+      } finally {
+        setLoadingParents(false);
+      }
+    };
+    fetchLinkedParents();
+  }, [user, userRole]);
+
   const handleLogout = async () => {
     setSigningOut(true);
     await logout();
