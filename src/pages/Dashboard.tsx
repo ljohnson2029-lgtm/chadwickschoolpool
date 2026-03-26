@@ -51,15 +51,44 @@ const Dashboard = () => {
     }
     const fetchRides = async () => {
       setLoading(true);
-      const { data } = await supabase
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch user's rides that have accepted conversations (confirmed rides only)
+      const { data: confirmedConvos } = await supabase
+        .from('ride_conversations')
+        .select('ride_id')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      const confirmedRideIds = confirmedConvos?.map(c => c.ride_id) || [];
+
+      // Also fetch user's own rides that are confirmed
+      const { data: ownRides } = await supabase
         .from('rides')
         .select('*')
         .eq('user_id', user.id)
-        .eq('transaction_type', 'broadcast')
         .eq('status', 'active')
-        .gte('ride_date', new Date().toISOString().split('T')[0])
+        .eq('is_fulfilled', true)
+        .gte('ride_date', today)
         .order('ride_date', { ascending: true });
-      if (data) setMyRides(data);
+
+      // Fetch rides user joined via conversations
+      let joinedRides: any[] = [];
+      if (confirmedRideIds.length > 0) {
+        const { data } = await supabase
+          .from('rides')
+          .select('*')
+          .in('id', confirmedRideIds)
+          .eq('status', 'active')
+          .gte('ride_date', today)
+          .order('ride_date', { ascending: true });
+        joinedRides = data || [];
+      }
+
+      // Merge and deduplicate
+      const allRides = [...(ownRides || []), ...joinedRides];
+      const uniqueRides = Array.from(new Map(allRides.map(r => [r.id, r])).values());
+      setMyRides(uniqueRides);
       setLoading(false);
     };
     fetchRides();
@@ -144,7 +173,7 @@ const Dashboard = () => {
 
           <Card
             className="rounded-lg shadow-sm border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
-            onClick={() => navigate('/find-rides')}
+            onClick={() => navigate('/family-carpools')}
           >
             <CardContent className="p-5 sm:p-6">
               <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center mb-3">

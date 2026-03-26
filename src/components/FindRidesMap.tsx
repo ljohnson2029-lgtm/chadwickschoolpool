@@ -266,6 +266,7 @@ const useMapRides = (userId: string | undefined) => {
         .from("rides")
         .select("*")
         .eq("status", "active")
+        .eq("is_fulfilled", false)
         .gte("ride_date", today);
 
       if (error || !ridesData) {

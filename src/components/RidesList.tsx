@@ -227,6 +227,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         .from("rides")
         .select("*")
         .eq("status", "active")
+        .eq("is_fulfilled", false)
         .gte("ride_date", today);
 
       // If student with linked parents, only show parent's rides
