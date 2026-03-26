@@ -230,7 +230,7 @@ const MyRides = () => {
         .eq('id', conversationId);
       if (error) throw error;
 
-      // Get the conversation to send notification
+      // Get the conversation to send notification and auto-decline others
       const { data: conv } = await supabase
         .from('ride_conversations')
         .select('sender_id, ride_id, rides(ride_date, ride_time)')
@@ -238,6 +238,43 @@ const MyRides = () => {
         .single();
 
       if (conv) {
+        // Auto-decline all other pending requests for this ride
+        const { data: otherPending } = await supabase
+          .from('ride_conversations')
+          .select('id, sender_id')
+          .eq('ride_id', conv.ride_id)
+          .eq('status', 'pending')
+          .neq('id', conversationId);
+
+        if (otherPending && otherPending.length > 0) {
+          await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('ride_id', conv.ride_id)
+            .eq('status', 'pending')
+            .neq('id', conversationId);
+
+          // Notify each declined requester
+          const senderName = profile?.first_name
+            ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+            : 'The ride owner';
+          const rideData = conv.rides as any;
+
+          for (const pending of otherPending) {
+            try {
+              await supabase.functions.invoke('create-notification', {
+                body: {
+                  userId: pending.sender_id,
+                  type: 'ride_join_declined',
+                  message: `❌ ${senderName} has filled the ride on ${rideData?.ride_date || 'upcoming'} — your request was automatically declined.`,
+                }
+              });
+            } catch (notifErr) {
+              console.warn('Failed to send auto-decline notification:', notifErr);
+            }
+          }
+        }
+
         const senderName = profile?.first_name
           ? `${profile.first_name} ${profile.last_name || ''}`.trim()
           : 'The ride owner';
