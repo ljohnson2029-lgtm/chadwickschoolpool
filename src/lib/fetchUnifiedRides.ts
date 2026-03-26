@@ -59,9 +59,18 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
 
-  // Fetch current user's children
-  const userChildrenMap = await fetchChildrenForIds([userId]);
+  // Fetch current user's children and car info
+  const [userChildrenMap, { data: myProfile }] = await Promise.all([
+    fetchChildrenForIds([userId]),
+    supabase.from('profiles').select('car_make, car_model, car_color, license_plate').eq('id', userId).single(),
+  ]);
   const myChildren = userChildrenMap[userId] || [];
+  const myCarInfo = myProfile ? {
+    carMake: myProfile.car_make || null,
+    carModel: myProfile.car_model || null,
+    carColor: myProfile.car_color || null,
+    licensePlate: myProfile.license_plate || null,
+  } : undefined;
 
   // 1. Fetch ALL user's own rides (active + past)
   const { data: myRides } = await supabase
