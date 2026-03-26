@@ -163,6 +163,14 @@ const MyRides = () => {
         status = isParentDriving ? 'posted-offering' : 'posted-looking';
       }
 
+      // Determine driver's vehicle info
+      const driverId = isParentDriving ? r.parent_id : (r.connected_parent_id || null);
+      const driverVehicle = driverId ? vehicleByParent[driverId] : undefined;
+
+      // For otherParent, include vehicle info from the connected parent
+      const otherParentId = r.connected_parent_id || r.parent_id;
+      const otherParentVehicle = vehicleByParent[otherParentId];
+
       return {
         id: r.id,
         source: 'posted' as const,
@@ -184,8 +192,13 @@ const MyRides = () => {
           email: null,
           phone: null,
           children: otherKids,
+          carMake: otherParentVehicle?.carMake || null,
+          carModel: otherParentVehicle?.carModel || null,
+          carColor: otherParentVehicle?.carColor || null,
+          licensePlate: otherParentVehicle?.licensePlate || null,
         } : null,
         myChildren: myKids,
+        myCarInfo: driverVehicle || undefined,
         originalData: r,
         _studentView: true,
         _driverName: isParentDriving
