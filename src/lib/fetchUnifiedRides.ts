@@ -81,12 +81,19 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       fetchChildrenForIds(requesterIds),
     ]);
 
+    console.log('[fetchUnifiedRides] Pending join requests debug:');
+    console.log('  Requester IDs:', requesterIds);
+    console.log('  Profiles fetched:', Object.keys(requesterProfiles));
+    console.log('  Children fetched:', Object.entries(requesterChildren).map(([id, kids]) => ({ id, childCount: (kids as any[]).length, children: kids })));
+
     for (const conv of pendingConvos) {
       const profile = requesterProfiles[conv.sender_id];
       const children = requesterChildren[conv.sender_id] || [];
       const name = profile
         ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.username
         : 'Unknown';
+
+      console.log(`  Request from ${name} (${conv.sender_id}): profile=${!!profile}, children=${children.length}`, { profile, children });
 
       const req: PendingJoinRequest = {
         conversationId: conv.id,

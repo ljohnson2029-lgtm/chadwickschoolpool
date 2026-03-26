@@ -297,9 +297,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                       <span>{req.requesterPhone}</span>
                     </div>
                   )}
-                  {req.children.length > 0 && (
-                    <div className="mt-1 space-y-0.5">
-                      {req.children.map((child, i) => (
+                  <div className="mt-1 space-y-0.5">
+                    {req.children.length > 0 ? (
+                      req.children.map((child, i) => (
                         <div key={i} className="flex items-center gap-1.5 text-xs">
                           <GraduationCap className="h-3 w-3 text-blue-600" />
                           <span className="font-medium">{child.name}</span>
@@ -307,9 +307,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                             <span className="text-muted-foreground">({formatGrade(child.grade)})</span>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                        <GraduationCap className="h-3 w-3" />
+                        <span>No children listed</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button
