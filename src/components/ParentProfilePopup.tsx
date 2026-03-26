@@ -4,7 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Mail, Phone, Users, GraduationCap } from "lucide-react";
+import { X, Mail, Phone, Users, GraduationCap, Hand, Car } from "lucide-react";
+import DirectRideModal from "@/components/DirectRideModal";
+import { isParent as checkIsParent } from "@/lib/permissions";
 
 interface ParentProfilePopupProps {
   parentId: string;
@@ -35,11 +37,22 @@ const ParentProfilePopup = ({
   parentId,
   onClose,
 }: ParentProfilePopupProps) => {
-  const { user } = useAuth();
+  const { user, profile: myProfile } = useAuth();
   const [profile, setProfile] = useState<ParentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [linkedStudents, setLinkedStudents] = useState<LinkedStudent[]>([]);
+  const [directRide, setDirectRide] = useState<{ type: "request" | "offer" } | null>(null);
+  const [isCurrentUserParent, setIsCurrentUserParent] = useState(false);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      if (!user) return;
+      const { data } = await supabase.from("users").select("email").eq("user_id", user.id).single();
+      if (data?.email) setIsCurrentUserParent(checkIsParent(data.email));
+    };
+    checkRole();
+  }, [user]);
 
   useEffect(() => {
     fetchParentProfile();
@@ -202,7 +215,41 @@ const ParentProfilePopup = ({
             )}
           </div>
         </div>
+
+        {/* Direct Ride Buttons */}
+        {isCurrentUserParent && parentId !== user?.id && (
+          <div className="flex gap-2 pt-2 border-t">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 gap-1 text-xs"
+              onClick={() => setDirectRide({ type: "request" })}
+            >
+              <Hand className="h-3.5 w-3.5" />
+              Send Direct Ride Request
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 gap-1 text-xs"
+              onClick={() => setDirectRide({ type: "offer" })}
+            >
+              <Car className="h-3.5 w-3.5" />
+              Send Direct Ride Offer
+            </Button>
+          </div>
+        )}
       </CardContent>
+
+      {directRide && (
+        <DirectRideModal
+          open
+          onClose={() => setDirectRide(null)}
+          recipientId={parentId}
+          recipientName={getDisplayName()}
+          type={directRide.type}
+          onSuccess={() => { setDirectRide(null); onClose(); }}
+        />
+      )}
     </Card>
   );
 };

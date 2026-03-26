@@ -277,12 +277,12 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // 3. Private ride requests (accepted)
+  // 3. Private ride requests (accepted AND pending)
   const { data: privateRequests } = await supabase
     .from('private_ride_requests')
     .select('*')
     .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-    .eq('status', 'accepted');
+    .in('status', ['accepted', 'pending']);
 
   if (privateRequests) {
     const otherIds = [...new Set(privateRequests.map(r => r.sender_id === userId ? r.recipient_id : r.sender_id))];
@@ -298,12 +298,19 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       let status: UnifiedRide['status'];
       let isDriver: boolean;
       
-      if (isSender) {
-        status = req.request_type === 'request' ? 'joined-ride' : 'helping-out';
-        isDriver = req.request_type !== 'request';
+      if (req.status === 'pending') {
+        // Pending direct ride
+        status = isSender ? 'pending-direct-sent' : 'pending-direct-received';
+        isDriver = req.request_type === 'offer' ? isSender : !isSender;
       } else {
-        status = req.request_type === 'request' ? 'helping-out' : 'joined-ride';
-        isDriver = req.request_type === 'request';
+        // Accepted
+        if (isSender) {
+          status = req.request_type === 'request' ? 'joined-ride' : 'helping-out';
+          isDriver = req.request_type !== 'request';
+        } else {
+          status = req.request_type === 'request' ? 'helping-out' : 'joined-ride';
+          isDriver = req.request_type === 'request';
+        }
       }
 
       const isPast = req.ride_date < today;

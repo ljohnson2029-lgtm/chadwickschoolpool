@@ -64,7 +64,7 @@ export interface UnifiedRide {
   id: string;
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
-  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval';
+  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval' | 'pending-direct-sent' | 'pending-direct-received';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
   pickupLocation: string;
   dropoffLocation: string;
@@ -88,7 +88,7 @@ export interface UnifiedRide {
   };
 }
 
-export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request';
+export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct';
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
@@ -97,10 +97,18 @@ interface UnifiedRideCardProps {
   topConnectionIds?: string[];
   onAcceptRequest?: (conversationId: string) => void;
   onDeclineRequest?: (conversationId: string) => void;
+  onAcceptDirect?: (requestId: string) => void;
+  onDeclineDirect?: (requestId: string) => void;
   acceptDeclineLoading?: string | null;
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  if (ride.status === 'pending-direct-sent') {
+    return { label: 'Pending - Awaiting Response', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
+  if (ride.status === 'pending-direct-received') {
+    return { label: 'Direct Ride - Action Required', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
   if (ride.status === 'pending-approval') {
     return { label: 'Pending - Awaiting Approval', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
   }
@@ -203,6 +211,18 @@ function getCancelActionConfig(ride: UnifiedRide): {
       timeRestrictedMessage: 'You cannot leave a ride within 9 hours of departure',
     };
   }
+  // Pending direct ride sent by user → Cancel
+  if (ride.source === 'private' && ride.status === 'pending-direct-sent') {
+    return {
+      action: 'cancel-direct',
+      label: 'Cancel',
+      icon: X,
+      confirmTitle: 'Cancel Direct Ride',
+      confirmDescription: 'Are you sure you want to cancel this direct ride? The other parent will be notified.',
+      hasTimeRestriction: false,
+      timeRestrictedMessage: '',
+    };
+  }
   return null;
 }
 
@@ -223,7 +243,7 @@ export const UnifiedRideCardSkeleton = () => (
   </Card>
 );
 
-export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, acceptDeclineLoading }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
@@ -452,6 +472,43 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Direct Ride Accept/Decline */}
+          {!isPast && ride.status === 'pending-direct-received' && ride.otherParent && (
+            <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 border border-amber-200/50 dark:border-amber-800/50">
+              <p className="text-sm font-medium text-foreground">
+                {getParentName(ride.otherParent)} sent you a direct ride {ride.rideType}
+              </p>
+              {ride.originalData?.message && (
+                <p className="text-xs text-muted-foreground italic">"{ride.originalData.message}"</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="flex-1 gap-1"
+                  onClick={() => onAcceptDirect?.(ride.id)}
+                  disabled={acceptDeclineLoading === ride.id}
+                >
+                  {acceptDeclineLoading === ride.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserCheck className="h-3.5 w-3.5" />
+                  )}
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 gap-1 text-destructive hover:bg-destructive/10"
+                  onClick={() => onDeclineDirect?.(ride.id)}
+                  disabled={acceptDeclineLoading === ride.id}
+                >
+                  <UserX className="h-3.5 w-3.5" />
+                  Decline
+                </Button>
+              </div>
             </div>
           )}
 
