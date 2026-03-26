@@ -173,7 +173,8 @@ const RideOfferForm = ({
         recurring_days: isRecurring ? recurringDays : null,
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
-      }).select();
+        selected_children: selectedChildIds,
+      } as any).select();
 
       if (rideError) throw rideError;
 
