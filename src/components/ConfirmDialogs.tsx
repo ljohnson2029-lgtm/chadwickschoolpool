@@ -402,11 +402,11 @@ export const OfferRideDialog = ({
   />
 );
 
-// Instant Join Ride Dialog (no approval needed)
+// Instant Join Ride Dialog (with child selection)
 interface InstantJoinRideDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: (selectedChildIds?: string[]) => void | Promise<void>;
   ownerName: string;
   rideDate: string;
   rideTime: string;
