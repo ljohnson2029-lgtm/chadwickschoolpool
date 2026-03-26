@@ -451,7 +451,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
     const badgeTooltipText = ride.type === 'request'
       ? 'This parent is requesting help from someone to fulfill this route'
-      : 'This parent is offering to drive others along this route';
+      : 'This parent is offering to drive others this route';
 
     console.log('[RidesList] Rendering ride badge', {
       rideId: ride.id,
