@@ -7,9 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap } from "lucide-react";
+import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap, Trash2 } from "lucide-react";
 import { InstantJoinRideDialog, InstantOfferRideDialog } from "./ConfirmDialogs";
 import ParentProfilePopup from "./ParentProfilePopup";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 import { format } from "date-fns";
