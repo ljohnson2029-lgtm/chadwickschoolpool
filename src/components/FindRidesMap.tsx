@@ -15,6 +15,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 import { JoinRideDialog, OfferRideDialog } from "./ConfirmDialogs";
 import MapFilterPanel from "./MapFilterPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES
