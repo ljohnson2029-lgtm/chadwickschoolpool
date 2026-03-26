@@ -124,6 +124,13 @@ const RideRequestForm = ({
       return;
     }
 
+    // Validate children selection
+    if (selectedChildIds.length === 0) {
+      setChildError("Please select at least one child for this ride");
+      return;
+    }
+    setChildError(null);
+
     // Validate that addresses have been selected from autocomplete
     if (!pickupCoords) {
       toast({
