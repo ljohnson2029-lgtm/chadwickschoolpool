@@ -211,6 +211,18 @@ function getCancelActionConfig(ride: UnifiedRide): {
       timeRestrictedMessage: 'You cannot leave a ride within 9 hours of departure',
     };
   }
+  // Pending direct ride sent by user → Cancel
+  if (ride.source === 'private' && ride.status === 'pending-direct-sent') {
+    return {
+      action: 'cancel-direct',
+      label: 'Cancel',
+      icon: X,
+      confirmTitle: 'Cancel Direct Ride',
+      confirmDescription: 'Are you sure you want to cancel this direct ride? The other parent will be notified.',
+      hasTimeRestriction: false,
+      timeRestrictedMessage: '',
+    };
+  }
   return null;
 }
 
