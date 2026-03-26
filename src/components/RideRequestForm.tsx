@@ -215,6 +215,7 @@ const RideRequestForm = ({
       setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
+      setSelectedChildIds([]);
 
       onSuccess();
       

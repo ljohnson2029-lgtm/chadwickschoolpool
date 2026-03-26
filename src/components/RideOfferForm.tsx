@@ -220,6 +220,7 @@ const RideOfferForm = ({
       setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
+      setSelectedChildIds([]);
 
       onSuccess();
       
