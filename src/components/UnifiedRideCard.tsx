@@ -475,6 +475,43 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </div>
           )}
 
+          {/* Direct Ride Accept/Decline */}
+          {!isPast && ride.status === 'pending-direct-received' && ride.otherParent && (
+            <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 border border-amber-200/50 dark:border-amber-800/50">
+              <p className="text-sm font-medium text-foreground">
+                {getParentName(ride.otherParent)} sent you a direct ride {ride.rideType}
+              </p>
+              {ride.originalData?.message && (
+                <p className="text-xs text-muted-foreground italic">"{ride.originalData.message}"</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="flex-1 gap-1"
+                  onClick={() => onAcceptDirect?.(ride.id)}
+                  disabled={acceptDeclineLoading === ride.id}
+                >
+                  {acceptDeclineLoading === ride.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserCheck className="h-3.5 w-3.5" />
+                  )}
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 gap-1 text-destructive hover:bg-destructive/10"
+                  onClick={() => onDeclineDirect?.(ride.id)}
+                  disabled={acceptDeclineLoading === ride.id}
+                >
+                  <UserX className="h-3.5 w-3.5" />
+                  Decline
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Seats Info */}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
