@@ -489,6 +489,7 @@ interface SelectedRidePanelProps {
   responseStatus: string | null;
   onClose: () => void;
   onRespond: (ride: Ride) => void;
+  onDeleteRide?: (rideId: string) => void;
 }
 
 const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
@@ -499,6 +500,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
   responseStatus,
   onClose,
   onRespond,
+  onDeleteRide,
 }) => {
   const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
 
