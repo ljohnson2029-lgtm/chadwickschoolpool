@@ -459,6 +459,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const badgeTooltipText = ride.type === 'request'
       ? 'This parent is requesting help from someone to fulfill this route'
       : 'This parent is offering to drive others this route';
