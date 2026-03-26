@@ -86,18 +86,33 @@ const MyRides = () => {
       }).filter(Boolean)
     )] as string[];
 
-    const { data: childrenData } = await supabase
-      .from('children')
-      .select('user_id, first_name, last_name, grade_level')
-      .in('user_id', allParentIds);
-
+    // Fetch children via edge function (service role) to bypass RLS
+    // so students can see children from BOTH families in a ride
     const childrenByParent: Record<string, { name: string; grade: string }[]> = {};
-    (childrenData || []).forEach((c: any) => {
-      const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown';
-      const grade = c.grade_level || 'N/A';
-      if (!childrenByParent[c.user_id]) childrenByParent[c.user_id] = [];
-      childrenByParent[c.user_id].push({ name, grade });
-    });
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (token) {
+      const childFetches = allParentIds.map(async (parentId) => {
+        try {
+          const { data } = await supabase.functions.invoke('get-parent-profile', {
+            body: { parentId },
+          });
+          if (data?.profile?.linked_students) {
+            childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
+              name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+              grade: s.grade_level || 'N/A',
+            }));
+          }
+        } catch (err) {
+          console.warn(`Failed to fetch children for parent ${parentId}:`, err);
+        }
+      });
+      await Promise.all(childFetches);
+    }
+
+    console.log('[Student MyRides] allParentIds:', allParentIds);
+    console.log('[Student MyRides] childrenByParent:', childrenByParent);
 
     const today = new Date().toISOString().split('T')[0];
     const studentDisplayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.username || 'You';
