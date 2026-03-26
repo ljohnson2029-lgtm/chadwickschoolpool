@@ -241,6 +241,21 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                 </a>
               )}
             </div>
+            {/* Vehicle Info */}
+            {(() => {
+              const carInfo = ride.isDriver
+                ? ride.myCarInfo
+                : ride.otherParent;
+              const hasVehicle = carInfo && (carInfo.carMake || carInfo.carModel || carInfo.carColor);
+              if (!hasVehicle) return null;
+              const vehicleParts = [carInfo.carColor, carInfo.carMake, carInfo.carModel].filter(Boolean).join(' ');
+              return (
+                <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                  {vehicleParts && <p>Vehicle: {vehicleParts}</p>}
+                  {carInfo.licensePlate && <p>License Plate: {carInfo.licensePlate}</p>}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Passengers Section - shows students/children */}
