@@ -362,10 +362,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         .eq('user_id', respondingToRide.user_id)
         .single();
 
-      // For ride offers: create as PENDING (needs owner approval)
-      // For ride requests: create as ACCEPTED immediately (instant help)
+      // ALL requests go through pending approval - owner must accept
       const isOffer = respondingToRide.type === 'offer';
-      const conversationStatus = isOffer ? 'pending' : 'accepted';
 
       const { error } = await supabase
         .from('ride_conversations')
@@ -373,7 +371,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           ride_id: respondingToRide.id,
           sender_id: user.id,
           recipient_id: respondingToRide.user_id,
-          status: conversationStatus,
+          status: 'pending',
           message: isOffer
             ? `I'd like to join your offered ride!`
             : `I can help with your ride request!`
