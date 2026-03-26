@@ -152,7 +152,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsNeeded: ride.seats_needed,
         isDriver: ride.type === 'offer',
         otherParent: null,
-        myChildren,
+        myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
         myCarInfo,
         originalData: ride,
         pendingRequests: pendingByRide[ride.id] || [],
