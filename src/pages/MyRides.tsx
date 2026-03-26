@@ -326,6 +326,10 @@ const MyRides = () => {
           toast.success('You have left the ride');
           break;
         }
+        case 'cancel-direct': {
+          await handleCancelDirect(ride);
+          return;
+        }
       }
 
       loadRides();
