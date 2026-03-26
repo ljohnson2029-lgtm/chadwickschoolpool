@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Search, Hand, Car, GraduationCap, Users, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDebounce } from "@/hooks/useDebounce";
 import DirectRideModal from "@/components/DirectRideModal";
 
 interface SearchResult {
@@ -50,12 +49,12 @@ const ParentSearchBar = () => {
     }
   }, []);
 
-  const debouncedSearch = useDebounce(query, 400);
-
-  // Trigger search on debounced value change
-  useState(() => {
-    if (debouncedSearch) doSearch(debouncedSearch);
-  });
+  // Debounce search
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+    const timer = setTimeout(() => doSearch(query), 400);
+    return () => clearTimeout(timer);
+  }, [query, doSearch]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
