@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil, UserPlus } from 'lucide-react';
+import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil, UserPlus, Baby } from 'lucide-react';
 import { TopConnections } from '@/components/TopConnections';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -32,6 +32,8 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [linkedParents, setLinkedParents] = useState<LinkedParentInfo[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
+  const [childrenList, setChildrenList] = useState<{ id: string; first_name: string; last_name: string; age: number; grade_level: string | null }[]>([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -49,6 +51,26 @@ const Profile = () => {
     };
     fetchUserRole();
   }, [user]);
+
+  // Fetch children for parent accounts
+  useEffect(() => {
+    const fetchChildren = async () => {
+      if (!user || profile?.account_type !== 'parent') return;
+      setLoadingChildren(true);
+      try {
+        const { data } = await supabase
+          .from('children')
+          .select('id, first_name, last_name, age, grade_level')
+          .eq('user_id', user.id);
+        setChildrenList(data || []);
+      } catch (err) {
+        console.error('Error fetching children:', err);
+      } finally {
+        setLoadingChildren(false);
+      }
+    };
+    fetchChildren();
+  }, [user, profile?.account_type]);
 
   // Fetch linked parents for student accounts
   useEffect(() => {
@@ -264,6 +286,42 @@ const Profile = () => {
                         </p>
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* My Children (parents only) */}
+              {isParent && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Baby className="h-5 w-5" />
+                      My Children
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingChildren ? (
+                      <p className="text-sm text-muted-foreground">Loading...</p>
+                    ) : childrenList.length > 0 ? (
+                      <div className="space-y-3">
+                        {childrenList.map((child) => (
+                          <div key={child.id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                            <p className="font-medium">{child.first_name} {child.last_name}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                              {child.grade_level && <span>{child.grade_level}</span>}
+                              <span>Age {child.age}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground mb-3">No children added yet.</p>
+                        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                          Add Children
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
