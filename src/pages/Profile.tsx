@@ -290,6 +290,42 @@ const Profile = () => {
                 </Card>
               )}
 
+              {/* My Children (parents only) */}
+              {isParent && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Baby className="h-5 w-5" />
+                      My Children
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingChildren ? (
+                      <p className="text-sm text-muted-foreground">Loading...</p>
+                    ) : childrenList.length > 0 ? (
+                      <div className="space-y-3">
+                        {childrenList.map((child) => (
+                          <div key={child.id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                            <p className="font-medium">{child.first_name} {child.last_name}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                              {child.grade_level && <span>{child.grade_level}</span>}
+                              <span>Age {child.age}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground mb-3">No children added yet.</p>
+                        <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                          Add Children
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Linked Parent Info (students only) */}
               {isChild && (
                 <Card>
