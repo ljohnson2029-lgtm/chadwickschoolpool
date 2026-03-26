@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
-import WelcomeModal from '@/components/WelcomeModal';
+
 import AddressRequiredModal from '@/components/AddressRequiredModal';
 
 const Login = () => {
@@ -20,7 +20,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
   const [actualEmail, setActualEmail] = useState('');
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [userAccountType, setUserAccountType] = useState<'student' | 'parent'>('parent');
   const [userFirstName, setUserFirstName] = useState('');
@@ -115,9 +115,9 @@ const Login = () => {
           return;
         }
 
-        // For students without address, show welcome modal then navigate
+        // For students without address, navigate to family links
         if (profileData?.account_type === 'student' && needsAddress) {
-          setShowWelcomeModal(true);
+          navigate('/family-links');
           return;
         }
       }
@@ -130,10 +130,6 @@ const Login = () => {
     }
   };
 
-  const handleWelcomeModalClose = () => {
-    setShowWelcomeModal(false);
-    navigate('/family-links');
-  };
 
   const handleAddressAdded = () => {
     setShowAddressModal(false);
@@ -143,12 +139,6 @@ const Login = () => {
   return (
     <>
       <Navigation />
-      <WelcomeModal 
-        open={showWelcomeModal} 
-        onClose={handleWelcomeModalClose}
-        accountType={userAccountType}
-        firstName={userFirstName}
-      />
       {loggedInUserId && (
         <AddressRequiredModal
           open={showAddressModal}

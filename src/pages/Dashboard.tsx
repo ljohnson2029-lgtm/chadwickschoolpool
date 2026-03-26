@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { OnboardingTour, useOnboardingTour } from "@/components/OnboardingTour";
+
 import { Car, Hand, Map as MapIcon, Calendar, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
@@ -17,7 +17,7 @@ import type { FamilyRide } from "@/hooks/useLinkedParentRides";
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const { showTour, completeTour } = useOnboardingTour();
+  
   const [isUserStudent, setIsUserStudent] = useState(false);
   const [myRides, setMyRides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      {showTour && <OnboardingTour onComplete={completeTour} />}
+      
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-6xl">
 
         {/* ── HERO HEADER ── */}
