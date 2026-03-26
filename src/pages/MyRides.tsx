@@ -80,7 +80,7 @@ const MyRides = () => {
 
     const allParentIds = [...new Set(
       scheduleData.flatMap((r: any) => {
-        const ids = [r.parent_id];
+        const ids = [r.parent_id, r.user_id];
         if (r.connected_parent_id) ids.push(r.connected_parent_id);
         return ids;
       }).filter(Boolean)
@@ -110,11 +110,25 @@ const MyRides = () => {
         ? `${r.connected_parent_first_name} ${r.connected_parent_last_name || ''}`.trim()
         : null;
 
+      // Collect children from ALL parents involved in this ride
+      const rideOwnerKids = childrenByParent[r.user_id] || [];
       const linkedParentKids = childrenByParent[r.parent_id] || [];
-      const myKids = linkedParentKids.length > 0
-        ? linkedParentKids
+      const connectedParentKids = r.connected_parent_id ? (childrenByParent[r.connected_parent_id] || []) : [];
+      
+      // Merge all children, deduplicating by name+grade
+      const allKidsSet = new Map<string, { name: string; grade: string }>();
+      [...rideOwnerKids, ...linkedParentKids, ...connectedParentKids].forEach(k => {
+        const key = `${k.name}-${k.grade}`.toLowerCase();
+        if (!allKidsSet.has(key)) allKidsSet.set(key, k);
+      });
+      const allKids = Array.from(allKidsSet.values());
+      
+      // Fallback to student's own name if no children found
+      const myKids = allKids.length > 0
+        ? allKids
         : [{ name: studentDisplayName, grade: studentGrade }];
-      const otherKids = r.connected_parent_id ? (childrenByParent[r.connected_parent_id] || []) : [];
+      // otherKids empty since we already merged everything into myKids
+      const otherKids: { name: string; grade: string }[] = [];
 
       let status: UnifiedRide['status'];
       if (hasConnection) {
