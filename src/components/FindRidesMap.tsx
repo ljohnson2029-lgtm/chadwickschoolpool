@@ -549,7 +549,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{ride.type === "request" ? "This parent is requesting help from someone to fulfill this route" : "This parent is offering to drive others along this route"}</p>
+                <p>{ride.type === "request" ? "This parent is requesting help from someone to fulfill this route" : <p>{ride.type === "request" ? "This parent is requesting help from someone to fulfill this route" : "This parent is offering to drive others this route"}</p>}</p>
               </TooltipContent>
             </Tooltip>
             <Button
