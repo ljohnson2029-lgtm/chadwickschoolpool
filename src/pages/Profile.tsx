@@ -52,6 +52,26 @@ const Profile = () => {
     fetchUserRole();
   }, [user]);
 
+  // Fetch children for parent accounts
+  useEffect(() => {
+    const fetchChildren = async () => {
+      if (!user || profile?.account_type !== 'parent') return;
+      setLoadingChildren(true);
+      try {
+        const { data } = await supabase
+          .from('children')
+          .select('id, first_name, last_name, age, grade_level')
+          .eq('user_id', user.id);
+        setChildrenList(data || []);
+      } catch (err) {
+        console.error('Error fetching children:', err);
+      } finally {
+        setLoadingChildren(false);
+      }
+    };
+    fetchChildren();
+  }, [user, profile?.account_type]);
+
   // Fetch linked parents for student accounts
   useEffect(() => {
     const fetchLinkedParents = async () => {
