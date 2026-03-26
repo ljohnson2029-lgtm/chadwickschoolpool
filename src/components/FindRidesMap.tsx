@@ -503,6 +503,9 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
   onDeleteRide,
 }) => {
   const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isOwnRide = ride.user_id === currentUserId;
 
   // Fetch children from children table via edge function (bypasses RLS)
   useEffect(() => {
@@ -656,6 +659,52 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
           responseStatus={responseStatus}
           onRespond={onRespond}
         />
+
+        {/* Delete button for own rides */}
+        {isOwnRide && onDeleteRide && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="w-full gap-2 mt-2"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Ride
+          </Button>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Ride</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this ride? This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setDeleting(true);
+                  try {
+                    await onDeleteRide(ride.id);
+                    setShowDeleteDialog(false);
+                  } catch {
+                    // handled by parent
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
