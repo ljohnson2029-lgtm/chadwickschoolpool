@@ -21,7 +21,7 @@ const FamilyCarpools = () => {
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
   const [showHome, setShowHome] = useState(false);
@@ -122,20 +122,20 @@ const FamilyCarpools = () => {
             {/* View Toggle */}
             <div className="flex gap-2">
               <Button
-                variant={viewMode === 'map' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('map')}
-              >
-                <MapIcon className="h-4 w-4 mr-2" />
-                Map View
-              </Button>
-              <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4 mr-2" />
                 List View
+              </Button>
+              <Button
+                variant={viewMode === 'map' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('map')}
+              >
+                <MapIcon className="h-4 w-4 mr-2" />
+                Map View
               </Button>
             </div>
           </div>
@@ -159,8 +159,8 @@ const FamilyCarpools = () => {
               <>
                 <Button 
                   onClick={() => setShowRequestDialog(true)}
-                  variant="outline"
-                  className="gap-2"
+                  variant="secondary"
+                  className="gap-2 bg-muted hover:bg-muted/80 text-foreground"
                 >
                   <Hand className="h-4 w-4" />
                   Post Ride Request
