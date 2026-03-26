@@ -9,12 +9,22 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 import { JoinRideDialog, OfferRideDialog } from "./ConfirmDialogs";
 import MapFilterPanel from "./MapFilterPanel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* ═══════════════════════════════════════════════════════════════════
    TYPES
@@ -479,6 +489,7 @@ interface SelectedRidePanelProps {
   responseStatus: string | null;
   onClose: () => void;
   onRespond: (ride: Ride) => void;
+  onDeleteRide?: (rideId: string) => void;
 }
 
 const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
@@ -489,8 +500,12 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
   responseStatus,
   onClose,
   onRespond,
+  onDeleteRide,
 }) => {
   const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const isOwnRide = ride.user_id === currentUserId;
 
   // Fetch children from children table via edge function (bypasses RLS)
   useEffect(() => {
@@ -644,6 +659,52 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
           responseStatus={responseStatus}
           onRespond={onRespond}
         />
+
+        {/* Delete button for own rides */}
+        {isOwnRide && onDeleteRide && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="w-full gap-2 mt-2"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Ride
+          </Button>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Ride</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this ride? This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setDeleting(true);
+                  try {
+                    await onDeleteRide(ride.id);
+                    setShowDeleteDialog(false);
+                  } catch {
+                    // handled by parent
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
@@ -1137,6 +1198,29 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           responseStatus={getResponseStatus(selectedRide.id)}
           onClose={() => setSelectedRide(null)}
           onRespond={initiateRespondToRide}
+          onDeleteRide={async (rideId: string) => {
+            // Delete pending conversations
+            await supabase
+              .from('ride_conversations')
+              .update({ status: 'declined' })
+              .eq('ride_id', rideId)
+              .eq('status', 'pending');
+
+            const { error } = await supabase
+              .from('rides')
+              .delete()
+              .eq('id', rideId)
+              .eq('user_id', user!.id);
+
+            if (error) {
+              toast({ title: "Error", description: "Failed to delete ride.", variant: "destructive" });
+              throw error;
+            }
+
+            setRides(prev => prev.filter(r => r.id !== rideId));
+            setSelectedRide(null);
+            toast({ title: "Ride deleted", description: "Your ride has been removed." });
+          }}
         />
       )}
 

@@ -7,9 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap } from "lucide-react";
+import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap, Trash2 } from "lucide-react";
 import { InstantJoinRideDialog, InstantOfferRideDialog } from "./ConfirmDialogs";
 import ParentProfilePopup from "./ParentProfilePopup";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 import { format } from "date-fns";
@@ -449,6 +459,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const badgeTooltipText = ride.type === 'request'
       ? 'This parent is requesting help from someone to fulfill this route'
       : 'This parent is offering to drive others this route';
@@ -716,7 +728,71 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 View on Map
               </Button>
             )}
+
+            {isOwnRide && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full gap-2"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Ride
+              </Button>
+            )}
           </div>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Ride</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this ride? This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={deleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    setDeleting(true);
+                    try {
+                      // Delete pending conversations for this ride
+                      await supabase
+                        .from('ride_conversations')
+                        .update({ status: 'declined' })
+                        .eq('ride_id', ride.id)
+                        .eq('status', 'pending');
+
+                      // Delete the ride
+                      const { error } = await supabase
+                        .from('rides')
+                        .delete()
+                        .eq('id', ride.id)
+                        .eq('user_id', user!.id);
+
+                      if (error) throw error;
+
+                      // Remove from local state
+                      setRides(prev => prev.filter(r => r.id !== ride.id));
+                      toast({ title: "Ride deleted", description: "Your ride has been removed." });
+                      setShowDeleteDialog(false);
+                    } catch (err: any) {
+                      console.error('Error deleting ride:', err);
+                      toast({ title: "Error", description: "Failed to delete ride. Please try again.", variant: "destructive" });
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     );
