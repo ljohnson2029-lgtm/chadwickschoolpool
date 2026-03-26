@@ -262,8 +262,6 @@ export const NotificationDropdown = () => {
         return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'private_request_declined':
         return <XCircle className="h-4 w-4 text-destructive" />;
-      case 'nearby_ride':
-        return <MapPin className="h-4 w-4 text-emerald-500" />;
       case 'new_message':
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
       case 'ride_expiring':
@@ -288,10 +286,7 @@ export const NotificationDropdown = () => {
     }
     
     // Navigate based on notification type
-    if (notification.type === 'nearby_ride') {
-      setIsOpen(false);
-      navigate('/find-rides');
-    } else if (notification.type === 'new_message') {
+    if (notification.type === 'new_message') {
       setIsOpen(false);
       navigate('/conversations');
     } else if (notification.type === 'ride_expiring') {
