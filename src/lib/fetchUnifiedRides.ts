@@ -193,8 +193,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: isHelpingWithRequest,
-        otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
-        myChildren,
+        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo,
         originalData: { conversation: conv, ride },
       });
