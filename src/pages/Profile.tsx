@@ -32,6 +32,8 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [linkedParents, setLinkedParents] = useState<LinkedParentInfo[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
+  const [childrenList, setChildrenList] = useState<{ id: string; first_name: string; last_name: string; age: number; grade_level: string | null }[]>([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
