@@ -29,7 +29,8 @@ serve(async (req) => {
       });
     }
 
-    const { query } = await req.json();
+    const { query, limit } = await req.json();
+    const maxResults = Math.min(limit || 3, 10);
     if (!query || query.trim().length < 2) {
       return new Response(JSON.stringify({ results: [] }), {
         status: 200,
@@ -39,19 +40,16 @@ serve(async (req) => {
 
     const searchTerm = query.trim().toLowerCase();
 
-    // Search parent profiles by name
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, first_name, last_name, username, account_type")
       .eq("account_type", "parent")
       .neq("id", user.id);
 
-    // Search children by name
     const { data: children } = await supabase
       .from("children")
       .select("user_id, first_name, last_name, grade_level");
 
-    // Build parent-to-children map
     const childrenByParent: Record<string, Array<{ first_name: string; last_name: string; grade_level: string | null }>> = {};
     if (children) {
       for (const child of children) {
@@ -64,40 +62,59 @@ serve(async (req) => {
       }
     }
 
-    // Match parents by their own name or their children's names
-    const matchedParents: Array<{
+    const scored: Array<{
       id: string;
       first_name: string;
       last_name: string;
       username: string;
       children: Array<{ first_name: string; last_name: string; grade_level: string | null }>;
+      score: number;
     }> = [];
 
     if (profiles) {
       for (const p of profiles) {
-        const parentName = `${p.first_name || ""} ${p.last_name || ""}`.toLowerCase();
+        const firstName = (p.first_name || "").toLowerCase();
+        const lastName = (p.last_name || "").toLowerCase();
+        const fullName = `${firstName} ${lastName}`;
         const parentChildren = childrenByParent[p.id] || [];
 
-        const parentNameMatch = parentName.includes(searchTerm);
-        const childNameMatch = parentChildren.some((c) => {
-          const childName = `${c.first_name} ${c.last_name}`.toLowerCase();
-          return childName.includes(searchTerm);
-        });
+        let score = 0;
 
-        if (parentNameMatch || childNameMatch) {
-          matchedParents.push({
+        // Exact full name match
+        if (fullName === searchTerm) score = 100;
+        else if (firstName === searchTerm || lastName === searchTerm) score = 90;
+        else if (fullName.startsWith(searchTerm)) score = 80;
+        else if (firstName.startsWith(searchTerm) || lastName.startsWith(searchTerm)) score = 70;
+        else if (fullName.includes(searchTerm)) score = 50;
+        
+        // Child name matching
+        if (score === 0) {
+          for (const c of parentChildren) {
+            const childFull = `${c.first_name} ${c.last_name}`.toLowerCase();
+            const childFirst = c.first_name.toLowerCase();
+            const childLast = c.last_name.toLowerCase();
+            if (childFull === searchTerm) { score = 85; break; }
+            if (childFirst === searchTerm || childLast === searchTerm) { score = 75; break; }
+            if (childFull.startsWith(searchTerm) || childFirst.startsWith(searchTerm)) { score = 65; break; }
+            if (childFull.includes(searchTerm)) { score = 45; break; }
+          }
+        }
+
+        if (score > 0) {
+          scored.push({
             id: p.id,
             first_name: p.first_name || "",
             last_name: p.last_name || "",
             username: p.username,
             children: parentChildren,
+            score,
           });
         }
       }
     }
 
-    // Limit to 10 results
-    const results = matchedParents.slice(0, 10);
+    scored.sort((a, b) => b.score - a.score);
+    const results = scored.slice(0, maxResults).map(({ score, ...rest }) => rest);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
