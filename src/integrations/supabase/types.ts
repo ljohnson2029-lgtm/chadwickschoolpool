@@ -894,6 +894,10 @@ export type Database = {
       is_valid_student_email: { Args: { email: string }; Returns: boolean }
       is_whitelisted_parent: { Args: { check_email: string }; Returns: boolean }
       notify_expiring_rides: { Args: never; Returns: undefined }
+      reset_ride_fulfillment: {
+        Args: { p_ride_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "student" | "parent" | "staff" | "admin"
