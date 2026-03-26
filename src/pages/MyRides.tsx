@@ -471,7 +471,7 @@ const MyRides = () => {
           }
           action={!isPast && !isStudent ? {
             label: "Find Rides",
-            onClick: () => navigate('/find-rides')
+            onClick: () => navigate('/family-carpools')
           } : undefined}
         />
       );
