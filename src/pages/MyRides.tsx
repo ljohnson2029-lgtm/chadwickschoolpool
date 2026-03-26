@@ -245,11 +245,8 @@ const MyRides = () => {
             .update({ status: 'declined' })
             .eq('id', conv.id);
           if (error) throw error;
-          // Re-open the ride (unfulfill it)
-          await supabase
-            .from('rides')
-            .update({ is_fulfilled: false })
-            .eq('id', rideId);
+          // Re-open the ride (unfulfill it) via secure RPC
+          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
           // Notify the ride owner
           const rideOwnerId = ride.otherParent?.id;
           if (rideOwnerId) {
@@ -300,11 +297,8 @@ const MyRides = () => {
             .update({ status: 'declined' })
             .eq('id', conv.id);
           if (error) throw error;
-          // Re-open the request
-          await supabase
-            .from('rides')
-            .update({ is_fulfilled: false })
-            .eq('id', rideId);
+          // Re-open the request via secure RPC
+          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
           // Notify the requester
           const requesterId = ride.otherParent?.id;
           if (requesterId) {
