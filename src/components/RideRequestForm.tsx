@@ -66,7 +66,8 @@ const RideRequestForm = ({
   const [personalMessage, setPersonalMessage] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
-
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [childError, setChildError] = useState<string | null>(null);
   useEffect(() => {
     const fetchUserEmail = async () => {
       if (!user) return;
