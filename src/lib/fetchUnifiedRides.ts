@@ -141,6 +141,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: ride.type === 'offer',
         otherParent: null,
         myChildren,
+        myCarInfo,
         originalData: ride,
         pendingRequests: pendingByRide[ride.id] || [],
       });
@@ -182,6 +183,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: isHelpingWithRequest,
         otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
         myChildren,
+        myCarInfo,
         originalData: { conversation: conv, ride },
       });
     }
@@ -221,6 +223,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: false,
         otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
         myChildren,
+        myCarInfo,
         originalData: { conversation: conv, ride },
       });
     }
@@ -267,6 +270,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           isDriver: ride.type === 'offer',
           otherParent: participant,
           myChildren,
+        myCarInfo,
           originalData: { conversation: conv, ride },
         });
       }
@@ -320,6 +324,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver,
         otherParent: profile ? toParticipant(profile, otherChildren[otherId] || []) : null,
         myChildren,
+        myCarInfo,
         originalData: req,
       });
     }
