@@ -89,6 +89,7 @@ const MyRides = () => {
     // Fetch children via edge function (service role) to bypass RLS
     // so students can see children from BOTH families in a ride
     const childrenByParent: Record<string, { name: string; grade: string }[]> = {};
+    const vehicleByParent: Record<string, { carMake: string | null; carModel: string | null; carColor: string | null; licensePlate: string | null }> = {};
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
 
@@ -98,11 +99,19 @@ const MyRides = () => {
           const { data } = await supabase.functions.invoke('get-parent-profile', {
             body: { parentId },
           });
-          if (data?.profile?.linked_students) {
-            childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
-              name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
-              grade: s.grade_level || 'N/A',
-            }));
+          if (data?.profile) {
+            if (data.profile.linked_students) {
+              childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
+                name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+                grade: s.grade_level || 'N/A',
+              }));
+            }
+            vehicleByParent[parentId] = {
+              carMake: data.profile.car_make || null,
+              carModel: data.profile.car_model || null,
+              carColor: data.profile.car_color || null,
+              licensePlate: data.profile.license_plate || null,
+            };
           }
         } catch (err) {
           console.warn(`Failed to fetch children for parent ${parentId}:`, err);
@@ -110,6 +119,8 @@ const MyRides = () => {
       });
       await Promise.all(childFetches);
     }
+
+    console.log('[Student MyRides] vehicleByParent:', vehicleByParent);
 
     console.log('[Student MyRides] allParentIds:', allParentIds);
     console.log('[Student MyRides] childrenByParent:', childrenByParent);
