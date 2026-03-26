@@ -22,11 +22,11 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
   }, {} as Record<string, any>);
 }
 
-async function fetchChildrenForIds(ids: string[]): Promise<Record<string, { name: string; grade: string }[]>> {
+async function fetchChildrenForIds(ids: string[]): Promise<Record<string, { id: string; name: string; grade: string }[]>> {
   if (ids.length === 0) return {};
   const { data } = await supabase
     .from('children')
-    .select('user_id, first_name, last_name, grade_level')
+    .select('id, user_id, first_name, last_name, grade_level')
     .in('user_id', ids);
   
   if (!data) return {};
@@ -34,9 +34,21 @@ async function fetchChildrenForIds(ids: string[]): Promise<Record<string, { name
     const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown';
     const grade = c.grade_level || 'N/A';
     if (!acc[c.user_id]) acc[c.user_id] = [];
-    acc[c.user_id].push({ name, grade });
+    acc[c.user_id].push({ id: c.id, name, grade });
     return acc;
-  }, {} as Record<string, { name: string; grade: string }[]>);
+  }, {} as Record<string, { id: string; name: string; grade: string }[]>);
+}
+
+function filterChildrenBySelection(
+  allChildren: { id?: string; name: string; grade: string }[],
+  selectedChildIds: string[] | null | undefined
+): { name: string; grade: string }[] {
+  if (!selectedChildIds || selectedChildIds.length === 0) {
+    return allChildren.map(({ name, grade }) => ({ name, grade }));
+  }
+  return allChildren
+    .filter(c => c.id && selectedChildIds.includes(c.id))
+    .map(({ name, grade }) => ({ name, grade }));
 }
 
 function toParticipant(p: any, children: { name: string; grade: string }[]): ParticipantInfo {
