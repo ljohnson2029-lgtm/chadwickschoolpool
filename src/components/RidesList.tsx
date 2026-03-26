@@ -449,6 +449,16 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
+    const badgeTooltipText = ride.type === 'request'
+      ? 'This parent is requesting help from someone to fulfill this route'
+      : 'This parent is offering to drive others along this route';
+
+    console.log('[RidesList] Rendering ride badge', {
+      rideId: ride.id,
+      rideType: ride.type,
+      badgeLabel: ride.type === 'request' ? 'Ride Request' : 'Ride Offer',
+      badgeTooltipText,
+    });
 
     // Fetch children from children table via edge function if client-side data is empty (RLS)
     useEffect(() => {
@@ -567,9 +577,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     };
 
     return (
-      <Card className="hover:shadow-lg transition-shadow">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-start justify-between gap-2">
+      <Card className="hover:shadow-lg transition-shadow overflow-visible">
+        <CardHeader className="pb-2 pt-4 px-4 overflow-visible">
+          <div className="flex items-start justify-between gap-2 overflow-visible">
           <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold truncate">{getDisplayName(ride)}</h3>
@@ -587,21 +597,23 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                 Parent/Adult
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge className={ride.type === "request" ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}>
-                    {ride.type === "request" ? (
-                      <><Hand className="h-3 w-3 mr-1" /> Ride Request</>
-                    ) : (
-                      <><Car className="h-3 w-3 mr-1" /> Ride Offer</>
-                    )}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{ride.type === "request" ? "This parent is requesting help from someone to fulfill this route" : "This parent is offering to drive others along this route"}</p>
-                </TooltipContent>
-              </Tooltip>
+            <div className="flex items-center gap-2 flex-shrink-0 overflow-visible">
+              <div className="group relative inline-flex">
+                <Badge
+                  title={badgeTooltipText}
+                  aria-label={badgeTooltipText}
+                  className={ride.type === "request" ? "bg-destructive text-destructive-foreground cursor-help" : "bg-primary text-primary-foreground cursor-help"}
+                >
+                  {ride.type === "request" ? (
+                    <><Hand className="h-3 w-3 mr-1" /> Ride Request</>
+                  ) : (
+                    <><Car className="h-3 w-3 mr-1" /> Ride Offer</>
+                  )}
+                </Badge>
+                <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-64 -translate-x-1/2 rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md group-hover:block">
+                  {badgeTooltipText}
+                </div>
+              </div>
             </div>
           </div>
 
