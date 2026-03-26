@@ -7,8 +7,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
 import { Car, History, Info, LinkIcon } from "lucide-react";
 import { toast } from "sonner";
-import { DeleteRideDialog } from "@/components/ConfirmDialogs";
-import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide } from "@/components/UnifiedRideCard";
+import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
@@ -20,9 +19,6 @@ const MyRides = () => {
   const [activeRides, setActiveRides] = useState<UnifiedRide[]>([]);
   const [pastRides, setPastRides] = useState<UnifiedRide[]>([]);
   const [loadingData, setLoadingData] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [rideToDelete, setRideToDelete] = useState<UnifiedRide | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
   const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
@@ -58,7 +54,6 @@ const MyRides = () => {
     if (!user) return;
     setLoadingData(true);
 
-    // Check if student has linked parents
     const { data: links } = await supabase
       .from('account_links')
       .select('parent_id')
@@ -73,7 +68,6 @@ const MyRides = () => {
 
     setHasLinkedParent(true);
 
-    // Use get_family_schedule RPC
     const { data: scheduleData } = await supabase
       .rpc('get_family_schedule', { student_user_id: user.id });
 
@@ -84,7 +78,6 @@ const MyRides = () => {
       return;
     }
 
-    // Collect all unique parent IDs to fetch their children
     const allParentIds = [...new Set(
       scheduleData.flatMap((r: any) => {
         const ids = [r.parent_id];
@@ -93,7 +86,6 @@ const MyRides = () => {
       }).filter(Boolean)
     )] as string[];
 
-    // Fetch children for all involved parents
     const { data: childrenData } = await supabase
       .from('children')
       .select('user_id, first_name, last_name, grade_level')
@@ -174,63 +166,160 @@ const MyRides = () => {
     setLoadingData(false);
   };
 
-  const handleCancelRide = async (ride: UnifiedRide) => {
-    setRideToDelete(ride);
-    setDeleteDialogOpen(true);
+  const getMyName = () => {
+    return profile?.first_name
+      ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+      : 'A parent';
   };
 
-  const confirmCancelRide = async () => {
-    if (!rideToDelete || !user) return;
+  const sendNotification = async (userId: string, type: string, message: string) => {
+    try {
+      await supabase.functions.invoke('create-notification', {
+        body: { userId, type, message },
+      });
+    } catch (err) {
+      console.warn('Failed to send notification:', err);
+    }
+  };
 
-    setDeleteLoading(true);
+  const handleCancelAction = useCallback(async (ride: UnifiedRide, action: CancelAction) => {
+    if (!user) return;
 
     try {
-      if (rideToDelete.source === 'posted') {
-        const { error } = await supabase
-          .from('rides')
-          .update({ status: 'cancelled' })
-          .eq('id', rideToDelete.id)
-          .eq('user_id', user.id);
-        if (error) throw error;
-        toast.success('Ride cancelled');
-      } else if (rideToDelete.source === 'conversation') {
-        const { error } = await supabase
-          .from('ride_conversations')
-          .delete()
-          .eq('id', rideToDelete.id)
-          .eq('sender_id', user.id);
-        if (error) throw error;
-        toast.success('Left the ride');
-      } else if (rideToDelete.source === 'private') {
-        const { error } = await supabase
-          .from('private_ride_requests')
-          .delete()
-          .eq('id', rideToDelete.id);
-        if (error) throw error;
-        toast.success('Ride cancelled');
+      switch (action) {
+        case 'cancel-offer': {
+          // Driver cancels their ride offer - update status to cancelled
+          // First notify passenger if one exists
+          if (ride.otherParent) {
+            await sendNotification(
+              ride.otherParent.id,
+              'ride_cancelled',
+              '❌ A ride you joined has been cancelled by the driver'
+            );
+          }
+          // Decline pending requests
+          await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('ride_id', ride.id)
+            .eq('status', 'pending');
+          // Also decline accepted conversations
+          await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('ride_id', ride.id)
+            .eq('status', 'accepted');
+          // Cancel the ride
+          const { error } = await supabase
+            .from('rides')
+            .update({ status: 'cancelled' })
+            .eq('id', ride.id)
+            .eq('user_id', user.id);
+          if (error) throw error;
+          toast.success('Ride offer cancelled');
+          break;
+        }
+
+        case 'leave-offer': {
+          // Passenger leaves a ride offer - delete/update their conversation
+          const conv = ride.originalData?.conversation;
+          if (!conv) break;
+          const rideId = conv.ride_id;
+          // Update conversation status
+          const { error } = await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('id', conv.id);
+          if (error) throw error;
+          // Re-open the ride (unfulfill it)
+          await supabase
+            .from('rides')
+            .update({ is_fulfilled: false })
+            .eq('id', rideId);
+          // Notify the ride owner
+          const rideOwnerId = ride.otherParent?.id;
+          if (rideOwnerId) {
+            await sendNotification(
+              rideOwnerId,
+              'ride_left',
+              `🔄 ${getMyName()} has left your ride. Your ride is now open again.`
+            );
+          }
+          toast.success('You have left the ride');
+          break;
+        }
+
+        case 'cancel-request': {
+          // Passenger cancels their ride request - update status to cancelled
+          // Notify helper if one exists
+          if (ride.otherParent) {
+            await sendNotification(
+              ride.otherParent.id,
+              'ride_cancelled',
+              '❌ The ride request you offered to fulfill has been cancelled'
+            );
+          }
+          // Decline any conversations
+          await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('ride_id', ride.id);
+          // Cancel the ride
+          const { error } = await supabase
+            .from('rides')
+            .update({ status: 'cancelled' })
+            .eq('id', ride.id)
+            .eq('user_id', user.id);
+          if (error) throw error;
+          toast.success('Ride request cancelled');
+          break;
+        }
+
+        case 'leave-request': {
+          // Driver leaves a ride request they were helping with
+          const conv = ride.originalData?.conversation;
+          if (!conv) break;
+          const rideId = conv.ride_id;
+          // Update conversation
+          const { error } = await supabase
+            .from('ride_conversations')
+            .update({ status: 'declined' })
+            .eq('id', conv.id);
+          if (error) throw error;
+          // Re-open the request
+          await supabase
+            .from('rides')
+            .update({ is_fulfilled: false })
+            .eq('id', rideId);
+          // Notify the requester
+          const requesterId = ride.otherParent?.id;
+          if (requesterId) {
+            await sendNotification(
+              requesterId,
+              'ride_left',
+              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again.`
+            );
+          }
+          toast.success('You have left the ride');
+          break;
+        }
       }
 
       loadRides();
     } catch (error: any) {
-      toast.error('Failed to cancel: ' + error.message);
+      toast.error('Failed: ' + error.message);
     }
-
-    setDeleteLoading(false);
-    setDeleteDialogOpen(false);
-    setRideToDelete(null);
-  };
+  }, [user, profile]);
 
   const handleAcceptRequest = useCallback(async (conversationId: string) => {
     setAcceptDeclineLoading(conversationId);
     try {
-      // Update conversation status to accepted
       const { error } = await supabase
         .from('ride_conversations')
         .update({ status: 'accepted' })
         .eq('id', conversationId);
       if (error) throw error;
 
-      // Get the conversation to send notification and auto-decline others
       const { data: conv } = await supabase
         .from('ride_conversations')
         .select('sender_id, ride_id, rides(ride_date, ride_time)')
@@ -238,7 +327,6 @@ const MyRides = () => {
         .single();
 
       if (conv) {
-        // Auto-decline all other pending requests for this ride
         const { data: otherPending } = await supabase
           .from('ride_conversations')
           .select('id, sender_id')
@@ -254,43 +342,25 @@ const MyRides = () => {
             .eq('status', 'pending')
             .neq('id', conversationId);
 
-          // Notify each declined requester
-          const senderName = profile?.first_name
-            ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-            : 'The ride owner';
+          const senderName = getMyName();
           const rideData = conv.rides as any;
 
           for (const pending of otherPending) {
-            try {
-              await supabase.functions.invoke('create-notification', {
-                body: {
-                  userId: pending.sender_id,
-                  type: 'ride_join_declined',
-                  message: `❌ ${senderName} has filled the ride on ${rideData?.ride_date || 'upcoming'} — your request was automatically declined.`,
-                }
-              });
-            } catch (notifErr) {
-              console.warn('Failed to send auto-decline notification:', notifErr);
-            }
+            await sendNotification(
+              pending.sender_id,
+              'ride_join_declined',
+              `❌ ${senderName} has filled the ride on ${rideData?.ride_date || 'upcoming'} — your request was automatically declined.`
+            );
           }
         }
 
-        const senderName = profile?.first_name
-          ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-          : 'The ride owner';
+        const senderName = getMyName();
         const rideData = conv.rides as any;
-        
-        try {
-          await supabase.functions.invoke('create-notification', {
-            body: {
-              userId: conv.sender_id,
-              type: 'ride_join_accepted',
-              message: `✅ ${senderName} accepted your request to join the ride on ${rideData?.ride_date || 'upcoming'} at ${rideData?.ride_time || ''}`,
-            }
-          });
-        } catch (notifErr) {
-          console.warn('Failed to send acceptance notification:', notifErr);
-        }
+        await sendNotification(
+          conv.sender_id,
+          'ride_join_accepted',
+          `✅ ${senderName} accepted your request to join the ride on ${rideData?.ride_date || 'upcoming'} at ${rideData?.ride_time || ''}`
+        );
       }
 
       toast.success('Request accepted! The parent has been added to your ride.');
@@ -304,7 +374,6 @@ const MyRides = () => {
   const handleDeclineRequest = useCallback(async (conversationId: string) => {
     setAcceptDeclineLoading(conversationId);
     try {
-      // Update conversation status to declined
       const { data: conv } = await supabase
         .from('ride_conversations')
         .select('sender_id, ride_id, rides(ride_date, ride_time)')
@@ -318,22 +387,13 @@ const MyRides = () => {
       if (error) throw error;
 
       if (conv) {
-        const senderName = profile?.first_name
-          ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-          : 'The ride owner';
+        const senderName = getMyName();
         const rideData = conv.rides as any;
-        
-        try {
-          await supabase.functions.invoke('create-notification', {
-            body: {
-              userId: conv.sender_id,
-              type: 'ride_join_declined',
-              message: `❌ ${senderName} declined your request to join the ride on ${rideData?.ride_date || 'upcoming'}`,
-            }
-          });
-        } catch (notifErr) {
-          console.warn('Failed to send decline notification:', notifErr);
-        }
+        await sendNotification(
+          conv.sender_id,
+          'ride_join_declined',
+          `❌ ${senderName} declined your request to join the ride on ${rideData?.ride_date || 'upcoming'}`
+        );
       }
 
       toast.success('Request declined.');
@@ -356,7 +416,6 @@ const MyRides = () => {
     );
   }
 
-  // Student with no linked parent
   if (isStudent && hasLinkedParent === false) {
     return (
       <DashboardLayout>
@@ -417,7 +476,7 @@ const MyRides = () => {
             <UnifiedRideCard
               key={`${ride.source}-${ride.id}`}
               ride={ride}
-              onCancel={!isStudent && !isPast ? () => handleCancelRide(ride) : undefined}
+              onCancel={!isStudent && !isPast ? handleCancelAction : undefined}
               isPast={isPast}
               onAcceptRequest={!isStudent ? handleAcceptRequest : undefined}
               onDeclineRequest={!isStudent ? handleDeclineRequest : undefined}
@@ -472,15 +531,6 @@ const MyRides = () => {
             {renderRideList(pastRides, true)}
           </TabsContent>
         </Tabs>
-
-        {!isStudent && (
-          <DeleteRideDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            onConfirm={confirmCancelRide}
-            loading={deleteLoading}
-          />
-        )}
       </div>
     </DashboardLayout>
   );
