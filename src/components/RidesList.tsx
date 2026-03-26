@@ -341,7 +341,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   };
 
   // Handle the actual response after confirmation
-  const handleConfirmResponse = async () => {
+  const handleConfirmResponse = async (selectedChildIds?: string[]) => {
     if (!user || !respondingToRide) return;
     setActionLoading(true);
 
