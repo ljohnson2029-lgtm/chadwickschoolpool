@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Mail, Phone, Calendar, GraduationCap, Users, Home, Car as CarIcon, Pencil, UserPlus, Baby } from 'lucide-react';
-import { TopConnections } from '@/components/TopConnections';
+
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -400,8 +400,6 @@ const Profile = () => {
                 <FamilyLinksSection />
               </div>
 
-              {/* Frequent Carpool Partners - parents only */}
-              {isParent && <TopConnections limit={3} variant="profile" />}
             </>
           )}
         </div>
