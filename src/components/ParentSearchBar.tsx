@@ -107,7 +107,7 @@ const ParentSearchBar = () => {
                       </div>
                       {r.children.length > 0 && (
                         <div className="ml-6 space-y-0.5">
-                          <p className="text-xs font-medium text-muted-foreground">Children:</p>
+                          <p className="text-xs font-medium text-muted-foreground">Chadwick Children:</p>
                           {r.children.map((child, i) => (
                             <div key={i} className="flex items-center gap-1.5 text-sm">
                               <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
