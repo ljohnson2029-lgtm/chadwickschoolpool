@@ -440,6 +440,12 @@ const RideRequestForm = ({
             )}
           </div>
 
+          <ChildrenRidingSelector
+            selectedChildIds={selectedChildIds}
+            onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
+            error={childError}
+          />
+
           <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Request to ${recipientParentName.split(' ')[0]}` : "Post Ride Request"}
           </Button>
