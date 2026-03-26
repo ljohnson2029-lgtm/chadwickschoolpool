@@ -451,6 +451,7 @@ export type Database = {
           read_at: string | null
           recipient_id: string
           ride_id: string
+          selected_children: Json | null
           sender_id: string
           status: string
           updated_at: string | null
@@ -462,6 +463,7 @@ export type Database = {
           read_at?: string | null
           recipient_id: string
           ride_id: string
+          selected_children?: Json | null
           sender_id: string
           status?: string
           updated_at?: string | null
@@ -473,6 +475,7 @@ export type Database = {
           read_at?: string | null
           recipient_id?: string
           ride_id?: string
+          selected_children?: Json | null
           sender_id?: string
           status?: string
           updated_at?: string | null
@@ -520,6 +523,7 @@ export type Database = {
           route_details: string | null
           seats_available: number | null
           seats_needed: number | null
+          selected_children: Json | null
           status: string | null
           transaction_type:
             | Database["public"]["Enums"]["transaction_type"]
@@ -545,6 +549,7 @@ export type Database = {
           route_details?: string | null
           seats_available?: number | null
           seats_needed?: number | null
+          selected_children?: Json | null
           status?: string | null
           transaction_type?:
             | Database["public"]["Enums"]["transaction_type"]
@@ -570,6 +575,7 @@ export type Database = {
           route_details?: string | null
           seats_available?: number | null
           seats_needed?: number | null
+          selected_children?: Json | null
           status?: string | null
           transaction_type?:
             | Database["public"]["Enums"]["transaction_type"]

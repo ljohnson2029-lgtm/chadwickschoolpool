@@ -341,7 +341,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   };
 
   // Handle the actual response after confirmation
-  const handleConfirmResponse = async () => {
+  const handleConfirmResponse = async (selectedChildIds?: string[]) => {
     if (!user || !respondingToRide) return;
     setActionLoading(true);
 
@@ -375,8 +375,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           status: 'pending',
           message: isOffer
             ? `I'd like to join your offered ride!`
-            : `I can help with your ride request!`
-        });
+            : `I can help with your ride request!`,
+          selected_children: selectedChildIds || null,
+        } as any);
 
       if (error) {
         console.error('Error responding to ride:', error);

@@ -13,6 +13,7 @@ import { AlertCircle, School, Home } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
+import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 
 
 interface RideOfferFormProps {
@@ -67,7 +68,8 @@ const RideOfferForm = ({
   const [personalMessage, setPersonalMessage] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
-
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [childError, setChildError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -125,6 +127,12 @@ const RideOfferForm = ({
       return;
     }
 
+    // Validate children selection
+    if (selectedChildIds.length === 0) {
+      setChildError("Please select at least one child for this ride");
+      return;
+    }
+    setChildError(null);
 
     // Validate that addresses have been selected from autocomplete
     if (!pickupCoords) {
@@ -165,7 +173,8 @@ const RideOfferForm = ({
         recurring_days: isRecurring ? recurringDays : null,
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
-      }).select();
+        selected_children: selectedChildIds,
+      } as any).select();
 
       if (rideError) throw rideError;
 
@@ -211,6 +220,7 @@ const RideOfferForm = ({
       setPersonalMessage("");
       setIsRecurring(false);
       setRecurringDays([]);
+      setSelectedChildIds([]);
 
       onSuccess();
       
@@ -448,6 +458,11 @@ const RideOfferForm = ({
             )}
           </div>
 
+          <ChildrenRidingSelector
+            selectedChildIds={selectedChildIds}
+            onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
+            error={childError}
+          />
 
           <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
