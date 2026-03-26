@@ -1198,6 +1198,29 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
           responseStatus={getResponseStatus(selectedRide.id)}
           onClose={() => setSelectedRide(null)}
           onRespond={initiateRespondToRide}
+          onDeleteRide={async (rideId: string) => {
+            // Delete pending conversations
+            await supabase
+              .from('ride_conversations')
+              .update({ status: 'declined' })
+              .eq('ride_id', rideId)
+              .eq('status', 'pending');
+
+            const { error } = await supabase
+              .from('rides')
+              .delete()
+              .eq('id', rideId)
+              .eq('user_id', user!.id);
+
+            if (error) {
+              toast({ title: "Error", description: "Failed to delete ride.", variant: "destructive" });
+              throw error;
+            }
+
+            setRides(prev => prev.filter(r => r.id !== rideId));
+            setSelectedRide(null);
+            toast({ title: "Ride deleted", description: "Your ride has been removed." });
+          }}
         />
       )}
 
