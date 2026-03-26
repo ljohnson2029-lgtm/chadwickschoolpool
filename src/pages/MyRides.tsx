@@ -598,6 +598,8 @@ const MyRides = () => {
               isPast={isPast}
               onAcceptRequest={!isStudent ? handleAcceptRequest : undefined}
               onDeclineRequest={!isStudent ? handleDeclineRequest : undefined}
+              onAcceptDirect={!isStudent ? handleAcceptDirect : undefined}
+              onDeclineDirect={!isStudent ? handleDeclineDirect : undefined}
               acceptDeclineLoading={acceptDeclineLoading}
             />
           ))}
