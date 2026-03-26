@@ -233,8 +233,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: false,
-        otherParent: profile ? toParticipant(profile, ownerChildren[ride.user_id] || []) : null,
-        myChildren,
+        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo,
         originalData: { conversation: conv, ride },
       });
@@ -261,7 +261,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
       const existingIdx = allRides.findIndex(r => r.source === 'posted' && r.id === ride.id);
       const joiner = joinerProfiles[conv.sender_id];
-      const participant = joiner ? toParticipant(joiner, joinerChildren[conv.sender_id] || []) : null;
+      const participant = joiner ? toParticipant(joiner, filterChildrenBySelection(joinerChildren[conv.sender_id] || [], (conv as any).selected_children)) : null;
 
       if (existingIdx !== -1) {
         allRides[existingIdx].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
@@ -281,7 +281,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           seatsNeeded: ride.seats_needed,
           isDriver: ride.type === 'offer',
           otherParent: participant,
-          myChildren,
+          myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
         myCarInfo,
           originalData: { conversation: conv, ride },
         });
