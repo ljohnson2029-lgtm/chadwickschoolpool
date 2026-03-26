@@ -126,7 +126,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         requesterName: name,
         requesterEmail: profile?.email || null,
         requesterPhone: profile?.phone_number || null,
-        children,
+        children: filterChildrenBySelection(children, (conv as any).selected_children),
         message: conv.message,
         requestedAt: conv.created_at || '',
       };
