@@ -173,7 +173,7 @@ const Dashboard = () => {
 
           <Card
             className="rounded-lg shadow-sm border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
-            onClick={() => navigate('/find-rides')}
+            onClick={() => navigate('/family-carpools')}
           >
             <CardContent className="p-5 sm:p-6">
               <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center mb-3">
