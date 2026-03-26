@@ -64,7 +64,7 @@ export interface UnifiedRide {
   id: string;
   source: 'posted' | 'conversation' | 'private';
   rideType: 'request' | 'offer';
-  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval';
+  status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval' | 'pending-direct-sent' | 'pending-direct-received';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
   pickupLocation: string;
   dropoffLocation: string;
@@ -88,7 +88,7 @@ export interface UnifiedRide {
   };
 }
 
-export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request';
+export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct';
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
@@ -97,10 +97,18 @@ interface UnifiedRideCardProps {
   topConnectionIds?: string[];
   onAcceptRequest?: (conversationId: string) => void;
   onDeclineRequest?: (conversationId: string) => void;
+  onAcceptDirect?: (requestId: string) => void;
+  onDeclineDirect?: (requestId: string) => void;
   acceptDeclineLoading?: string | null;
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  if (ride.status === 'pending-direct-sent') {
+    return { label: 'Pending - Awaiting Response', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
+  if (ride.status === 'pending-direct-received') {
+    return { label: 'Direct Ride - Action Required', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
+  }
   if (ride.status === 'pending-approval') {
     return { label: 'Pending - Awaiting Approval', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
   }
@@ -223,7 +231,7 @@ export const UnifiedRideCardSkeleton = () => (
   </Card>
 );
 
-export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, acceptDeclineLoading }: UnifiedRideCardProps) => {
+export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
