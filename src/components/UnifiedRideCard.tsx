@@ -68,6 +68,12 @@ export interface UnifiedRide {
   _driverName?: string;
   _studentPassengerName?: string;
   pendingRequests?: PendingJoinRequest[];
+  myCarInfo?: {
+    carMake: string | null;
+    carModel: string | null;
+    carColor: string | null;
+    licensePlate: string | null;
+  };
 }
 
 interface UnifiedRideCardProps {
