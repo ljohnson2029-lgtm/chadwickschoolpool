@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Search, Hand, Car, GraduationCap, Users, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import DirectRideModal from "@/components/DirectRideModal";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useEffect } from "react";
 
 interface SearchResult {
   id: string;
@@ -25,36 +27,35 @@ const ParentSearchBar = () => {
   const [directRide, setDirectRide] = useState<{ recipientId: string; recipientName: string; type: "request" | "offer" } | null>(null);
 
   const isParent = profile?.account_type === "parent";
+  const debouncedQuery = useDebounce(query, 200);
 
-  const doSearch = useCallback(async (searchQuery: string) => {
-    if (searchQuery.trim().length < 2) {
+  useEffect(() => {
+    if (debouncedQuery.trim().length < 2) {
       setResults([]);
       setHasSearched(false);
       return;
     }
-    setLoading(true);
-    setHasSearched(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("search-parents", {
-        body: { query: searchQuery.trim() },
-      });
-      if (error) throw error;
-      setResults(data?.results || []);
-    } catch (err) {
-      console.error("Search error:", err);
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Debounce search
-  useEffect(() => {
-    if (query.trim().length < 2) return;
-    const timer = setTimeout(() => doSearch(query), 400);
-    return () => clearTimeout(timer);
-  }, [query, doSearch]);
+    
+    let cancelled = false;
+    const doSearch = async () => {
+      setLoading(true);
+      setHasSearched(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("search-parents", {
+          body: { query: debouncedQuery.trim(), limit: 3 },
+        });
+        if (error) throw error;
+        if (!cancelled) setResults(data?.results || []);
+      } catch (err) {
+        console.error("Search error:", err);
+        if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    doSearch();
+    return () => { cancelled = true; };
+  }, [debouncedQuery]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -65,25 +66,18 @@ const ParentSearchBar = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      doSearch(query);
-    }
-  };
-
   const getParentName = (r: SearchResult) =>
     [r.first_name, r.last_name].filter(Boolean).join(" ") || r.username;
 
   return (
     <div className="space-y-3">
-      {/* Search Input */}
+      <h3 className="text-lg font-semibold text-foreground">Search Parents for Direct Ride Requests &amp; Offers</h3>
+      
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={query}
           onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
           placeholder="Search for a parent or student by name"
           className="pl-9 pr-10"
         />
@@ -93,13 +87,12 @@ const ParentSearchBar = () => {
         Note: Only parents who have created a Chadwick School Pool account will appear in search results
       </p>
 
-      {/* Results */}
       {hasSearched && !loading && results.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">No matching parents found</p>
+        <p className="text-sm text-muted-foreground text-center py-4">No parents found. They may not have created a Chadwick School Pool account yet.</p>
       )}
 
       {results.length > 0 && (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        <div className="space-y-2">
           {results.map((r) => {
             const name = getParentName(r);
             return (
@@ -157,7 +150,6 @@ const ParentSearchBar = () => {
         </div>
       )}
 
-      {/* Direct Ride Modal */}
       {directRide && (
         <DirectRideModal
           open
