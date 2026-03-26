@@ -13,6 +13,7 @@ import { AlertCircle, School, Home } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
+import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 
 
 interface RideOfferFormProps {
