@@ -14,6 +14,7 @@ import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import RidesList, { type Ride } from "@/components/RidesList";
 import FindRidesMap from "@/components/FindRidesMap";
+import ParentSearchBar from "@/components/ParentSearchBar";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
 const FamilyCarpools = () => {
@@ -207,6 +208,9 @@ const FamilyCarpools = () => {
               </>
             )}
           </div>
+
+          {/* Parent Search */}
+          <ParentSearchBar />
 
           {/* Map View */}
           {viewMode === 'map' && (
