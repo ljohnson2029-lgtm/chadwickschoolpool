@@ -398,37 +398,22 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         await supabase.functions.invoke('create-notification', {
           body: {
             userId: respondingToRide.user_id,
-            type: isOffer ? 'ride_join_request' : 'ride_accepted',
+            type: 'ride_join_request',
             message: isOffer
               ? `🙋 ${senderName} has requested to join your ride on ${rideDate} at ${rideTime}`
-              : `${senderName} is helping with your ride on ${rideDate}! Contact them to coordinate.`
+              : `🙋 ${senderName} has offered to help with your ride request on ${rideDate} at ${rideTime}`
           }
         });
       } catch (notifError) {
         console.error('Error sending notification:', notifError);
       }
 
-      if (isOffer) {
-        // Pending flow - show request sent confirmation
-        toast({
-          title: "Request Sent! ✉️",
-          description: `Your request to join ${ownerName}'s ride has been sent. You'll be notified when they respond.`,
-        });
-      } else {
-        // Instant connection flow for ride requests
-        setRideOwnerContact({
-          firstName: ownerProfile?.first_name || ownerName,
-          lastName: ownerProfile?.last_name || '',
-          email: ownerProfile?.share_email !== false ? ownerUser?.email || null : null,
-          phone: ownerProfile?.share_phone ? ownerProfile.phone_number : null,
-        });
-        setShowSuccessInfo(true);
-
-        toast({
-          title: "You're connected! 🎉",
-          description: `Contact ${ownerName} to coordinate pickup details.`,
-        });
-      }
+      toast({
+        title: isOffer ? "Request Sent! ✉️" : "Offer Sent! ✉️",
+        description: isOffer
+          ? `Your request to join ${ownerName}'s ride has been sent. You'll be notified when they respond.`
+          : `Your offer to help ${ownerName} has been sent. You'll be notified when they respond.`,
+      });
 
       // Refresh user responses to update button state
       await fetchUserResponses();
