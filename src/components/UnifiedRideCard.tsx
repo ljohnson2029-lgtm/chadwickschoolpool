@@ -31,6 +31,10 @@ export interface ParticipantInfo {
   email: string | null;
   phone: string | null;
   children: { name: string; grade: string }[];
+  carMake?: string | null;
+  carModel?: string | null;
+  carColor?: string | null;
+  licensePlate?: string | null;
 }
 
 export interface PendingJoinRequest {
