@@ -583,11 +583,11 @@ export const InstantJoinRideDialog = ({
   );
 };
 
-// Instant Offer Ride Dialog (no approval needed)
+// Instant Offer Ride Dialog (with child selection)
 interface InstantOfferRideDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: (selectedChildIds?: string[]) => void | Promise<void>;
   requesterName: string;
   rideDate: string;
   rideTime: string;
@@ -614,9 +614,21 @@ export const InstantOfferRideDialog = ({
   requesterContact,
   onClose,
 }: InstantOfferRideDialogProps) => {
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [childError, setChildError] = useState<string | null>(null);
+
   const handleClose = () => {
     onClose?.();
     onOpenChange(false);
+  };
+
+  const handleConfirm = () => {
+    if (selectedChildIds.length === 0) {
+      setChildError("Please select at least one child for this ride");
+      return;
+    }
+    setChildError(null);
+    onConfirm(selectedChildIds);
   };
 
   const copyToClipboard = (text: string) => {
@@ -715,13 +727,18 @@ export const InstantOfferRideDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
-            Fulfill this ride request?
+            Children Riding on This Trip
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p>
                 Fulfill <strong>{requesterName}</strong>'s ride request on <strong>{formatDisplayDate(rideDate)}</strong> at <strong>{formatDisplayTime(rideTime)}</strong>?
               </p>
+              <ChildrenRidingSelector
+                selectedChildIds={selectedChildIds}
+                onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
+                error={childError}
+              />
               <p className="text-sm text-muted-foreground">
                 You'll be connected immediately and can coordinate pickup details.
               </p>
@@ -730,7 +747,7 @@ export const InstantOfferRideDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={loading}>
+          <AlertDialogAction onClick={handleConfirm} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
