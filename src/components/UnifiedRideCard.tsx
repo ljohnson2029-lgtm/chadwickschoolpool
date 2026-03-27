@@ -265,6 +265,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const [contactOpen, setContactOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [authUserId, setAuthUserId] = useState<string>('');
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
