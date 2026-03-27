@@ -462,9 +462,10 @@ const RideOfferForm = ({
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
             error={childError}
+            maxSeats={seatsAvailable ? parseInt(seatsAvailable) : null}
           />
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
+          <Button type="submit" disabled={submitting || (!!seatsAvailable && selectedChildIds.length > parseInt(seatsAvailable))} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
           </Button>
         </form>

@@ -445,9 +445,10 @@ const RideRequestForm = ({
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
             error={childError}
+            maxSeats={seatsNeeded ? parseInt(seatsNeeded) : null}
           />
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
+          <Button type="submit" disabled={submitting || (!!seatsNeeded && selectedChildIds.length > parseInt(seatsNeeded))} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Request to ${recipientParentName.split(' ')[0]}` : "Post Ride Request"}
           </Button>
         </form>
