@@ -717,6 +717,17 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Contact Card Modal */}
+      {ride.otherParent && (
+        <ContactCardModal
+          open={contactOpen}
+          onClose={() => setContactOpen(false)}
+          parentName={getParentName(ride.otherParent)}
+          phone={ride.otherParent.phone}
+          email={ride.otherParent.email}
+        />
+      )}
     </>
   );
 };
