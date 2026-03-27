@@ -270,13 +270,13 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const StatusIcon = statusConfig.icon;
 
   // Determine if this is a confirmed ride with another parent
-  const isConfirmed = ride.otherParent && (
-    ride.status === 'joined-ride' ||
-    ride.status === 'helping-out' ||
-    ride.status === 'confirmed' ||
+  const isConfirmed = !!(ride.otherParent && !isPast && (
+    ride.status === 'joined-ride' as string ||
+    ride.status === 'helping-out' as string ||
+    ride.status === 'confirmed' as string ||
     (ride.source === 'posted' && ride.otherParent) ||
-    (ride.source === 'private' && (ride.status === 'joined-ride' || ride.status === 'helping-out' || ride.status === 'confirmed'))
-  );
+    (ride.source === 'private')
+  ));
 
   const rideSource = ride.source === 'private' ? 'private' : 'public';
   const currentUserId = ride.isDriver
