@@ -14,7 +14,8 @@ import {
   BellOff,
   Users,
   Trash2,
-  Clock
+  Clock,
+  Repeat
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -265,6 +266,10 @@ export const NotificationDropdown = () => {
       case 'new_message':
       case 'ride_message':
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case 'series_message':
+        return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      case 'series_ride':
+        return <Car className="h-4 w-4 text-teal-500" />;
       case 'ride_expiring':
         return <Clock className="h-4 w-4 text-amber-500" />;
       default:
@@ -293,6 +298,9 @@ export const NotificationDropdown = () => {
     } else if (notification.type === 'ride_message') {
       setIsOpen(false);
       navigate('/my-rides');
+    } else if (notification.type === 'series_message' || notification.type === 'series_ride') {
+      setIsOpen(false);
+      navigate('/series');
     } else if (notification.type === 'ride_expiring') {
       setIsOpen(false);
       navigate('/my-rides');
@@ -422,6 +430,23 @@ export const NotificationDropdown = () => {
                       >
                         <MessageSquare className="h-3 w-3" />
                         View Requests
+                      </Button>
+                    )}
+
+                    {/* Action buttons for series notifications */}
+                    {(notification.type === 'series_message' || notification.type === 'series_ride') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/series');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <Repeat className="h-3 w-3" />
+                        View in Series
                       </Button>
                     )}
                     

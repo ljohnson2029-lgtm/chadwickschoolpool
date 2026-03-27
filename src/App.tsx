@@ -42,6 +42,7 @@ const Feedback = lazy(() => import("./pages/Feedback"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const RequestAccess = lazy(() => import("./pages/RequestAccess"));
 const AdminApprovals = lazy(() => import("./pages/AdminApprovals"));
+const Series = lazy(() => import("./pages/Series"));
 
 // Loading component for lazy loaded pages
 const PageLoader = () => (
@@ -110,6 +111,9 @@ const AppRoutes = () => {
           } />
           <Route path="/conversations" element={<Conversations />} />
           <Route path="/my-rides" element={<MyRides />} />
+          <Route path="/series" element={
+            <ParentOnlyRoute><Series /></ParentOnlyRoute>
+          } />
           
           {/* Parent-only routes */}
           <Route path="/requests/private" element={

@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Car, Calendar, User, Menu, MessageSquarePlus, Info, Shield, HelpCircle, Settings } from "lucide-react";
+import { Home, Car, Calendar, User, Menu, MessageSquarePlus, Info, Shield, HelpCircle, Settings, Repeat } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +26,7 @@ const MobileBottomNav = () => {
     { label: "Home", path: "/dashboard", icon: Home },
     { label: "Carpools", path: "/family-carpools", icon: Calendar },
     { label: "My Rides", path: "/my-rides", icon: Car },
+    ...(!isStudent ? [{ label: "Series", path: "/series", icon: Repeat }] : []),
     { label: "Profile", path: "/profile", icon: User },
   ];
 
