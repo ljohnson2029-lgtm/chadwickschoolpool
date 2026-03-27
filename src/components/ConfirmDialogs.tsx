@@ -603,6 +603,7 @@ interface InstantOfferRideDialogProps {
     phone: string | null;
   } | null;
   onClose?: () => void;
+  maxSeats?: number | null;
 }
 
 export const InstantOfferRideDialog = ({
@@ -616,6 +617,7 @@ export const InstantOfferRideDialog = ({
   showSuccess = false,
   requesterContact,
   onClose,
+  maxSeats,
 }: InstantOfferRideDialogProps) => {
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [childError, setChildError] = useState<string | null>(null);
@@ -741,6 +743,7 @@ export const InstantOfferRideDialog = ({
                 selectedChildIds={selectedChildIds}
                 onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
                 error={childError}
+                maxSeats={maxSeats}
               />
               <p className="text-sm text-muted-foreground">
                 You'll be connected immediately and can coordinate pickup details.
@@ -750,7 +753,7 @@ export const InstantOfferRideDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={loading}>
+          <AlertDialogAction onClick={handleConfirm} disabled={loading || (maxSeats != null && selectedChildIds.length > maxSeats)}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
