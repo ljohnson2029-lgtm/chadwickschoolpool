@@ -311,7 +311,6 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       let isDriver: boolean;
       
       if (req.status === 'pending') {
-        // Pending direct ride
         status = isSender ? 'pending-direct-sent' : 'pending-direct-received';
         isDriver = req.request_type === 'offer' ? isSender : !isSender;
       } else {
@@ -328,6 +327,16 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       const isPast = req.ride_date < today;
       const profile = otherProfiles[otherId];
 
+      // Filter children by per-trip selections
+      const senderChildIds = (req as any).selected_children as string[] | null;
+      const recipientChildIds = (req as any).recipient_selected_children as string[] | null;
+      const mySelectedIds = isSender ? senderChildIds : recipientChildIds;
+      const otherSelectedIds = isSender ? recipientChildIds : senderChildIds;
+
+      const filteredMyChildren = filterChildrenBySelection(myChildren, mySelectedIds);
+      const otherKids = otherChildren[otherId] || [];
+      const filteredOtherKids = filterChildrenBySelection(otherKids, otherSelectedIds);
+
       allRides.push({
         id: req.id,
         source: 'private',
@@ -341,8 +350,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: req.seats_offered,
         seatsNeeded: req.seats_needed,
         isDriver,
-        otherParent: profile ? toParticipant(profile, otherChildren[otherId] || []) : null,
-        myChildren,
+        otherParent: profile ? toParticipant(profile, filteredOtherKids) : null,
+        myChildren: filteredMyChildren,
         myCarInfo,
         originalData: req,
       });

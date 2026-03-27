@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
