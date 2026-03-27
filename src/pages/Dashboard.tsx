@@ -96,6 +96,84 @@ const Dashboard = () => {
     fetchRides();
   }, [user, shouldUseStudentDashboard]);
 
+  // Fetch recurring rides for schedule
+  useEffect(() => {
+    if (!user || shouldUseStudentDashboard) return;
+    const fetchRecurring = async () => {
+      const DAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      
+      // Get all accepted recurring rides for this user
+      const { data: spaces } = await supabase
+        .from("series_spaces")
+        .select("id")
+        .or(`parent_a_id.eq.${user.id},parent_b_id.eq.${user.id}`);
+      
+      if (!spaces || spaces.length === 0) return;
+      
+      const spaceIds = spaces.map(s => s.id);
+      const { data: rides } = await supabase
+        .from("recurring_rides")
+        .select("*")
+        .in("space_id", spaceIds)
+        .eq("status", "accepted");
+      
+      if (!rides || rides.length === 0) return;
+
+      // Get cancellations
+      const rideIds = rides.map(r => r.id);
+      const { data: cancellations } = await supabase
+        .from("recurring_ride_cancellations")
+        .select("recurring_ride_id, cancelled_date")
+        .in("recurring_ride_id", rideIds);
+      
+      const cancelledDates = new Set(
+        (cancellations || []).map(c => `${c.recurring_ride_id}-${c.cancelled_date}`)
+      );
+
+      // Generate occurrences for next 4 weeks
+      const today = new Date();
+      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+      const generated: FamilyRide[] = [];
+
+      for (const ride of rides) {
+        for (let w = 0; w < 4; w++) {
+          for (const dayName of (ride.recurring_days as string[])) {
+            const dayIdx = DAY_INDEX[dayName];
+            if (dayIdx === undefined) continue;
+            const date = addDays(addDays(weekStart, w * 7), (dayIdx + 6) % 7); // Mon=0
+            const dateStr = format(date, "yyyy-MM-dd");
+            if (date < today && !format(today, "yyyy-MM-dd").startsWith(dateStr)) continue;
+            
+            const isCancelled = cancelledDates.has(`${ride.id}-${dateStr}`);
+            
+            generated.push({
+              id: `recurring-${ride.id}-${dateStr}`,
+              type: ride.ride_type,
+              ride_date: dateStr,
+              ride_time: ride.ride_time,
+              pickup_location: ride.pickup_address,
+              dropoff_location: ride.dropoff_address,
+              pickup_latitude: null,
+              pickup_longitude: null,
+              dropoff_latitude: null,
+              dropoff_longitude: null,
+              seats_available: null,
+              seats_needed: null,
+              status: isCancelled ? "cancelled" : "active",
+              user_id: ride.creator_id,
+              parent_id: user.id,
+              parent_name: profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile?.username || '',
+              parent_email: '',
+              connected_parent_name: null,
+            });
+          }
+        }
+      }
+      setRecurringScheduleRides(generated);
+    };
+    fetchRecurring();
+  }, [user, shouldUseStudentDashboard, profile]);
+
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
     return username.substring(0, 2).toUpperCase();
