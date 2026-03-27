@@ -77,6 +77,10 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
 
   const isRequest = type === "request";
 
+  // Use a key to force remount AddressAutocompleteInput on quick-fill
+  const [pickupKey, setPickupKey] = useState(0);
+  const [dropoffKey, setDropoffKey] = useState(0);
+
   const handlePickupSelect = (address: string, lat: number, lng: number) => {
     form.setValue("pickup_address", address, { shouldValidate: true });
     form.setValue("pickup_latitude", lat);
@@ -89,20 +93,30 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
     form.setValue("dropoff_longitude", lng);
   };
 
-  const setQuickPickup = (type: "home" | "school") => {
-    if (type === "school") {
-      handlePickupSelect(CHADWICK_SCHOOL.address, CHADWICK_SCHOOL.latitude, CHADWICK_SCHOOL.longitude);
+  const setQuickPickup = (locType: "home" | "school") => {
+    if (locType === "school") {
+      form.setValue("pickup_address", CHADWICK_SCHOOL.address, { shouldValidate: true });
+      form.setValue("pickup_latitude", CHADWICK_SCHOOL.latitude);
+      form.setValue("pickup_longitude", CHADWICK_SCHOOL.longitude);
     } else if (profile?.home_address && profile?.home_latitude && profile?.home_longitude) {
-      handlePickupSelect(profile.home_address, profile.home_latitude, profile.home_longitude);
+      form.setValue("pickup_address", profile.home_address, { shouldValidate: true });
+      form.setValue("pickup_latitude", profile.home_latitude);
+      form.setValue("pickup_longitude", profile.home_longitude);
     }
+    setPickupKey(k => k + 1);
   };
 
-  const setQuickDropoff = (type: "home" | "school") => {
-    if (type === "school") {
-      handleDropoffSelect(CHADWICK_SCHOOL.address, CHADWICK_SCHOOL.latitude, CHADWICK_SCHOOL.longitude);
+  const setQuickDropoff = (locType: "home" | "school") => {
+    if (locType === "school") {
+      form.setValue("dropoff_address", CHADWICK_SCHOOL.address, { shouldValidate: true });
+      form.setValue("dropoff_latitude", CHADWICK_SCHOOL.latitude);
+      form.setValue("dropoff_longitude", CHADWICK_SCHOOL.longitude);
     } else if (profile?.home_address && profile?.home_latitude && profile?.home_longitude) {
-      handleDropoffSelect(profile.home_address, profile.home_latitude, profile.home_longitude);
+      form.setValue("dropoff_address", profile.home_address, { shouldValidate: true });
+      form.setValue("dropoff_latitude", profile.home_latitude);
+      form.setValue("dropoff_longitude", profile.home_longitude);
     }
+    setDropoffKey(k => k + 1);
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -205,6 +219,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
                 </div>
                 <FormControl>
                   <AddressAutocompleteInput
+                    key={`pickup-${pickupKey}`}
                     value={form.watch("pickup_address")}
                     onAddressSelect={handlePickupSelect}
                     placeholder="Enter pickup address"
@@ -227,6 +242,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
                 </div>
                 <FormControl>
                   <AddressAutocompleteInput
+                    key={`dropoff-${dropoffKey}`}
                     value={form.watch("dropoff_address")}
                     onAddressSelect={handleDropoffSelect}
                     placeholder="Enter dropoff address"
@@ -251,14 +267,18 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          if (date) {
+                            field.onChange(date);
+                          }
+                        }}
                         disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0)) || d > new Date(new Date().setDate(new Date().getDate() + 30))}
                         initialFocus
-                        className="pointer-events-auto"
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
