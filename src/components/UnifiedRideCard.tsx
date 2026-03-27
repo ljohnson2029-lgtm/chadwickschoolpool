@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,13 @@ import {
   UserX,
   LogOut,
   AlertTriangle,
+  MessageCircle,
+  Contact,
 } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { ContactCardModal } from "@/components/ContactCardModal";
+import { RideChatThread } from "@/components/RideChatThread";
 
 export interface ParticipantInfo {
   id: string;
@@ -257,9 +262,70 @@ export const UnifiedRideCardSkeleton = () => (
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
+
+  // Determine if this is a confirmed ride with another parent
+  const isConfirmed = !!(ride.otherParent && !isPast && (
+    ride.status === 'joined-ride' as string ||
+    ride.status === 'helping-out' as string ||
+    ride.status === 'confirmed' as string ||
+    (ride.source === 'posted' && ride.otherParent) ||
+    (ride.source === 'private')
+  ));
+
+  const rideSource = ride.source === 'private' ? 'private' : 'public';
+  const currentUserId = ride.isDriver
+    ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
+    : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!isConfirmed || isPast || !ride.otherParent) return;
+    
+    const fetchUnread = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { count } = await supabase
+        .from('ride_messages' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('ride_ref_id', ride.id)
+        .eq('ride_source', rideSource)
+        .neq('sender_id', user.id)
+        .eq('is_read', false);
+      
+      setUnreadCount(count || 0);
+    };
+    
+    fetchUnread();
+
+    // Subscribe to new messages for unread badge
+    const channel = supabase
+      .channel(`unread-${ride.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ride_messages',
+        filter: `ride_ref_id=eq.${ride.id}`,
+      }, () => {
+        if (!chatOpen) {
+          setUnreadCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [ride.id, isConfirmed, isPast, rideSource, chatOpen]);
+
+  // Reset unread when chat opens
+  useEffect(() => {
+    if (chatOpen) setUnreadCount(0);
+  }, [chatOpen]);
 
   const cancelConfig = !isPast && !ride._studentView && onCancel ? getCancelActionConfig(ride) : null;
   const isTimeRestricted = cancelConfig?.hasTimeRestriction ? isWithin9Hours(ride.rideDate, ride.rideTime) : false;
@@ -539,6 +605,71 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </span>
           </div>
 
+          {/* Contact & Messages buttons for confirmed rides */}
+          {isConfirmed && ride.otherParent && (
+            <div className="pt-2 border-t border-border space-y-3">
+              <div className="flex gap-2">
+                {/* Contact Card - hidden for students */}
+                {!ride._studentView && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5 text-xs"
+                    onClick={() => setContactOpen(true)}
+                  >
+                    <Contact className="h-3.5 w-3.5" />
+                    Contact Ride Parent
+                  </Button>
+                )}
+                {/* Messages button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs relative"
+                  onClick={() => setChatOpen(!chatOpen)}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+              {!ride._studentView && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  View contact info for the other parent on this ride
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Expandable Chat Thread */}
+          {chatOpen && isConfirmed && ride.otherParent && (
+            <RideChatThread
+              rideRefId={ride.id}
+              rideSource={rideSource}
+              currentUserId={(() => {
+                // We need the actual current user id - derive from ride data
+                if (ride.source === 'posted') return ride.originalData?.user_id || '';
+                if (ride.source === 'conversation') {
+                  const conv = ride.originalData?.conversation;
+                  return ride.isDriver ? conv?.sender_id || '' : conv?.sender_id || '';
+                }
+                // private
+                return ride.originalData?.sender_id === ride.otherParent?.id
+                  ? ride.originalData?.recipient_id || ''
+                  : ride.originalData?.sender_id || '';
+              })()}
+              currentUserName="You"
+              otherParentId={ride.otherParent.id}
+              otherParentName={getParentName(ride.otherParent)}
+              isStudent={ride._studentView}
+              rideDate={ride.rideDate}
+            />
+          )}
+
           {/* Cancel/Leave button */}
           {cancelConfig && (
             <div className="pt-2 border-t border-border space-y-1.5">
@@ -585,6 +716,17 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      )}
+
+      {/* Contact Card Modal */}
+      {ride.otherParent && (
+        <ContactCardModal
+          open={contactOpen}
+          onClose={() => setContactOpen(false)}
+          parentName={getParentName(ride.otherParent)}
+          phone={ride.otherParent.phone}
+          email={ride.otherParent.email}
+        />
       )}
     </>
   );
