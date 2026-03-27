@@ -865,6 +865,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         loading={actionLoading}
         showSuccess={showSuccessInfo}
         ownerContact={rideOwnerContact}
+        maxSeats={respondingToRide?.seats_available || null}
         onClose={() => {
           setShowSuccessInfo(false);
           setRideOwnerContact(null);
@@ -887,6 +888,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         loading={actionLoading}
         showSuccess={showSuccessInfo}
         requesterContact={rideOwnerContact}
+        maxSeats={respondingToRide?.seats_needed || null}
         onClose={() => {
           setShowSuccessInfo(false);
           setRideOwnerContact(null);
