@@ -82,7 +82,12 @@ serve(async (req) => {
       'ride_left',
       'ride_cancelled',
       'private_ride_request_received',
-      'private_ride_offer_received'
+      'private_ride_offer_received',
+      'direct_ride_request',
+      'direct_ride_offer',
+      'direct_ride_accepted',
+      'direct_ride_declined',
+      'direct_ride_cancelled'
     ];
     
     if (!allowedTypes.includes(type)) {

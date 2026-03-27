@@ -275,12 +275,14 @@ export type Database = {
           pickup_longitude: number
           pickup_time: string
           recipient_id: string
+          recipient_selected_children: Json | null
           request_type: Database["public"]["Enums"]["private_request_type"]
           responded_at: string | null
           return_time: string | null
           ride_date: string
           seats_needed: number | null
           seats_offered: number | null
+          selected_children: Json | null
           sender_id: string
           status: Database["public"]["Enums"]["private_request_status"]
           updated_at: string
@@ -299,12 +301,14 @@ export type Database = {
           pickup_longitude: number
           pickup_time: string
           recipient_id: string
+          recipient_selected_children?: Json | null
           request_type: Database["public"]["Enums"]["private_request_type"]
           responded_at?: string | null
           return_time?: string | null
           ride_date: string
           seats_needed?: number | null
           seats_offered?: number | null
+          selected_children?: Json | null
           sender_id: string
           status?: Database["public"]["Enums"]["private_request_status"]
           updated_at?: string
@@ -323,12 +327,14 @@ export type Database = {
           pickup_longitude?: number
           pickup_time?: string
           recipient_id?: string
+          recipient_selected_children?: Json | null
           request_type?: Database["public"]["Enums"]["private_request_type"]
           responded_at?: string | null
           return_time?: string | null
           ride_date?: string
           seats_needed?: number | null
           seats_offered?: number | null
+          selected_children?: Json | null
           sender_id?: string
           status?: Database["public"]["Enums"]["private_request_status"]
           updated_at?: string

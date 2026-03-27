@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { useAuth } from "@/contexts/AuthContext";
+import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 
 const CHADWICK_SCHOOL = {
   name: "Chadwick School",
@@ -61,6 +62,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
   const { profile } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -129,6 +131,12 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
         return;
       }
 
+      if (selectedChildIds.length === 0) {
+        toast({ title: "Select Children", description: "Please select at least one child for this ride.", variant: "destructive" });
+        setSubmitting(false);
+        return;
+      }
+
       const { error: insertError } = await supabase.from("private_ride_requests").insert({
         request_type: type,
         sender_id: profile.id,
@@ -146,7 +154,8 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
         seats_offered: isRequest ? null : values.seats,
         message: values.message || null,
         status: "pending",
-      });
+        selected_children: selectedChildIds,
+      } as any);
 
       if (insertError) throw insertError;
 
@@ -297,6 +306,13 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
                 <FormMessage />
               </FormItem>
             )} />
+
+            {/* Children Riding */}
+            <ChildrenRidingSelector
+              selectedChildIds={selectedChildIds}
+              onSelectionChange={setSelectedChildIds}
+              maxSeats={isRequest ? null : form.watch("seats")}
+            />
 
             {/* Note */}
             <FormField control={form.control} name="message" render={({ field }) => (
