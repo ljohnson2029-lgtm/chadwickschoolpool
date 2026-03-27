@@ -452,6 +452,109 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_ride_cancellations: {
+        Row: {
+          cancelled_by: string
+          cancelled_date: string
+          created_at: string
+          id: string
+          recurring_ride_id: string
+        }
+        Insert: {
+          cancelled_by: string
+          cancelled_date: string
+          created_at?: string
+          id?: string
+          recurring_ride_id: string
+        }
+        Update: {
+          cancelled_by?: string
+          cancelled_date?: string
+          created_at?: string
+          id?: string
+          recurring_ride_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_ride_cancellations_recurring_ride_id_fkey"
+            columns: ["recurring_ride_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_rides: {
+        Row: {
+          created_at: string
+          creator_children: Json | null
+          creator_id: string
+          dropoff_address: string
+          dropoff_latitude: number
+          dropoff_longitude: number
+          id: string
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          recipient_children: Json | null
+          recipient_id: string
+          recurring_days: string[]
+          ride_time: string
+          ride_type: string
+          space_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_children?: Json | null
+          creator_id: string
+          dropoff_address: string
+          dropoff_latitude: number
+          dropoff_longitude: number
+          id?: string
+          pickup_address: string
+          pickup_latitude: number
+          pickup_longitude: number
+          recipient_children?: Json | null
+          recipient_id: string
+          recurring_days: string[]
+          ride_time: string
+          ride_type: string
+          space_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_children?: Json | null
+          creator_id?: string
+          dropoff_address?: string
+          dropoff_latitude?: number
+          dropoff_longitude?: number
+          id?: string
+          pickup_address?: string
+          pickup_latitude?: number
+          pickup_longitude?: number
+          recipient_children?: Json | null
+          recipient_id?: string
+          recurring_days?: string[]
+          ride_time?: string
+          ride_type?: string
+          space_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_rides_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "series_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_conversations: {
         Row: {
           created_at: string | null
@@ -674,6 +777,62 @@ export type Database = {
           state?: string
           updated_at?: string
           zip_code?: string
+        }
+        Relationships: []
+      }
+      series_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message_text: string
+          sender_id: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text: string
+          sender_id: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text?: string
+          sender_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "series_messages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "series_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      series_spaces: {
+        Row: {
+          created_at: string
+          id: string
+          parent_a_id: string
+          parent_b_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_a_id: string
+          parent_b_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_a_id?: string
+          parent_b_id?: string
         }
         Relationships: []
       }
