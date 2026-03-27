@@ -280,26 +280,29 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <WeekCalendar
-              rides={myRides.map((ride): FamilyRide => ({
-                id: ride.id,
-                type: ride.type,
-                ride_date: ride.ride_date,
-                ride_time: ride.ride_time,
-                pickup_location: ride.pickup_location,
-                dropoff_location: ride.dropoff_location,
-                pickup_latitude: null,
-                pickup_longitude: null,
-                dropoff_latitude: null,
-                dropoff_longitude: null,
-                seats_available: ride.seats_available ?? null,
-                seats_needed: ride.seats_needed ?? null,
-                status: 'active',
-                user_id: user.id,
-                parent_id: user.id,
-                parent_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile.username,
-                parent_email: '',
-                connected_parent_name: null,
-              }))}
+              rides={[
+                ...myRides.map((ride): FamilyRide => ({
+                  id: ride.id,
+                  type: ride.type,
+                  ride_date: ride.ride_date,
+                  ride_time: ride.ride_time,
+                  pickup_location: ride.pickup_location,
+                  dropoff_location: ride.dropoff_location,
+                  pickup_latitude: null,
+                  pickup_longitude: null,
+                  dropoff_latitude: null,
+                  dropoff_longitude: null,
+                  seats_available: ride.seats_available ?? null,
+                  seats_needed: ride.seats_needed ?? null,
+                  status: 'active',
+                  user_id: user.id,
+                  parent_id: user.id,
+                  parent_name: profile.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile.username,
+                  parent_email: '',
+                  connected_parent_name: null,
+                })),
+                ...recurringScheduleRides,
+              ]}
               loading={loading}
             />
           </CardContent>
