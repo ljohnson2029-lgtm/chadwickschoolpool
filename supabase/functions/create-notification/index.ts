@@ -79,6 +79,8 @@ serve(async (req) => {
       'ride_join_request',
       'ride_join_accepted',
       'ride_join_declined',
+      'ride_left',
+      'ride_cancelled',
       'private_ride_request_received',
       'private_ride_offer_received'
     ];
