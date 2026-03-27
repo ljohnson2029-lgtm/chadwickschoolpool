@@ -265,6 +265,10 @@ export const NotificationDropdown = () => {
       case 'new_message':
       case 'ride_message':
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case 'series_message':
+        return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      case 'series_ride':
+        return <Car className="h-4 w-4 text-teal-500" />;
       case 'ride_expiring':
         return <Clock className="h-4 w-4 text-amber-500" />;
       default:
@@ -293,6 +297,9 @@ export const NotificationDropdown = () => {
     } else if (notification.type === 'ride_message') {
       setIsOpen(false);
       navigate('/my-rides');
+    } else if (notification.type === 'series_message' || notification.type === 'series_ride') {
+      setIsOpen(false);
+      navigate('/series');
     } else if (notification.type === 'ride_expiring') {
       setIsOpen(false);
       navigate('/my-rides');
