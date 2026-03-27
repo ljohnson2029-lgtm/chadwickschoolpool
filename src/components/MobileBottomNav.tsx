@@ -26,6 +26,7 @@ const MobileBottomNav = () => {
     { label: "Home", path: "/dashboard", icon: Home },
     { label: "Carpools", path: "/family-carpools", icon: Calendar },
     { label: "My Rides", path: "/my-rides", icon: Car },
+    ...(!isStudent ? [{ label: "Series", path: "/series", icon: Calendar }] : []),
     { label: "Profile", path: "/profile", icon: User },
   ];
 
