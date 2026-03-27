@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -49,12 +48,12 @@ export function RideChatThread({
       .select("*")
       .eq("ride_ref_id", rideRefId)
       .eq("ride_source", rideSource)
-      .order("created_at", { ascending: true });
-    if (data) setMessages(data as any);
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data) setMessages((data as any).reverse());
     setLoading(false);
   }, [rideRefId, rideSource]);
 
-  // Mark unread messages as read
   const markAsRead = useCallback(async () => {
     await supabase
       .from("ride_messages" as any)
@@ -69,14 +68,13 @@ export function RideChatThread({
     fetchMessages();
   }, [fetchMessages]);
 
-  // Mark as read on open and when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
       markAsRead();
     }
   }, [messages, markAsRead]);
 
-  // Realtime subscription
+  // Realtime subscription - set up immediately
   useEffect(() => {
     const channel = supabase
       .channel(`ride-chat-${rideRefId}`)
@@ -112,35 +110,25 @@ export function RideChatThread({
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
-    console.log("[RideChatThread] Send button clicked");
-
     setSending(true);
     const msgText = newMessage.trim();
-    const messagePayload = {
-      ride_ref_id: rideRefId,
-      ride_source: rideSource,
-      sender_id: currentUserId,
-      message_text: msgText,
-    };
-
-    console.log("[RideChatThread] Sending message payload:", messagePayload);
     setNewMessage("");
 
-    const response = await supabase
+    const { error } = await supabase
       .from("ride_messages" as any)
-      .insert(messagePayload as any);
-
-    console.log("[RideChatThread] Insert response:", response);
-
-    const { error } = response;
+      .insert({
+        ride_ref_id: rideRefId,
+        ride_source: rideSource,
+        sender_id: currentUserId,
+        message_text: msgText,
+      } as any);
 
     if (error) {
       console.error("Failed to send message:", error);
       setNewMessage(msgText);
     } else {
+      // Optimistic: realtime will add it, but fetch to be safe
       await fetchMessages();
-
-      // Send notification to the other parent
       try {
         await supabase.functions.invoke("create-notification", {
           body: {
@@ -162,19 +150,15 @@ export function RideChatThread({
     return otherParentName;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-4">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-background">
       {/* Messages area */}
       <div ref={scrollRef} className="h-48 overflow-y-auto p-3 space-y-2">
-        {messages.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : messages.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-8">
             No messages yet. {!isStudent && "Start a conversation!"}
           </p>
@@ -204,7 +188,7 @@ export function RideChatThread({
         )}
       </div>
 
-      {/* Input area - hidden for students */}
+      {/* Input area - always available immediately, hidden for students */}
       {!isStudent && (
         <div className="border-t border-border p-2 flex gap-2">
           <Input

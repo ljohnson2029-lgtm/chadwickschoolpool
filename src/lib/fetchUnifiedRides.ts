@@ -91,11 +91,27 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
 
-  // Fetch current user's children and car info
-  const [userChildrenMap, { data: myProfile }] = await Promise.all([
+  // ── BATCH 1: Fetch all primary data in parallel ──
+  const [
+    userChildrenMap,
+    { data: myProfile },
+    { data: myRides },
+    { data: pendingConvos },
+    { data: joinedConvos },
+    { data: pendingSentConvos },
+    { data: receivedConvos },
+    { data: privateRequests },
+  ] = await Promise.all([
     fetchChildrenForIds([userId]),
     supabase.from('profiles').select('car_make, car_model, car_color, license_plate').eq('id', userId).single(),
+    supabase.from('rides').select('*').eq('user_id', userId),
+    supabase.from('ride_conversations').select('id, ride_id, sender_id, message, created_at, status, selected_children').eq('recipient_id', userId).eq('status', 'pending'),
+    supabase.from('ride_conversations').select('*, rides(*)').eq('sender_id', userId).eq('status', 'accepted'),
+    supabase.from('ride_conversations').select('*, rides(*)').eq('sender_id', userId).eq('status', 'pending'),
+    supabase.from('ride_conversations').select('*, rides(*)').eq('recipient_id', userId).eq('status', 'accepted'),
+    supabase.from('private_ride_requests').select('*').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).in('status', ['accepted', 'pending']),
   ]);
+
   const myChildren = userChildrenMap[userId] || [];
   const myProfileCarInfo = myProfile ? {
     carMake: myProfile.car_make || null,
@@ -104,41 +120,34 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     licensePlate: myProfile.license_plate || null,
   } : undefined;
 
-  // 1. Fetch ALL user's own rides (active + past)
-  const { data: myRides } = await supabase
-    .from('rides')
-    .select('*')
-    .eq('user_id', userId);
+  // ── Collect ALL other user IDs needed for profiles/children ──
+  const otherUserIds = new Set<string>();
 
-  // 1b. Fetch pending join requests for user's own rides
-  const { data: pendingConvos } = await supabase
-    .from('ride_conversations')
-    .select('id, ride_id, sender_id, message, created_at, status, selected_children')
-    .eq('recipient_id', userId)
-    .eq('status', 'pending');
+  if (pendingConvos) pendingConvos.forEach(c => otherUserIds.add(c.sender_id));
+  if (joinedConvos) joinedConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
+  if (pendingSentConvos) pendingSentConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
+  if (receivedConvos) receivedConvos.forEach(c => otherUserIds.add(c.sender_id));
+  if (privateRequests) privateRequests.forEach(r => {
+    otherUserIds.add(r.sender_id === userId ? r.recipient_id : r.sender_id);
+  });
+  otherUserIds.delete(userId);
 
-  // Build pending requests map: ride_id -> PendingJoinRequest[]
+  // ── BATCH 2: Fetch ALL other profiles and children in one go ──
+  const allOtherIds = [...otherUserIds];
+  const [allProfiles, allChildren] = await Promise.all([
+    fetchProfilesForIds(allOtherIds),
+    fetchChildrenForIds(allOtherIds),
+  ]);
+
+  // ── Process pending join requests ──
   const pendingByRide: Record<string, PendingJoinRequest[]> = {};
   if (pendingConvos && pendingConvos.length > 0) {
-    const requesterIds = [...new Set(pendingConvos.map(c => c.sender_id))];
-    const [requesterProfiles, requesterChildren] = await Promise.all([
-      fetchProfilesForIds(requesterIds),
-      fetchChildrenForIds(requesterIds),
-    ]);
-
-    console.log('[fetchUnifiedRides] Pending join requests debug:');
-    console.log('  Requester IDs:', requesterIds);
-    console.log('  Profiles fetched:', Object.keys(requesterProfiles));
-    console.log('  Children fetched:', Object.entries(requesterChildren).map(([id, kids]) => ({ id, childCount: (kids as any[]).length, children: kids })));
-
     for (const conv of pendingConvos) {
-      const profile = requesterProfiles[conv.sender_id];
-      const children = requesterChildren[conv.sender_id] || [];
+      const profile = allProfiles[conv.sender_id];
+      const children = allChildren[conv.sender_id] || [];
       const name = profile
         ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.username
         : 'Unknown';
-
-      console.log(`  Request from ${name} (${conv.sender_id}): profile=${!!profile}, children=${children.length}`, { profile, children });
 
       const req: PendingJoinRequest = {
         conversationId: conv.id,
@@ -156,6 +165,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
+  // ── 1. Own rides ──
   if (myRides) {
     for (const ride of myRides) {
       allRides.push({
@@ -180,25 +190,13 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // 2. Fetch conversations where user joined someone's ride (accepted)
-  const { data: joinedConvos } = await supabase
-    .from('ride_conversations')
-    .select('*, rides(*)')
-    .eq('sender_id', userId)
-    .eq('status', 'accepted');
-
+  // ── 2. Joined rides (accepted) ──
   if (joinedConvos) {
-    const ownerIds = [...new Set(joinedConvos.map(c => c.rides?.user_id).filter(Boolean))] as string[];
-    const [ownerProfiles, ownerChildren] = await Promise.all([
-      fetchProfilesForIds(ownerIds),
-      fetchChildrenForIds(ownerIds),
-    ]);
-
     for (const conv of joinedConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
       const isHelpingWithRequest = ride.type === 'request';
-      const profile = ownerProfiles[ride.user_id];
+      const profile = allProfiles[ride.user_id];
       
       allRides.push({
         id: conv.id,
@@ -213,7 +211,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: isHelpingWithRequest,
-        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
@@ -221,24 +219,12 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // 2b. Fetch PENDING conversations where user requested to join (awaiting approval)
-  const { data: pendingSentConvos } = await supabase
-    .from('ride_conversations')
-    .select('*, rides(*)')
-    .eq('sender_id', userId)
-    .eq('status', 'pending');
-
+  // ── 2b. Pending sent conversations ──
   if (pendingSentConvos) {
-    const ownerIds = [...new Set(pendingSentConvos.map(c => c.rides?.user_id).filter(Boolean))] as string[];
-    const [ownerProfiles, ownerChildren] = await Promise.all([
-      fetchProfilesForIds(ownerIds),
-      fetchChildrenForIds(ownerIds),
-    ]);
-
     for (const conv of pendingSentConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
-      const profile = ownerProfiles[ride.user_id];
+      const profile = allProfiles[ride.user_id];
       
       allRides.push({
         id: conv.id,
@@ -253,7 +239,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: false,
-        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
@@ -261,27 +247,15 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // 2c. Conversations where someone joined the user's ride (accepted)
-  const { data: receivedConvos } = await supabase
-    .from('ride_conversations')
-    .select('*, rides(*)')
-    .eq('recipient_id', userId)
-    .eq('status', 'accepted');
-
+  // ── 2c. Received accepted conversations ──
   if (receivedConvos) {
-    const joinerIds = [...new Set(receivedConvos.map(c => c.sender_id).filter(Boolean))] as string[];
-    const [joinerProfiles, joinerChildren] = await Promise.all([
-      fetchProfilesForIds(joinerIds),
-      fetchChildrenForIds(joinerIds),
-    ]);
-
     for (const conv of receivedConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
 
       const existingIdx = allRides.findIndex(r => r.source === 'posted' && r.id === ride.id);
-      const joiner = joinerProfiles[conv.sender_id];
-      const participant = joiner ? toParticipant(joiner, filterChildrenBySelection(joinerChildren[conv.sender_id] || [], (conv as any).selected_children)) : null;
+      const joiner = allProfiles[conv.sender_id];
+      const participant = joiner ? toParticipant(joiner, filterChildrenBySelection(allChildren[conv.sender_id] || [], (conv as any).selected_children)) : null;
 
       if (existingIdx !== -1) {
         allRides[existingIdx].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
@@ -302,27 +276,15 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           isDriver: ride.type === 'offer',
           otherParent: participant,
           myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
-        myCarInfo: extractCarInfo(null, myProfile),
+          myCarInfo: extractCarInfo(null, myProfile),
           originalData: { conversation: conv, ride },
         });
       }
     }
   }
 
-  // 3. Private ride requests (accepted AND pending)
-  const { data: privateRequests } = await supabase
-    .from('private_ride_requests')
-    .select('*')
-    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-    .in('status', ['accepted', 'pending']);
-
+  // ── 3. Private ride requests ──
   if (privateRequests) {
-    const otherIds = [...new Set(privateRequests.map(r => r.sender_id === userId ? r.recipient_id : r.sender_id))];
-    const [otherProfiles, otherChildren] = await Promise.all([
-      fetchProfilesForIds(otherIds),
-      fetchChildrenForIds(otherIds),
-    ]);
-
     for (const req of privateRequests) {
       const isSender = req.sender_id === userId;
       const otherId = isSender ? req.recipient_id : req.sender_id;
@@ -334,7 +296,6 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         status = isSender ? 'pending-direct-sent' : 'pending-direct-received';
         isDriver = req.request_type === 'offer' ? isSender : !isSender;
       } else {
-        // Accepted
         if (isSender) {
           status = req.request_type === 'request' ? 'joined-ride' : 'helping-out';
           isDriver = req.request_type !== 'request';
@@ -345,18 +306,15 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       }
 
       const isPast = req.ride_date < today;
-      const profile = otherProfiles[otherId];
+      const profile = allProfiles[otherId];
 
-      // Filter children by per-trip selections
       const senderChildIds = (req as any).selected_children as string[] | null;
       const recipientChildIds = (req as any).recipient_selected_children as string[] | null;
       const mySelectedIds = isSender ? senderChildIds : recipientChildIds;
       const otherSelectedIds = isSender ? recipientChildIds : senderChildIds;
 
       const filteredMyChildren = filterChildrenBySelection(myChildren, mySelectedIds);
-      const otherKids = otherChildren[otherId] || [];
-      // Only show the other party's children if the ride has been accepted
-      // and they have actually selected their children
+      const otherKids = allChildren[otherId] || [];
       const filteredOtherKids = req.status === 'accepted' && otherSelectedIds
         ? filterChildrenBySelection(otherKids, otherSelectedIds)
         : [];
@@ -382,7 +340,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
   }
 
-  // Sort by date (soonest first for active, most recent first for past)
+  // Sort by date
   allRides.sort((a, b) => {
     const dateA = new Date(`${a.rideDate}T${a.rideTime}`);
     const dateB = new Date(`${b.rideDate}T${b.rideTime}`);
