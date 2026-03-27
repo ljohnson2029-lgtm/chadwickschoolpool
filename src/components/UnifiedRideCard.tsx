@@ -265,6 +265,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const [contactOpen, setContactOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [authUserId, setAuthUserId] = useState<string>('');
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
@@ -283,13 +284,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
 
-  // Fetch unread message count
+  // Fetch auth user ID and unread message count
   useEffect(() => {
     if (!isConfirmed || isPast || !ride.otherParent) return;
     
     const fetchUnread = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setAuthUserId(user.id);
       
       const { count } = await supabase
         .from('ride_messages' as any)
@@ -618,7 +620,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                     onClick={() => setContactOpen(true)}
                   >
                     <Contact className="h-3.5 w-3.5" />
-                    Contact Ride Parent
+                    View Contact Info for the Other Parent on This Ride
                   </Button>
                 )}
                 {/* Messages button */}
@@ -637,31 +639,16 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   )}
                 </Button>
               </div>
-              {!ride._studentView && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  View contact info for the other parent on this ride
-                </p>
-              )}
+              {/* Subtitle removed - label is self-descriptive */}
             </div>
           )}
 
           {/* Expandable Chat Thread */}
-          {chatOpen && isConfirmed && ride.otherParent && (
+          {chatOpen && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
               rideRefId={ride.id}
               rideSource={rideSource}
-              currentUserId={(() => {
-                // We need the actual current user id - derive from ride data
-                if (ride.source === 'posted') return ride.originalData?.user_id || '';
-                if (ride.source === 'conversation') {
-                  const conv = ride.originalData?.conversation;
-                  return ride.isDriver ? conv?.sender_id || '' : conv?.sender_id || '';
-                }
-                // private
-                return ride.originalData?.sender_id === ride.otherParent?.id
-                  ? ride.originalData?.recipient_id || ''
-                  : ride.originalData?.sender_id || '';
-              })()}
+              currentUserId={authUserId}
               currentUserName="You"
               otherParentId={ride.otherParent.id}
               otherParentName={getParentName(ride.otherParent)}
@@ -725,7 +712,6 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           onClose={() => setContactOpen(false)}
           parentName={getParentName(ride.otherParent)}
           phone={ride.otherParent.phone}
-          email={ride.otherParent.email}
         />
       )}
     </>

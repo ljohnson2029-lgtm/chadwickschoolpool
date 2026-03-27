@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, Copy, User } from "lucide-react";
+import { Phone, Copy, User } from "lucide-react";
 import { toast } from "sonner";
 
 interface ContactCardModalProps {
@@ -8,10 +8,9 @@ interface ContactCardModalProps {
   onClose: () => void;
   parentName: string;
   phone: string | null;
-  email: string | null;
 }
 
-export function ContactCardModal({ open, onClose, parentName, phone, email }: ContactCardModalProps) {
+export function ContactCardModal({ open, onClose, parentName, phone }: ContactCardModalProps) {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
@@ -51,26 +50,9 @@ export function ContactCardModal({ open, onClose, parentName, phone, email }: Co
             </div>
           )}
 
-          {email && (
-            <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-medium truncate">{email}</span>
-              </div>
-              <div className="flex gap-1.5 flex-shrink-0">
-                <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
-                  <a href={`mailto:${email}`}>Email</a>
-                </Button>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => copyToClipboard(email, "Email")}>
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {!phone && !email && (
+          {!phone && (
             <p className="text-sm text-muted-foreground text-center py-2">
-              No contact information available for this parent.
+              No phone number available for this parent.
             </p>
           )}
         </div>
