@@ -646,8 +646,8 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </div>
           )}
 
-          {/* Expandable Chat Thread */}
-          {chatOpen && isConfirmed && ride.otherParent && authUserId && (
+          {/* Expandable Chat Thread - hidden for students */}
+          {chatOpen && !ride._studentView && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
               rideRefId={chatRideRefId}
               rideSource={rideSource}
@@ -655,7 +655,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
               currentUserName="You"
               otherParentId={ride.otherParent.id}
               otherParentName={getParentName(ride.otherParent)}
-              isStudent={ride._studentView}
+              isStudent={false}
               rideDate={ride.rideDate}
             />
           )}
