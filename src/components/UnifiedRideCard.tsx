@@ -556,7 +556,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                 <p className="text-xs text-muted-foreground text-center">
                   {isTimeRestricted
                     ? 'This action is no longer available within 9 hours of the scheduled ride time'
-                    : 'Must be cancelled at least 9 hours before the scheduled ride time'}
+                    : cancelConfig.action === 'leave-request'
+                      ? 'Must be left at least 9 hours before the scheduled ride time'
+                      : 'Must be cancelled at least 9 hours before the scheduled ride time'}
                 </p>
               )}
             </div>
