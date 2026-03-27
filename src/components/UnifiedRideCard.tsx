@@ -552,10 +552,13 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                 <CancelIcon className="h-3.5 w-3.5 mr-1.5" />
                 {cancelConfig.label}
               </Button>
-              {isTimeRestricted && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {cancelConfig.timeRestrictedMessage}
+              {cancelConfig.hasTimeRestriction && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {isTimeRestricted
+                    ? 'This action is no longer available within 9 hours of the scheduled ride time'
+                    : cancelConfig.action === 'leave-request'
+                      ? 'Must be left at least 9 hours before the scheduled ride time'
+                      : 'Must be cancelled at least 9 hours before the scheduled ride time'}
                 </p>
               )}
             </div>
