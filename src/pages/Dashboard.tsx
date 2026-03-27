@@ -21,6 +21,7 @@ const Dashboard = () => {
   
   const [isUserStudent, setIsUserStudent] = useState(false);
   const [myRides, setMyRides] = useState<any[]>([]);
+  const [recurringScheduleRides, setRecurringScheduleRides] = useState<FamilyRide[]>([]);
   const [loading, setLoading] = useState(true);
 
   const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
