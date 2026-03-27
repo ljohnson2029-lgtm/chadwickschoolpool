@@ -269,6 +269,12 @@ const MyRides = () => {
               }
             }
           }
+          // Delete all chat messages for this ride
+          await supabase
+            .from('ride_messages' as any)
+            .delete()
+            .eq('ride_ref_id', ride.id)
+            .eq('ride_source', 'public');
           // Delete all conversations for this ride
           await supabase
             .from('ride_conversations')
