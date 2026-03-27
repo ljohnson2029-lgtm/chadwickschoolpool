@@ -77,6 +77,7 @@ const MyRides = () => {
 
     const childrenByParent: Record<string, { name: string; grade: string }[]> = {};
     const vehicleByParent: Record<string, { carMake: string | null; carModel: string | null; carColor: string | null; licensePlate: string | null }> = {};
+    const phoneByParent: Record<string, string | null> = {};
 
     const childFetches = allParentIds.map(async (parentId) => {
       try {
@@ -90,12 +91,13 @@ const MyRides = () => {
               grade: s.grade_level || 'N/A',
             }));
           }
-          vehicleByParent[parentId] = {
-            carMake: data.profile.car_make || null,
-            carModel: data.profile.car_model || null,
-            carColor: data.profile.car_color || null,
-            licensePlate: data.profile.license_plate || null,
-          };
+           vehicleByParent[parentId] = {
+              carMake: data.profile.car_make || null,
+              carModel: data.profile.car_model || null,
+              carColor: data.profile.car_color || null,
+              licensePlate: data.profile.license_plate || null,
+            };
+            phoneByParent[parentId] = data.profile.phone_number || null;
         }
       } catch (err) {
         console.warn(`Failed to fetch children for parent ${parentId}:`, err);
@@ -161,7 +163,7 @@ const MyRides = () => {
           lastName: r.connected_parent_last_name || r.parent_last_name,
           username: '',
           email: null,
-          phone: null,
+          phone: phoneByParent[r.connected_parent_id || r.parent_id] || null,
           children: otherKids,
           carMake: otherParentVehicle?.carMake || null,
           carModel: otherParentVehicle?.carModel || null,
