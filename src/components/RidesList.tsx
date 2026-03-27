@@ -458,6 +458,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       : 'This parent is offering to drive others this route';
 
     const displayChildren = ride.children || [];
+    const seatsCount = ride.type === "offer" ? ride.seats_available : ride.seats_needed;
 
     // Render action button based on state
     const renderActionButton = () => {
@@ -637,10 +638,10 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           )}
 
           {/* Children */}
-          {fetchedChildren.length > 0 && (
+          {displayChildren.length > 0 && (
             <div className="border-t pt-2">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
-              {fetchedChildren.map((child, idx) => (
+              <p className="text-xs font-medium text-muted-foreground mb-1">Children Joining This Ride:</p>
+              {displayChildren.map((child, idx) => (
                 <div key={idx} className="text-sm flex items-center gap-1.5">
                   <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>{child.first_name} {child.last_name}</span>
