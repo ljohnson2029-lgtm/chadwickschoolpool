@@ -112,21 +112,34 @@ export function RideChatThread({
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
+    console.log("[RideChatThread] Send button clicked");
+
     setSending(true);
     const msgText = newMessage.trim();
-    setNewMessage("");
-
-    const { error } = await supabase.from("ride_messages" as any).insert({
+    const messagePayload = {
       ride_ref_id: rideRefId,
       ride_source: rideSource,
       sender_id: currentUserId,
       message_text: msgText,
-    } as any);
+    };
+
+    console.log("[RideChatThread] Sending message payload:", messagePayload);
+    setNewMessage("");
+
+    const response = await supabase
+      .from("ride_messages" as any)
+      .insert(messagePayload as any);
+
+    console.log("[RideChatThread] Insert response:", response);
+
+    const { error } = response;
 
     if (error) {
       console.error("Failed to send message:", error);
       setNewMessage(msgText);
     } else {
+      await fetchMessages();
+
       // Send notification to the other parent
       try {
         await supabase.functions.invoke("create-notification", {

@@ -280,6 +280,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   ));
 
   const rideSource = ride.source === 'private' ? 'private' : 'public';
+  const chatRideRefId = rideSource === 'public'
+    ? (ride.originalData?.ride?.id || ride.originalData?.conversation?.ride_id || ride.id)
+    : ride.id;
   const currentUserId = ride.isDriver
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
@@ -296,7 +299,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
       const { count } = await supabase
         .from('ride_messages' as any)
         .select('*', { count: 'exact', head: true })
-        .eq('ride_ref_id', ride.id)
+        .eq('ride_ref_id', chatRideRefId)
         .eq('ride_source', rideSource)
         .neq('sender_id', user.id)
         .eq('is_read', false);
@@ -313,7 +316,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
         event: 'INSERT',
         schema: 'public',
         table: 'ride_messages',
-        filter: `ride_ref_id=eq.${ride.id}`,
+        filter: `ride_ref_id=eq.${chatRideRefId}`,
       }, () => {
         if (!chatOpen) {
           setUnreadCount(prev => prev + 1);
@@ -322,7 +325,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [ride.id, isConfirmed, isPast, rideSource, chatOpen]);
+  }, [chatOpen, chatRideRefId, isConfirmed, isPast, ride.id, rideSource]);
 
   // Reset unread when chat opens
   useEffect(() => {
@@ -646,7 +649,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           {/* Expandable Chat Thread */}
           {chatOpen && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
-              rideRefId={ride.id}
+              rideRefId={chatRideRefId}
               rideSource={rideSource}
               currentUserId={authUserId}
               currentUserName="You"
