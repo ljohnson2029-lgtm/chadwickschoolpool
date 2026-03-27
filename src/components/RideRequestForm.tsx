@@ -408,39 +408,6 @@ const RideRequestForm = ({
             </div>
           )}
 
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 min-h-[44px]">
-              <Checkbox
-                id="recurring"
-                checked={isRecurring}
-                onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-              />
-              <Label htmlFor="recurring" className="cursor-pointer text-sm sm:text-base">
-                Recurring ride
-              </Label>
-            </div>
-
-            {isRecurring && (
-              <div className="pl-6 space-y-2">
-                <Label className="text-sm sm:text-base">Select days</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="flex items-center space-x-2 min-h-[44px]">
-                      <Checkbox
-                        id={day}
-                        checked={recurringDays.includes(day)}
-                        onCheckedChange={() => toggleDay(day)}
-                      />
-                      <Label htmlFor={day} className="cursor-pointer capitalize text-sm sm:text-base">
-                        {day}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
           <ChildrenRidingSelector
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}

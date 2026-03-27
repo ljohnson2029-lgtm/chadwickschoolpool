@@ -410,66 +410,7 @@ const RideOfferForm = ({
             />
           </div>
 
-          <div>
-            <Label htmlFor="route" className="text-sm sm:text-base">Route Details (Optional)</Label>
-            <Textarea
-              id="route"
-              value={routeDetails}
-              onChange={(e) => setRouteDetails(e.target.value)}
-              placeholder="Describe your route (e.g., stops along the way, flexibility)"
-              rows={3}
-              className="text-base sm:text-sm"
-            />
-          </div>
-
           {!isBroadcast && recipientParentName && (
-            <div>
-              <Label htmlFor="message" className="text-sm sm:text-base">Personal Message (Optional)</Label>
-              <Textarea
-                id="message"
-                value={personalMessage}
-                onChange={(e) => setPersonalMessage(e.target.value)}
-                placeholder="Add any additional details or notes..."
-                rows={3}
-                className="text-base sm:text-sm"
-              />
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 min-h-[44px]">
-              <Checkbox
-                id="recurring"
-                checked={isRecurring}
-                onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-              />
-              <Label htmlFor="recurring" className="cursor-pointer text-sm sm:text-base">
-                Recurring ride
-              </Label>
-            </div>
-
-            {isRecurring && (
-              <div className="pl-6 space-y-2">
-                <Label className="text-sm sm:text-base">Select days</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div key={day} className="flex items-center space-x-2 min-h-[44px]">
-                      <Checkbox
-                        id={`offer-${day}`}
-                        checked={recurringDays.includes(day)}
-                        onCheckedChange={() => toggleDay(day)}
-                      />
-                      <Label htmlFor={`offer-${day}`} className="cursor-pointer capitalize text-sm sm:text-base">
-                        {day}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <ChildrenRidingSelector
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
             error={childError}
