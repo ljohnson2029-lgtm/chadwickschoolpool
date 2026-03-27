@@ -431,6 +431,23 @@ export const NotificationDropdown = () => {
                         View Requests
                       </Button>
                     )}
+
+                    {/* Action buttons for series notifications */}
+                    {(notification.type === 'series_message' || notification.type === 'series_ride') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/series');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <Repeat className="h-3 w-3" />
+                        View in Series
+                      </Button>
+                    )}
                     
                     {/* Inline actions for link requests */}
                     {notification.type === 'link_request' && notification.link_id && (
