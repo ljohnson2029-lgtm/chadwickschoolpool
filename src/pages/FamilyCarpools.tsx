@@ -38,6 +38,17 @@ const FamilyCarpools = () => {
     pickup_longitude: number | null;
     pickup_location: string;
   } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    setRefreshKey((prev) => prev + 1);
+    // Brief delay so loading state is visible
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Rides updated", { duration: 2000 });
+    }, 800);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
