@@ -242,12 +242,12 @@ const MyRides = () => {
       switch (action) {
         case 'cancel-offer': {
           // Driver cancels their ride offer - permanently delete
-          // First notify passenger if one exists
+          // First notify confirmed passenger if one exists
           if (ride.otherParent) {
             await sendNotification(
               ride.otherParent.id,
               'ride_cancelled',
-              '❌ A ride you were involved in has been cancelled'
+              `❌ ${getMyName()} has cancelled the ride offer you were part of. Please find an alternative ride in Family Carpools.`
             );
           }
           // Also notify all pending requesters
@@ -262,7 +262,7 @@ const MyRides = () => {
                 await sendNotification(
                   conv.sender_id,
                   'ride_cancelled',
-                  '❌ A ride you requested to join has been cancelled'
+                  `❌ ${getMyName()} has cancelled the ride offer you requested to join.`
                 );
               }
             }
@@ -303,7 +303,7 @@ const MyRides = () => {
             await sendNotification(
               rideOwnerId,
               'ride_left',
-              `🔄 ${getMyName()} has left your ride. Your ride is now open again in Family Carpools.`
+              `🔄 ${getMyName()} has left your ride. Your ride has been reset and is now open in Family Carpools for others to join.`
             );
           }
           toast.success('You have left the ride');
@@ -312,12 +312,12 @@ const MyRides = () => {
 
         case 'cancel-request': {
           // Owner cancels their ride request - permanently delete
-          // Notify helper if one exists
+          // Notify confirmed helper if one exists
           if (ride.otherParent) {
             await sendNotification(
               ride.otherParent.id,
               'ride_cancelled',
-              '❌ A ride you were involved in has been cancelled'
+              `❌ ${getMyName()} has cancelled their ride request that you were fulfilling.`
             );
           }
           // Delete all conversations for this ride
@@ -356,7 +356,7 @@ const MyRides = () => {
             await sendNotification(
               requesterId,
               'ride_left',
-              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again in Family Carpools.`
+              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request has been reset and is now open in Family Carpools for others to help.`
             );
           }
           toast.success('You have left the ride');
