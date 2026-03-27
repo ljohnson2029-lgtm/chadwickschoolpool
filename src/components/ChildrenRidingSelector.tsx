@@ -16,9 +16,10 @@ interface ChildrenRidingSelectorProps {
   selectedChildIds: string[];
   onSelectionChange: (ids: string[]) => void;
   error?: string | null;
+  maxSeats?: number | null;
 }
 
-const ChildrenRidingSelector = ({ selectedChildIds, onSelectionChange, error }: ChildrenRidingSelectorProps) => {
+const ChildrenRidingSelector = ({ selectedChildIds, onSelectionChange, error, maxSeats }: ChildrenRidingSelectorProps) => {
   const { user } = useAuth();
   const [children, setChildren] = useState<ChildForRide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,11 @@ const ChildrenRidingSelector = ({ selectedChildIds, onSelectionChange, error }: 
           </div>
         ))}
       </div>
+      {maxSeats != null && selectedChildIds.length > maxSeats && (
+        <p className="text-sm text-destructive font-medium">
+          Please reduce the number of children to match the available seats. Available seats: {maxSeats}
+        </p>
+      )}
       {error && (
         <p className="text-sm text-destructive">{error}</p>
       )}
