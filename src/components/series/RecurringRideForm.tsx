@@ -123,6 +123,11 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
       <h4 className="font-semibold text-sm">
         {rideType === "offer" ? "Post Recurring Ride Offer" : "Post Recurring Ride Request"}
       </h4>
+      <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
+        {rideType === "offer"
+          ? "You are offering a weekly ride on the selected repeating days from the pickup location to the dropoff location"
+          : "You are requesting a weekly ride on the selected repeating days from the pickup location to the dropoff location"}
+      </p>
 
       <div className="space-y-2">
         <Label className="text-sm">Pickup Location</Label>
