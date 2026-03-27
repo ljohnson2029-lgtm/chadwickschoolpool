@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { useAuth } from "@/contexts/AuthContext";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import VehicleSelector from "@/components/VehicleSelector";
+import { type VehicleInfo } from "@/hooks/useVehicles";
 
 const CHADWICK_SCHOOL = {
   name: "Chadwick School",
@@ -58,6 +60,8 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState<VehicleInfo | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -164,6 +168,13 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
         message: values.message || null,
         status: "pending",
         selected_children: selectedChildIds,
+        vehicle_info: !isRequest && selectedVehicleInfo ? {
+          car_make: selectedVehicleInfo.car_make,
+          car_model: selectedVehicleInfo.car_model,
+          car_color: selectedVehicleInfo.car_color,
+          license_plate: selectedVehicleInfo.license_plate,
+          vehicle_id: selectedVehicleInfo.vehicle_id,
+        } : null,
       } as any);
 
       if (insertError) throw insertError;
@@ -325,6 +336,14 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
               selectedChildIds={selectedChildIds}
               onSelectionChange={setSelectedChildIds}
             />
+
+            {/* Vehicle Selection - only for offers */}
+            {!isRequest && (
+              <VehicleSelector
+                selectedVehicleId={selectedVehicleId}
+                onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
+              />
+            )}
 
             {/* Note */}
             <FormField control={form.control} name="message" render={({ field }) => (
