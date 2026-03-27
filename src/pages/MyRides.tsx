@@ -302,7 +302,7 @@ const MyRides = () => {
             await sendNotification(
               rideOwnerId,
               'ride_left',
-              `🔄 ${getMyName()} has left your ride. Your ride is now open again.`
+              `🔄 ${getMyName()} has left your ride. Your ride is now open again in Family Carpools.`
             );
           }
           toast.success('You have left the ride');
@@ -354,7 +354,7 @@ const MyRides = () => {
             await sendNotification(
               requesterId,
               'ride_left',
-              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again.`
+              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again in Family Carpools.`
             );
           }
           toast.success('You have left the ride');
