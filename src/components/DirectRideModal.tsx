@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Hand, Car, MapPin, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -25,12 +26,6 @@ const CHADWICK_SCHOOL = {
   longitude: -118.36111,
 };
 
-const timeSlots = Array.from({ length: 48 }, (_, i) => {
-  const hour = Math.floor(i / 4) + 6;
-  if (hour > 17) return null;
-  const minute = (i % 4) * 15;
-  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-}).filter(Boolean) as string[];
 
 const formSchema = z.object({
   ride_date: z.date({ required_error: "Please select a date" })
@@ -274,16 +269,9 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
               <FormField control={form.control} name="pickup_time" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Time *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timeSlots.map((t) => (
-                        <SelectItem key={t} value={t}>{format(new Date(`2000-01-01T${t}`), "h:mm a")}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input type="time" value={field.value} onChange={(e) => field.onChange(e.target.value)} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -311,7 +299,6 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
             <ChildrenRidingSelector
               selectedChildIds={selectedChildIds}
               onSelectionChange={setSelectedChildIds}
-              maxSeats={isRequest ? null : form.watch("seats")}
             />
 
             {/* Note */}

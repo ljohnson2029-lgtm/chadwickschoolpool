@@ -61,6 +61,12 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
 
   useEffect(() => {
     setInputValue(value);
+    // If value is set programmatically (e.g. quick-fill button), mark as selected
+    if (value && value !== inputValue) {
+      setSelectedAddress({ lat: 0, lng: 0 }); // truthy marker to show green check
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   }, [value]);
 
   /* ── Click outside to close ─────────────────────────────── */
