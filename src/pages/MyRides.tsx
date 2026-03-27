@@ -284,18 +284,19 @@ const MyRides = () => {
         }
 
         case 'leave-offer': {
-          // Passenger leaves a ride offer - delete the conversation entirely
+          // Passenger leaves a ride offer - reset ride to open, then remove conversation
           const conv = ride.originalData?.conversation;
           if (!conv) break;
           const rideId = conv.ride_id;
-          // Delete conversation completely so no "declined" trace remains
+          // FIRST re-open the ride (must happen before deleting conversation,
+          // because the RPC checks conversation membership for authorization)
+          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
+          // THEN delete conversation so no trace remains
           const { error } = await supabase
             .from('ride_conversations')
             .delete()
             .eq('id', conv.id);
           if (error) throw error;
-          // Re-open the ride (unfulfill it) via secure RPC
-          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
           // Notify the ride owner
           const rideOwnerId = ride.otherParent?.id;
           if (rideOwnerId) {
@@ -340,14 +341,15 @@ const MyRides = () => {
           const conv = ride.originalData?.conversation;
           if (!conv) break;
           const rideId = conv.ride_id;
-          // Delete conversation completely so no "declined" trace remains
+          // FIRST re-open the request (must happen before deleting conversation,
+          // because the RPC checks conversation membership for authorization)
+          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
+          // THEN delete conversation so no trace remains
           const { error } = await supabase
             .from('ride_conversations')
             .delete()
             .eq('id', conv.id);
           if (error) throw error;
-          // Re-open the request via secure RPC
-          await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
           // Notify the requester
           const requesterId = ride.otherParent?.id;
           if (requesterId) {
