@@ -241,35 +241,45 @@ const MyRides = () => {
     try {
       switch (action) {
         case 'cancel-offer': {
-          // Driver cancels their ride offer - update status to cancelled
+          // Driver cancels their ride offer - permanently delete
           // First notify passenger if one exists
           if (ride.otherParent) {
             await sendNotification(
               ride.otherParent.id,
               'ride_cancelled',
-              '❌ A ride you joined has been cancelled by the driver'
+              '❌ A ride you were involved in has been cancelled'
             );
           }
-          // Decline pending requests
-          await supabase
+          // Also notify all pending requesters
+          const { data: pendingConvs } = await supabase
             .from('ride_conversations')
-            .update({ status: 'declined' })
+            .select('sender_id')
             .eq('ride_id', ride.id)
             .eq('status', 'pending');
-          // Also decline accepted conversations
+          if (pendingConvs) {
+            for (const conv of pendingConvs) {
+              if (conv.sender_id !== ride.otherParent?.id) {
+                await sendNotification(
+                  conv.sender_id,
+                  'ride_cancelled',
+                  '❌ A ride you requested to join has been cancelled'
+                );
+              }
+            }
+          }
+          // Delete all conversations for this ride
           await supabase
             .from('ride_conversations')
-            .update({ status: 'declined' })
-            .eq('ride_id', ride.id)
-            .eq('status', 'accepted');
-          // Cancel the ride
+            .delete()
+            .eq('ride_id', ride.id);
+          // Permanently delete the ride
           const { error } = await supabase
             .from('rides')
-            .update({ status: 'cancelled' })
+            .delete()
             .eq('id', ride.id)
             .eq('user_id', user.id);
           if (error) throw error;
-          toast.success('Ride offer cancelled');
+          toast.success('Ride offer cancelled and removed');
           break;
         }
 
@@ -292,7 +302,7 @@ const MyRides = () => {
             await sendNotification(
               rideOwnerId,
               'ride_left',
-              `🔄 ${getMyName()} has left your ride. Your ride is now open again.`
+              `🔄 ${getMyName()} has left your ride. Your ride is now open again in Family Carpools.`
             );
           }
           toast.success('You have left the ride');
@@ -300,28 +310,28 @@ const MyRides = () => {
         }
 
         case 'cancel-request': {
-          // Passenger cancels their ride request - update status to cancelled
+          // Owner cancels their ride request - permanently delete
           // Notify helper if one exists
           if (ride.otherParent) {
             await sendNotification(
               ride.otherParent.id,
               'ride_cancelled',
-              '❌ The ride request you offered to fulfill has been cancelled'
+              '❌ A ride you were involved in has been cancelled'
             );
           }
-          // Decline any conversations
+          // Delete all conversations for this ride
           await supabase
             .from('ride_conversations')
-            .update({ status: 'declined' })
+            .delete()
             .eq('ride_id', ride.id);
-          // Cancel the ride
+          // Permanently delete the ride
           const { error } = await supabase
             .from('rides')
-            .update({ status: 'cancelled' })
+            .delete()
             .eq('id', ride.id)
             .eq('user_id', user.id);
           if (error) throw error;
-          toast.success('Ride request cancelled');
+          toast.success('Ride request cancelled and removed');
           break;
         }
 
@@ -344,7 +354,7 @@ const MyRides = () => {
             await sendNotification(
               requesterId,
               'ride_left',
-              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again.`
+              `🔄 ${getMyName()} is no longer able to fulfill your request. Your request is now open again in Family Carpools.`
             );
           }
           toast.success('You have left the ride');
