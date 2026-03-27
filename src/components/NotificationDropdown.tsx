@@ -263,6 +263,7 @@ export const NotificationDropdown = () => {
       case 'private_request_declined':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'new_message':
+      case 'ride_message':
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
       case 'ride_expiring':
         return <Clock className="h-4 w-4 text-amber-500" />;
@@ -289,6 +290,9 @@ export const NotificationDropdown = () => {
     if (notification.type === 'new_message') {
       setIsOpen(false);
       navigate('/conversations');
+    } else if (notification.type === 'ride_message') {
+      setIsOpen(false);
+      navigate('/my-rides');
     } else if (notification.type === 'ride_expiring') {
       setIsOpen(false);
       navigate('/my-rides');

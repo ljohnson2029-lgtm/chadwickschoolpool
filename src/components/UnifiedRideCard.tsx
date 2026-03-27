@@ -266,6 +266,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const [chatOpen, setChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [authUserId, setAuthUserId] = useState<string>('');
+  const [currentUserFullName, setCurrentUserFullName] = useState<string>('A parent');
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
@@ -295,6 +296,17 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setAuthUserId(user.id);
+
+      // Fetch current user's name for notifications
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, username')
+        .eq('id', user.id)
+        .single();
+      if (profile) {
+        const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.username || 'A parent';
+        setCurrentUserFullName(name);
+      }
       
       const { count } = await supabase
         .from('ride_messages' as any)
@@ -652,7 +664,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
               rideRefId={chatRideRefId}
               rideSource={rideSource}
               currentUserId={authUserId}
-              currentUserName="You"
+              currentUserName={currentUserFullName}
               otherParentId={ride.otherParent.id}
               otherParentName={getParentName(ride.otherParent)}
               isStudent={false}
