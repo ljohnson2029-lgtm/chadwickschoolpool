@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
