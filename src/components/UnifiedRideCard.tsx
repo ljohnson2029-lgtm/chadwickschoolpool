@@ -614,33 +614,33 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           {isConfirmed && ride.otherParent && (
             <div className="pt-2 border-t border-border space-y-3">
               <div className="flex gap-2">
-                {/* Contact Card - hidden for students */}
+                {/* Contact Card - visible for both parents and students */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs"
+                  onClick={() => setContactOpen(true)}
+                >
+                  <Contact className="h-3.5 w-3.5" />
+                  View Contact Info for the Other Parent on This Ride
+                </Button>
+                {/* Messages button - hidden for students */}
                 {!ride._studentView && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 gap-1.5 text-xs"
-                    onClick={() => setContactOpen(true)}
+                    className="flex-1 gap-1.5 text-xs relative"
+                    onClick={() => setChatOpen(!chatOpen)}
                   >
-                    <Contact className="h-3.5 w-3.5" />
-                    View Contact Info for the Other Parent on This Ride
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                        {unreadCount}
+                      </span>
+                    )}
                   </Button>
                 )}
-                {/* Messages button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1.5 text-xs relative"
-                  onClick={() => setChatOpen(!chatOpen)}
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Messages
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Button>
               </div>
               {/* Subtitle removed - label is self-descriptive */}
             </div>
