@@ -13,6 +13,7 @@ import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
 import { WeekCalendar } from "@/components/student/WeekCalendar";
 import type { FamilyRide } from "@/hooks/useLinkedParentRides";
+import { addDays, startOfWeek, format, getDay } from "date-fns";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
