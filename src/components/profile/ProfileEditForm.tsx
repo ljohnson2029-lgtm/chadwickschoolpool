@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import VehicleManager from "@/components/VehicleManager";
+
+const RequiredStar = () => <span className="text-destructive">*</span>;
+const FieldError = memo(({ show }: { show: boolean }) =>
+  show ? <p className="text-xs text-destructive mt-1">This field is required</p> : null
+);
+FieldError.displayName = "FieldError";
 
 interface EditChild {
   id?: string;
@@ -169,9 +175,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
     }
   };
 
-  const RequiredStar = () => <span className="text-destructive">*</span>;
-  const FieldError = ({ show }: { show: boolean }) =>
-    show ? <p className="text-xs text-destructive mt-1">This field is required</p> : null;
+  // RequiredStar and FieldError moved outside component to prevent focus loss
 
   return (
     <div className="space-y-6">
