@@ -262,7 +262,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             .select("id, first_name, last_name, username, grade_level, phone_number, share_phone, share_email")
             .in("id", userIds),
           supabase.from("users").select("user_id, email").in("user_id", userIds),
-          supabase.from("children").select("user_id, first_name, last_name, grade_level").in("user_id", userIds),
+          supabase.from("children").select("id, user_id, first_name, last_name, grade_level").in("user_id", userIds),
         ]);
 
         if (profilesResult.data) {
@@ -279,12 +279,19 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         }
       }
 
-      const ridesWithProfiles = allRides.map((ride: any) => ({
-        ...ride,
-        profiles: profilesMap[ride.user_id] || null,
-        userEmail: emailsMap[ride.user_id] || null,
-        children: childrenMap[ride.user_id] || [],
-      }));
+      const ridesWithProfiles = allRides.map((ride: any) => {
+        const allChildren = childrenMap[ride.user_id] || [];
+        const selectedIds: string[] | null = ride.selected_children;
+        const filteredChildren = selectedIds && selectedIds.length > 0
+          ? allChildren.filter((c: any) => selectedIds.includes(c.id))
+          : allChildren;
+        return {
+          ...ride,
+          profiles: profilesMap[ride.user_id] || null,
+          userEmail: emailsMap[ride.user_id] || null,
+          children: filteredChildren,
+        };
+      });
 
       setRides(ridesWithProfiles as unknown as Ride[]);
     } catch (error) {
