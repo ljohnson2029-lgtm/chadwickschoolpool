@@ -135,7 +135,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
         .in("status", ["pending", "accepted"]);
 
       if (existing && existing.length > 0) {
-        toast({ title: "Duplicate", description: "You already have a pending request with this parent for this date/time.", variant: "destructive" });
+        toast({ title: "Already Sent", description: "You already have a pending ride offer with this parent. Check your My Rides tab.", variant: "destructive" });
         setSubmitting(false);
         return;
       }
@@ -186,7 +186,12 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
       onSuccess?.();
     } catch (err: any) {
       console.error("Error sending direct ride:", err);
-      toast({ title: "Error", description: err.message || "Failed to send. Please try again.", variant: "destructive" });
+      const msg = err.message || "";
+      if (msg.includes("unique") || msg.includes("duplicate")) {
+        toast({ title: "Already Sent", description: "You already have a pending ride offer with this parent. Check your My Rides tab.", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: msg || "Failed to send. Please try again.", variant: "destructive" });
+      }
     } finally {
       setSubmitting(false);
     }
