@@ -62,6 +62,7 @@ interface Ride {
   seats_available: number | null;
   route_details: string | null;
   user_id: string;
+  selected_children?: string[] | null;
   profile?: RideProfile;
   userEmail?: string;
   hasAcceptedConnection?: boolean;
@@ -310,7 +311,7 @@ const useMapRides = (userId: string | undefined) => {
             .select("id, first_name, last_name, username, phone_number, share_phone, share_email")
             .in("id", userIds),
           supabase.from("users").select("user_id, email").in("user_id", userIds),
-          supabase.from("children").select("user_id, name, first_name, last_name, grade_level").in("user_id", userIds),
+          supabase.from("children").select("id, user_id, name, first_name, last_name, grade_level").in("user_id", userIds),
         ]);
 
         if (profilesResult.data) {
@@ -341,13 +342,20 @@ const useMapRides = (userId: string | undefined) => {
         }
       }
 
-      const combinedRides: Ride[] = ridesWithLocation.map((ride) => ({
-        ...ride,
-        profile: profilesMap[ride.user_id] || null,
-        userEmail: emailsMap[ride.user_id] || null,
-        hasAcceptedConnection: (ride as any).is_fulfilled === true,
-        children: childrenMap[ride.user_id] || [],
-      }));
+      const combinedRides: Ride[] = ridesWithLocation.map((ride) => {
+        const allChildren = childrenMap[ride.user_id] || [];
+        const selectedIds: string[] | null = ride.selected_children;
+        const filteredChildren = selectedIds && selectedIds.length > 0
+          ? allChildren.filter((c: any) => selectedIds.includes(c.id))
+          : allChildren;
+        return {
+          ...ride,
+          profile: profilesMap[ride.user_id] || null,
+          userEmail: emailsMap[ride.user_id] || null,
+          hasAcceptedConnection: (ride as any).is_fulfilled === true,
+          children: filteredChildren,
+        };
+      });
 
       setRides(combinedRides);
       setLoading(false);
