@@ -134,7 +134,7 @@ export function RideChatThread({
           body: {
             userId: otherParentId,
             type: "ride_message",
-            message: `💬 ${currentUserName} sent a message about your ride on ${rideDate || "upcoming"}`,
+            message: `💬 ${currentUserName || 'A parent'} sent you a message about your ride on ${rideDate ? format(new Date(rideDate + 'T00:00:00'), 'MMMM d, yyyy') : 'an upcoming date'}`,
           },
         });
       } catch (e) {
