@@ -605,6 +605,71 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </span>
           </div>
 
+          {/* Contact & Messages buttons for confirmed rides */}
+          {isConfirmed && ride.otherParent && (
+            <div className="pt-2 border-t border-border space-y-3">
+              <div className="flex gap-2">
+                {/* Contact Card - hidden for students */}
+                {!ride._studentView && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5 text-xs"
+                    onClick={() => setContactOpen(true)}
+                  >
+                    <Contact className="h-3.5 w-3.5" />
+                    Contact Ride Parent
+                  </Button>
+                )}
+                {/* Messages button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs relative"
+                  onClick={() => setChatOpen(!chatOpen)}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+              {!ride._studentView && (
+                <p className="text-[11px] text-muted-foreground text-center">
+                  View contact info for the other parent on this ride
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Expandable Chat Thread */}
+          {chatOpen && isConfirmed && ride.otherParent && (
+            <RideChatThread
+              rideRefId={ride.id}
+              rideSource={rideSource}
+              currentUserId={(() => {
+                // We need the actual current user id - derive from ride data
+                if (ride.source === 'posted') return ride.originalData?.user_id || '';
+                if (ride.source === 'conversation') {
+                  const conv = ride.originalData?.conversation;
+                  return ride.isDriver ? conv?.sender_id || '' : conv?.sender_id || '';
+                }
+                // private
+                return ride.originalData?.sender_id === ride.otherParent?.id
+                  ? ride.originalData?.recipient_id || ''
+                  : ride.originalData?.sender_id || '';
+              })()}
+              currentUserName="You"
+              otherParentId={ride.otherParent.id}
+              otherParentName={getParentName(ride.otherParent)}
+              isStudent={ride._studentView}
+              rideDate={ride.rideDate}
+            />
+          )}
+
           {/* Cancel/Leave button */}
           {cancelConfig && (
             <div className="pt-2 border-t border-border space-y-1.5">
