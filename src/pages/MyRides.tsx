@@ -46,9 +46,9 @@ const MyRides = () => {
     queryClient.invalidateQueries({ queryKey: ['student-rides'] });
   }, [queryClient]);
 
-  const loadStudentRides = async () => {
-    if (!user) return;
-    setLoadingData(true);
+  // Student rides fetcher for React Query
+  const fetchStudentRides = useCallback(async (): Promise<{ active: UnifiedRide[]; past: UnifiedRide[]; hasLinked: boolean }> => {
+    if (!user || !profile) return { active: [], past: [], hasLinked: false };
 
     const { data: links } = await supabase
       .from('account_links')
@@ -57,21 +57,14 @@ const MyRides = () => {
       .eq('status', 'approved');
 
     if (!links || links.length === 0) {
-      setHasLinkedParent(false);
-      setLoadingData(false);
-      return;
+      return { active: [], past: [], hasLinked: false };
     }
-
-    setHasLinkedParent(true);
 
     const { data: scheduleData } = await supabase
       .rpc('get_family_schedule', { student_user_id: user.id });
 
     if (!scheduleData) {
-      setActiveRides([]);
-      setPastRides([]);
-      setLoadingData(false);
-      return;
+      return { active: [], past: [], hasLinked: true };
     }
 
     const allParentIds = [...new Set(
@@ -82,44 +75,33 @@ const MyRides = () => {
       }).filter(Boolean)
     )] as string[];
 
-    // Fetch children via edge function (service role) to bypass RLS
-    // so students can see children from BOTH families in a ride
     const childrenByParent: Record<string, { name: string; grade: string }[]> = {};
     const vehicleByParent: Record<string, { carMake: string | null; carModel: string | null; carColor: string | null; licensePlate: string | null }> = {};
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
 
-    if (token) {
-      const childFetches = allParentIds.map(async (parentId) => {
-        try {
-          const { data } = await supabase.functions.invoke('get-parent-profile', {
-            body: { parentId },
-          });
-          if (data?.profile) {
-            if (data.profile.linked_students) {
-              childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
-                name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
-                grade: s.grade_level || 'N/A',
-              }));
-            }
-            vehicleByParent[parentId] = {
-              carMake: data.profile.car_make || null,
-              carModel: data.profile.car_model || null,
-              carColor: data.profile.car_color || null,
-              licensePlate: data.profile.license_plate || null,
-            };
+    const childFetches = allParentIds.map(async (parentId) => {
+      try {
+        const { data } = await supabase.functions.invoke('get-parent-profile', {
+          body: { parentId },
+        });
+        if (data?.profile) {
+          if (data.profile.linked_students) {
+            childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
+              name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+              grade: s.grade_level || 'N/A',
+            }));
           }
-        } catch (err) {
-          console.warn(`Failed to fetch children for parent ${parentId}:`, err);
+          vehicleByParent[parentId] = {
+            carMake: data.profile.car_make || null,
+            carModel: data.profile.car_model || null,
+            carColor: data.profile.car_color || null,
+            licensePlate: data.profile.license_plate || null,
+          };
         }
-      });
-      await Promise.all(childFetches);
-    }
-
-    console.log('[Student MyRides] vehicleByParent:', vehicleByParent);
-
-    console.log('[Student MyRides] allParentIds:', allParentIds);
-    console.log('[Student MyRides] childrenByParent:', childrenByParent);
+      } catch (err) {
+        console.warn(`Failed to fetch children for parent ${parentId}:`, err);
+      }
+    });
+    await Promise.all(childFetches);
 
     const today = new Date().toISOString().split('T')[0];
     const studentDisplayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.username || 'You';
@@ -132,12 +114,10 @@ const MyRides = () => {
         ? `${r.connected_parent_first_name} ${r.connected_parent_last_name || ''}`.trim()
         : null;
 
-      // Collect children from ALL parents involved in this ride
       const rideOwnerKids = childrenByParent[r.user_id] || [];
       const linkedParentKids = childrenByParent[r.parent_id] || [];
       const connectedParentKids = r.connected_parent_id ? (childrenByParent[r.connected_parent_id] || []) : [];
       
-      // Merge all children, deduplicating by name+grade
       const allKidsSet = new Map<string, { name: string; grade: string }>();
       [...rideOwnerKids, ...linkedParentKids, ...connectedParentKids].forEach(k => {
         const key = `${k.name}-${k.grade}`.toLowerCase();
@@ -145,11 +125,9 @@ const MyRides = () => {
       });
       const allKids = Array.from(allKidsSet.values());
       
-      // Fallback to student's own name if no children found
       const myKids = allKids.length > 0
         ? allKids
         : [{ name: studentDisplayName, grade: studentGrade }];
-      // otherKids empty since we already merged everything into myKids
       const otherKids: { name: string; grade: string }[] = [];
 
       let status: UnifiedRide['status'];
@@ -159,11 +137,8 @@ const MyRides = () => {
         status = isParentDriving ? 'posted-offering' : 'posted-looking';
       }
 
-      // Determine driver's vehicle info
       const driverId = isParentDriving ? r.parent_id : (r.connected_parent_id || null);
       const driverVehicle = driverId ? vehicleByParent[driverId] : undefined;
-
-      // For otherParent, include vehicle info from the connected parent
       const otherParentId = r.connected_parent_id || r.parent_id;
       const otherParentVehicle = vehicleByParent[otherParentId];
 
@@ -210,10 +185,36 @@ const MyRides = () => {
       return dateA.getTime() - dateB.getTime();
     });
 
-    setActiveRides(rides.filter(r => r.rideStatus === 'active' && r.rideDate >= today));
-    setPastRides(rides.filter(r => r.rideStatus !== 'active' || r.rideDate < today).reverse());
-    setLoadingData(false);
-  };
+    return {
+      active: rides.filter(r => r.rideStatus === 'active' && r.rideDate >= today),
+      past: rides.filter(r => r.rideStatus !== 'active' || r.rideDate < today).reverse(),
+      hasLinked: true,
+    };
+  }, [user, profile]);
+
+  const { data: studentRideData, isLoading: loadingStudentRides } = useQuery({
+    queryKey: ['student-rides', user?.id],
+    queryFn: fetchStudentRides,
+    enabled: !!user && !!profile && isStudent,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Update hasLinkedParent from student query result
+  useEffect(() => {
+    if (studentRideData) {
+      setHasLinkedParent(studentRideData.hasLinked);
+    }
+  }, [studentRideData]);
+
+  // Derive active/past rides from query data
+  const activeRides = isStudent
+    ? (studentRideData?.active || [])
+    : (parentRideData?.active || []);
+  const pastRides = isStudent
+    ? (studentRideData?.past || [])
+    : (parentRideData?.past || []);
+  const loadingData = isStudent ? loadingStudentRides : loadingParentRides;
 
   const getMyName = () => {
     return profile?.first_name
