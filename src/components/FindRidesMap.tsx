@@ -511,35 +511,11 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
   onRespond,
   onDeleteRide,
 }) => {
-  const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isOwnRide = ride.user_id === currentUserId;
 
-  // Fetch children from children table via edge function (bypasses RLS)
-  useEffect(() => {
-    const fetchChildren = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-parent-profile', {
-          body: { parentId: ride.user_id },
-        });
-        if (!error && data?.profile?.linked_students) {
-          setFetchedChildren(data.profile.linked_students.map((s: any) => ({
-            name: `${s.first_name} ${s.last_name}`,
-            first_name: s.first_name,
-            last_name: s.last_name,
-            grade_level: s.grade_level,
-          })));
-        }
-      } catch (err) {
-        console.error('Error fetching children for ride popup:', err);
-      }
-    };
-    fetchChildren();
-  }, [ride.user_id]);
-
-  // Use fetched children if client-side ones are empty (RLS blocked)
-  const displayChildren = (ride.children && ride.children.length > 0) ? ride.children : fetchedChildren;
+  const displayChildren = ride.children || [];
 
   const formatTime = (timeStr: string): string => {
     try {
@@ -627,7 +603,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
         {/* Children */}
         {displayChildren && displayChildren.length > 0 && (
           <div className="border-t pt-2">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1">Children Joining This Ride:</p>
             {displayChildren.map((child, idx) => (
               <div key={idx} className="text-sm flex items-center gap-1.5">
                 <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
