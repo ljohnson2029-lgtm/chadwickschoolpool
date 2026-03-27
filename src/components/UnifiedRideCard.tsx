@@ -429,7 +429,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                     <div className="mt-1 space-y-0.5">
                       {req.children.length > 0 ? (
                         <>
-                          <p className="text-xs font-medium text-muted-foreground">Chadwick Children:</p>
+                          <p className="text-xs font-medium text-muted-foreground">Chadwick Children Joining This Ride:</p>
                           {req.children.map((child, i) => (
                             <div key={i} className="flex items-center gap-1.5 text-xs">
                               <GraduationCap className="h-3 w-3 text-blue-600" />
