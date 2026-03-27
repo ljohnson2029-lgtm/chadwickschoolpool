@@ -513,6 +513,36 @@ export type Database = {
           },
         ]
       }
+      ride_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message_text: string
+          ride_ref_id: string
+          ride_source: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text: string
+          ride_ref_id: string
+          ride_source: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text?: string
+          ride_ref_id?: string
+          ride_source?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       rides: {
         Row: {
           created_at: string | null
