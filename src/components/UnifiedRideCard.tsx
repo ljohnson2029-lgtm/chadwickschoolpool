@@ -284,13 +284,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
 
-  // Fetch unread message count
+  // Fetch auth user ID and unread message count
   useEffect(() => {
     if (!isConfirmed || isPast || !ride.otherParent) return;
     
     const fetchUnread = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setAuthUserId(user.id);
       
       const { count } = await supabase
         .from('ride_messages' as any)
@@ -643,22 +644,11 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           )}
 
           {/* Expandable Chat Thread */}
-          {chatOpen && isConfirmed && ride.otherParent && (
+          {chatOpen && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
               rideRefId={ride.id}
               rideSource={rideSource}
-              currentUserId={(() => {
-                // We need the actual current user id - derive from ride data
-                if (ride.source === 'posted') return ride.originalData?.user_id || '';
-                if (ride.source === 'conversation') {
-                  const conv = ride.originalData?.conversation;
-                  return ride.isDriver ? conv?.sender_id || '' : conv?.sender_id || '';
-                }
-                // private
-                return ride.originalData?.sender_id === ride.otherParent?.id
-                  ? ride.originalData?.recipient_id || ''
-                  : ride.originalData?.sender_id || '';
-              })()}
+              currentUserId={authUserId}
               currentUserName="You"
               otherParentId={ride.otherParent.id}
               otherParentName={getParentName(ride.otherParent)}
