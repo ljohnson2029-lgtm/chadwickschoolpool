@@ -703,6 +703,19 @@ const MyRides = () => {
             {renderRideList(pastRides, true)}
           </TabsContent>
         </Tabs>
+
+        {/* Accept Direct Ride Dialog with Children Selector */}
+        {acceptingDirectRide && (
+          <AcceptDirectRideDialog
+            open={!!acceptingDirectRide}
+            onClose={() => setAcceptingDirectRide(null)}
+            onConfirm={confirmAcceptDirect}
+            senderName={acceptingDirectRide.otherParent ? `${acceptingDirectRide.otherParent.firstName || ''} ${acceptingDirectRide.otherParent.lastName || ''}`.trim() : 'Unknown'}
+            rideType={acceptingDirectRide.rideType}
+            maxSeats={acceptingDirectRide.seatsAvailable || acceptingDirectRide.seatsNeeded || null}
+            loading={acceptDeclineLoading === acceptingDirectRide.id}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
