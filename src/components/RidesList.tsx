@@ -275,7 +275,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         if (childrenResult.data) {
           childrenResult.data.forEach(c => {
             if (!childrenMap[c.user_id]) childrenMap[c.user_id] = [];
-            childrenMap[c.user_id].push({ first_name: c.first_name, last_name: c.last_name, grade_level: c.grade_level });
+            childrenMap[c.user_id].push({ id: c.id, first_name: c.first_name, last_name: c.last_name, grade_level: c.grade_level });
           });
         }
       }
