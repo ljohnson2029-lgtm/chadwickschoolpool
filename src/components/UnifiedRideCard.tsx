@@ -262,9 +262,70 @@ export const UnifiedRideCardSkeleton = () => (
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const statusConfig = getStatusConfig(ride);
   const isFrequentPartner = topConnectionIds && ride.otherParent && topConnectionIds.includes(ride.otherParent.id);
   const StatusIcon = statusConfig.icon;
+
+  // Determine if this is a confirmed ride with another parent
+  const isConfirmed = ride.otherParent && (
+    ride.status === 'joined-ride' ||
+    ride.status === 'helping-out' ||
+    ride.status === 'confirmed' ||
+    (ride.source === 'posted' && ride.otherParent) ||
+    (ride.source === 'private' && (ride.status === 'joined-ride' || ride.status === 'helping-out' || ride.status === 'confirmed'))
+  );
+
+  const rideSource = ride.source === 'private' ? 'private' : 'public';
+  const currentUserId = ride.isDriver
+    ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
+    : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!isConfirmed || isPast || !ride.otherParent) return;
+    
+    const fetchUnread = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { count } = await supabase
+        .from('ride_messages' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('ride_ref_id', ride.id)
+        .eq('ride_source', rideSource)
+        .neq('sender_id', user.id)
+        .eq('is_read', false);
+      
+      setUnreadCount(count || 0);
+    };
+    
+    fetchUnread();
+
+    // Subscribe to new messages for unread badge
+    const channel = supabase
+      .channel(`unread-${ride.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'ride_messages',
+        filter: `ride_ref_id=eq.${ride.id}`,
+      }, () => {
+        if (!chatOpen) {
+          setUnreadCount(prev => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [ride.id, isConfirmed, isPast, rideSource, chatOpen]);
+
+  // Reset unread when chat opens
+  useEffect(() => {
+    if (chatOpen) setUnreadCount(0);
+  }, [chatOpen]);
 
   const cancelConfig = !isPast && !ride._studentView && onCancel ? getCancelActionConfig(ride) : null;
   const isTimeRestricted = cancelConfig?.hasTimeRestriction ? isWithin9Hours(ride.rideDate, ride.rideTime) : false;
