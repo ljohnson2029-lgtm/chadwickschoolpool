@@ -14,7 +14,8 @@ import {
   BellOff,
   Users,
   Trash2,
-  Clock
+  Clock,
+  Repeat
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
