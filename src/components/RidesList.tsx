@@ -25,6 +25,7 @@ import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/pe
 import { format } from "date-fns";
 
 interface RideChild {
+  id: string;
   first_name: string;
   last_name: string;
   grade_level: string | null;
