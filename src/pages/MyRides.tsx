@@ -18,9 +18,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [activeRides, setActiveRides] = useState<UnifiedRide[]>([]);
-  const [pastRides, setPastRides] = useState<UnifiedRide[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("active");
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
   const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
@@ -34,24 +32,19 @@ const MyRides = () => {
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (user && profile) {
-      if (isStudent) {
-        loadStudentRides();
-      } else {
-        loadRides();
-      }
-    }
-  }, [user, profile]);
+  // Parent rides via React Query with caching
+  const { data: parentRideData, isLoading: loadingParentRides } = useQuery({
+    queryKey: ['my-rides', user?.id],
+    queryFn: () => fetchUnifiedRides(user!.id),
+    enabled: !!user && !!profile && !isStudent,
+    staleTime: 2 * 60 * 1000, // 2 minutes before considered stale
+    gcTime: 5 * 60 * 1000, // keep in cache 5 minutes
+  });
 
-  const loadRides = async () => {
-    if (!user) return;
-    setLoadingData(true);
-    const { active, past } = await fetchUnifiedRides(user.id);
-    setActiveRides(active);
-    setPastRides(past);
-    setLoadingData(false);
-  };
+  const invalidateRides = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    queryClient.invalidateQueries({ queryKey: ['student-rides'] });
+  }, [queryClient]);
 
   const loadStudentRides = async () => {
     if (!user) return;
