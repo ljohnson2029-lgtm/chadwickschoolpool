@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,13 @@ import {
   UserX,
   LogOut,
   AlertTriangle,
+  MessageCircle,
+  Contact,
 } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { ContactCardModal } from "@/components/ContactCardModal";
+import { RideChatThread } from "@/components/RideChatThread";
 
 export interface ParticipantInfo {
   id: string;
