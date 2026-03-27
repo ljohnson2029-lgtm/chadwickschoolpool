@@ -93,7 +93,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   // 1b. Fetch pending join requests for user's own rides
   const { data: pendingConvos } = await supabase
     .from('ride_conversations')
-    .select('id, ride_id, sender_id, message, created_at, status')
+    .select('id, ride_id, sender_id, message, created_at, status, selected_children')
     .eq('recipient_id', userId)
     .eq('status', 'pending');
 
