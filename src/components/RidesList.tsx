@@ -450,46 +450,14 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const hasConnection = !!connection;
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
     const [showProfilePopup, setShowProfilePopup] = useState(false);
-    const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
     const badgeTooltipText = ride.type === 'request'
       ? 'This parent is requesting help from someone to fulfill this route'
       : 'This parent is offering to drive others this route';
 
-    console.log('[RidesList] Rendering ride badge', {
-      rideId: ride.id,
-      rideType: ride.type,
-      badgeLabel: ride.type === 'request' ? 'Ride Request' : 'Ride Offer',
-      badgeTooltipText,
-    });
-
-    // Fetch children from children table via edge function if client-side data is empty (RLS)
-    useEffect(() => {
-      if (ride.children && ride.children.length > 0) {
-        setFetchedChildren(ride.children);
-        return;
-      }
-      const fetchChildren = async () => {
-        try {
-          const { data, error } = await supabase.functions.invoke('get-parent-profile', {
-            body: { parentId: ride.user_id },
-          });
-          if (!error && data?.profile?.linked_students) {
-            setFetchedChildren(data.profile.linked_students.map((s: any) => ({
-              first_name: s.first_name,
-              last_name: s.last_name,
-              grade_level: s.grade_level,
-            })));
-          }
-        } catch (err) {
-          console.error('Error fetching children:', err);
-        }
-      };
-      fetchChildren();
-    }, [ride.user_id, ride.children]);
-
-    const seatsCount = ride.type === "offer" ? ride.seats_available : ride.seats_needed;
+    const displayChildren = ride.children || [];
 
     // Render action button based on state
     const renderActionButton = () => {
