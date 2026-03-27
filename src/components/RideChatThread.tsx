@@ -128,24 +128,17 @@ export function RideChatThread({
 
     const response = await supabase
       .from("ride_messages" as any)
-      .insert(messagePayload as any)
-      .select()
-      .single();
+      .insert(messagePayload as any);
 
     console.log("[RideChatThread] Insert response:", response);
 
-    const { data, error } = response;
+    const { error } = response;
 
     if (error) {
       console.error("Failed to send message:", error);
       setNewMessage(msgText);
     } else {
-      if (data) {
-        setMessages((prev) => {
-          if (prev.some((message) => message.id === data.id)) return prev;
-          return [...prev, data as RideMessage];
-        });
-      }
+      await fetchMessages();
 
       // Send notification to the other parent
       try {
