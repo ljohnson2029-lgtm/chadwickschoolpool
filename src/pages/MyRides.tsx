@@ -326,12 +326,12 @@ const MyRides = () => {
               `❌ ${getMyName()} has cancelled their ride request that you were fulfilling.`
             );
           }
-          // Delete all conversations for this ride
+          // Delete chat messages and conversations for this ride
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', ride.id).eq('ride_source', 'public');
           await supabase
             .from('ride_conversations')
             .delete()
             .eq('ride_id', ride.id);
-          // Permanently delete the ride
           const { error } = await supabase
             .from('rides')
             .delete()
