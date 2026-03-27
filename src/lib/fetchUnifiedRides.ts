@@ -77,7 +77,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     supabase.from('profiles').select('car_make, car_model, car_color, license_plate').eq('id', userId).single(),
   ]);
   const myChildren = userChildrenMap[userId] || [];
-  const myCarInfo = myProfile ? {
+  const myProfileCarInfo = myProfile ? {
     carMake: myProfile.car_make || null,
     carModel: myProfile.car_model || null,
     carColor: myProfile.car_color || null,
