@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Calendar, Loader2, AlertTriangle } from "lucide-react";
+import { MapPin, Clock, Calendar, Loader2, AlertTriangle, Car, Users } from "lucide-react";
 import { toast } from "sonner";
 import { format, addDays, startOfToday, differenceInHours } from "date-fns";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
@@ -40,6 +40,9 @@ interface RecurringRide {
   recipient_children: any;
   status: string;
   created_at: string;
+  seats_available?: number | null;
+  seats_needed?: number | null;
+  vehicle_info?: any;
 }
 
 interface Props {
@@ -235,8 +238,31 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
                 <Calendar className="h-3.5 w-3.5" />
                 <span>Repeats every {ride.recurring_days.join(", ")}</span>
               </div>
+              {ride.seats_available && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{ride.seats_available} seats available</span>
+                </div>
+              )}
+              {ride.seats_needed && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{ride.seats_needed} seats needed</span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Vehicle Info */}
+          {isAccepted && ride.vehicle_info && (
+            <div className="text-sm space-y-0.5 bg-muted/30 rounded-md p-2">
+              <div className="flex items-center gap-1.5">
+                <Car className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Vehicle: {ride.vehicle_info.car_color} {ride.vehicle_info.car_make} {ride.vehicle_info.car_model}</span>
+              </div>
+              <p className="text-xs text-muted-foreground ml-5">License Plate: {ride.vehicle_info.license_plate}</p>
+            </div>
+          )}
 
           {/* Children */}
           {(creatorChildNames.length > 0 || recipientChildNames.length > 0) && (

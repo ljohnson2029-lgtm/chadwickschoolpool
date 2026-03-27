@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import VehicleSelector from "@/components/VehicleSelector";
+import { type VehicleInfo } from "@/hooks/useVehicles";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -33,6 +35,9 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
   const [time, setTime] = useState("");
   const [days, setDays] = useState<string[]>([]);
   const [childIds, setChildIds] = useState<string[]>([]);
+  const [seats, setSeats] = useState<number>(1);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const toggleDay = (d: string) => {
@@ -59,7 +64,7 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
     }
     setSubmitting(true);
 
-    const { error } = await supabase.from("recurring_rides").insert({
+    const insertData: any = {
       space_id: spaceId,
       creator_id: user.id,
       recipient_id: otherParentId,
@@ -73,7 +78,24 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
       ride_time: time,
       recurring_days: days,
       creator_children: childIds,
-    });
+    };
+
+    if (rideType === "offer") {
+      insertData.seats_available = seats;
+      if (vehicleInfo) {
+        insertData.vehicle_info = {
+          car_make: vehicleInfo.car_make,
+          car_model: vehicleInfo.car_model,
+          car_color: vehicleInfo.car_color,
+          license_plate: vehicleInfo.license_plate,
+          vehicle_id: vehicleInfo.vehicle_id,
+        };
+      }
+    } else {
+      insertData.seats_needed = seats;
+    }
+
+    const { error } = await supabase.from("recurring_rides").insert(insertData);
 
     if (error) {
       toast.error("Failed to create recurring ride");
@@ -163,6 +185,25 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
         </div>
         <p className="text-xs text-muted-foreground">This ride will repeat on the selected days every week until cancelled</p>
       </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm">{rideType === "offer" ? "Available Seats" : "Seats Needed"}</Label>
+        <Input
+          type="number"
+          min={1}
+          max={10}
+          value={seats}
+          onChange={(e) => setSeats(Math.max(1, parseInt(e.target.value) || 1))}
+        />
+      </div>
+
+      {rideType === "offer" && (
+        <VehicleSelector
+          selectedVehicleId={selectedVehicleId}
+          onSelect={(id, info) => { setSelectedVehicleId(id); setVehicleInfo(info); }}
+          label="Driving With:"
+        />
+      )}
 
       <ChildrenRidingSelector
         selectedChildIds={childIds}

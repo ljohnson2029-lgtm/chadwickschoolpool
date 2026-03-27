@@ -501,9 +501,12 @@ export type Database = {
           recurring_days: string[]
           ride_time: string
           ride_type: string
+          seats_available: number | null
+          seats_needed: number | null
           space_id: string
           status: string
           updated_at: string
+          vehicle_info: Json | null
         }
         Insert: {
           created_at?: string
@@ -521,9 +524,12 @@ export type Database = {
           recurring_days: string[]
           ride_time: string
           ride_type: string
+          seats_available?: number | null
+          seats_needed?: number | null
           space_id: string
           status?: string
           updated_at?: string
+          vehicle_info?: Json | null
         }
         Update: {
           created_at?: string
@@ -541,9 +547,12 @@ export type Database = {
           recurring_days?: string[]
           ride_time?: string
           ride_type?: string
+          seats_available?: number | null
+          seats_needed?: number | null
           space_id?: string
           status?: string
           updated_at?: string
+          vehicle_info?: Json | null
         }
         Relationships: [
           {
