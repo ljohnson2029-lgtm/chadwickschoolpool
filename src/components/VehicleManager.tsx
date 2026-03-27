@@ -17,6 +17,28 @@ interface NewVehicle {
 
 const emptyVehicle: NewVehicle = { car_make: "", car_model: "", car_color: "", license_plate: "" };
 
+// Moved OUTSIDE VehicleManager to prevent focus loss on re-render
+const VehicleFields = ({ data, onChange }: { data: NewVehicle; onChange: (d: NewVehicle) => void }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div>
+      <Label>Make <span className="text-destructive">*</span></Label>
+      <Input value={data.car_make} onChange={(e) => onChange({ ...data, car_make: e.target.value })} placeholder="e.g., Toyota" />
+    </div>
+    <div>
+      <Label>Model <span className="text-destructive">*</span></Label>
+      <Input value={data.car_model} onChange={(e) => onChange({ ...data, car_model: e.target.value })} placeholder="e.g., Camry" />
+    </div>
+    <div>
+      <Label>Color <span className="text-destructive">*</span></Label>
+      <Input value={data.car_color} onChange={(e) => onChange({ ...data, car_color: e.target.value })} placeholder="e.g., Silver" />
+    </div>
+    <div>
+      <Label>License Plate <span className="text-destructive">*</span></Label>
+      <Input value={data.license_plate} onChange={(e) => onChange({ ...data, license_plate: e.target.value })} placeholder="e.g., ABC1234" />
+    </div>
+  </div>
+);
+
 const VehicleManager = () => {
   const { vehicles, loading, addVehicle, updateVehicle, removeVehicle, setPrimary } = useVehicles();
   const { toast } = useToast();
@@ -77,27 +99,6 @@ const VehicleManager = () => {
     await setPrimary(id);
     toast({ title: "Primary vehicle updated" });
   };
-
-  const VehicleFields = ({ data, onChange }: { data: NewVehicle; onChange: (d: NewVehicle) => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div>
-        <Label>Make <span className="text-destructive">*</span></Label>
-        <Input value={data.car_make} onChange={(e) => onChange({ ...data, car_make: e.target.value })} placeholder="e.g., Toyota" />
-      </div>
-      <div>
-        <Label>Model <span className="text-destructive">*</span></Label>
-        <Input value={data.car_model} onChange={(e) => onChange({ ...data, car_model: e.target.value })} placeholder="e.g., Camry" />
-      </div>
-      <div>
-        <Label>Color <span className="text-destructive">*</span></Label>
-        <Input value={data.car_color} onChange={(e) => onChange({ ...data, car_color: e.target.value })} placeholder="e.g., Silver" />
-      </div>
-      <div>
-        <Label>License Plate <span className="text-destructive">*</span></Label>
-        <Input value={data.license_plate} onChange={(e) => onChange({ ...data, license_plate: e.target.value })} placeholder="e.g., ABC1234" />
-      </div>
-    </div>
-  );
 
   if (loading) return <Card><CardContent className="py-6 text-center text-muted-foreground">Loading vehicles...</CardContent></Card>;
 
