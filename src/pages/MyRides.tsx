@@ -23,6 +23,7 @@ const MyRides = () => {
   const [activeTab, setActiveTab] = useState("active");
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
   const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
+  const [acceptingDirectRide, setAcceptingDirectRide] = useState<UnifiedRide | null>(null);
 
   const isStudent = profile?.account_type === "student";
 
@@ -469,15 +470,28 @@ const MyRides = () => {
   }, [user, profile]);
 
   const handleAcceptDirect = useCallback(async (requestId: string) => {
+    // Find the ride to show children selector
+    const ride = activeRides.find(r => r.id === requestId);
+    if (ride) {
+      setAcceptingDirectRide(ride);
+    }
+  }, [activeRides]);
+
+  const confirmAcceptDirect = useCallback(async (selectedChildIds: string[]) => {
+    if (!acceptingDirectRide) return;
+    const requestId = acceptingDirectRide.id;
     setAcceptDeclineLoading(requestId);
     try {
       const { error } = await supabase
         .from('private_ride_requests')
-        .update({ status: 'accepted', responded_at: new Date().toISOString() })
+        .update({ 
+          status: 'accepted', 
+          responded_at: new Date().toISOString(),
+          recipient_selected_children: selectedChildIds,
+        } as any)
         .eq('id', requestId);
       if (error) throw error;
 
-      // Fetch request details for notification
       const { data: req } = await supabase
         .from('private_ride_requests')
         .select('sender_id, ride_date')
@@ -494,17 +508,17 @@ const MyRides = () => {
       }
 
       toast.success('Direct ride accepted!');
+      setAcceptingDirectRide(null);
       loadRides();
     } catch (err: any) {
       toast.error('Failed to accept: ' + err.message);
     }
     setAcceptDeclineLoading(null);
-  }, [user, profile]);
+  }, [acceptingDirectRide, user, profile]);
 
   const handleDeclineDirect = useCallback(async (requestId: string) => {
     setAcceptDeclineLoading(requestId);
     try {
-      // Fetch request details before declining
       const { data: req } = await supabase
         .from('private_ride_requests')
         .select('sender_id, ride_date, request_type')
@@ -534,23 +548,24 @@ const MyRides = () => {
     setAcceptDeclineLoading(null);
   }, [user, profile]);
 
-  const handleCancelDirect = useCallback(async (ride: any) => {
+  const handleCancelDirect = useCallback(async (ride: UnifiedRide) => {
     try {
+      const req = ride.originalData;
+      const isSender = req.sender_id === user?.id;
+
       const { error } = await supabase
         .from('private_ride_requests')
-        .update({ status: 'cancelled' })
-        .eq('id', ride.id)
-        .eq('sender_id', user?.id);
+        .update({ status: 'cancelled' } as any)
+        .eq('id', ride.id);
       if (error) throw error;
 
-      if (ride.otherParent) {
-        const myName = getMyName();
-        await sendNotification(
-          ride.otherParent.id,
-          'direct_ride_cancelled',
-          `❌ ${myName} cancelled their direct ride ${ride.rideType}`
-        );
-      }
+      const otherId = isSender ? req.recipient_id : req.sender_id;
+      const myName = getMyName();
+      const message = isSender
+        ? `❌ ${myName} has cancelled the direct ride they sent you`
+        : `❌ ${myName} has cancelled the direct ride you sent them`;
+
+      await sendNotification(otherId, 'direct_ride_cancelled', message);
 
       toast.success('Direct ride cancelled');
       loadRides();
