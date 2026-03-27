@@ -300,8 +300,6 @@ const ProfileSetup = () => {
         updateData.grade_level = PARENT_GRADE_LEVEL;
         // Vehicle info managed by VehicleManager
       } else {
-        
-      } else {
         updateData.grade_level = gradeLevel;
       }
 
