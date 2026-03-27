@@ -335,7 +335,11 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
       const filteredMyChildren = filterChildrenBySelection(myChildren, mySelectedIds);
       const otherKids = otherChildren[otherId] || [];
-      const filteredOtherKids = filterChildrenBySelection(otherKids, otherSelectedIds);
+      // Only show the other party's children if the ride has been accepted
+      // and they have actually selected their children
+      const filteredOtherKids = req.status === 'accepted' && otherSelectedIds
+        ? filterChildrenBySelection(otherKids, otherSelectedIds)
+        : [];
 
       allRides.push({
         id: req.id,
