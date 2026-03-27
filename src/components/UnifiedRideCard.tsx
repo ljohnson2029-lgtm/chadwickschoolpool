@@ -618,7 +618,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                     onClick={() => setContactOpen(true)}
                   >
                     <Contact className="h-3.5 w-3.5" />
-                    Contact Ride Parent
+                    View Contact Info for the Other Parent on This Ride
                   </Button>
                 )}
                 {/* Messages button */}

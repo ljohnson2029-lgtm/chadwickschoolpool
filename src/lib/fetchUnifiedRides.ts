@@ -58,7 +58,7 @@ function toParticipant(p: any, children: { name: string; grade: string }[]): Par
     lastName: p.last_name,
     username: p.username,
     email: p.share_email ? p.email : null,
-    phone: p.share_phone ? p.phone_number : null,
+    phone: p.phone_number || null,
     children: children || [],
     carMake: p.car_make || null,
     carModel: p.car_model || null,
