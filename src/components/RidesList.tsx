@@ -25,6 +25,7 @@ import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/pe
 import { format } from "date-fns";
 
 interface RideChild {
+  id: string;
   first_name: string;
   last_name: string;
   grade_level: string | null;
@@ -262,7 +263,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             .select("id, first_name, last_name, username, grade_level, phone_number, share_phone, share_email")
             .in("id", userIds),
           supabase.from("users").select("user_id, email").in("user_id", userIds),
-          supabase.from("children").select("user_id, first_name, last_name, grade_level").in("user_id", userIds),
+          supabase.from("children").select("id, user_id, first_name, last_name, grade_level").in("user_id", userIds),
         ]);
 
         if (profilesResult.data) {
@@ -274,17 +275,24 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         if (childrenResult.data) {
           childrenResult.data.forEach(c => {
             if (!childrenMap[c.user_id]) childrenMap[c.user_id] = [];
-            childrenMap[c.user_id].push({ first_name: c.first_name, last_name: c.last_name, grade_level: c.grade_level });
+            childrenMap[c.user_id].push({ id: c.id, first_name: c.first_name, last_name: c.last_name, grade_level: c.grade_level });
           });
         }
       }
 
-      const ridesWithProfiles = allRides.map((ride: any) => ({
-        ...ride,
-        profiles: profilesMap[ride.user_id] || null,
-        userEmail: emailsMap[ride.user_id] || null,
-        children: childrenMap[ride.user_id] || [],
-      }));
+      const ridesWithProfiles = allRides.map((ride: any) => {
+        const allChildren = childrenMap[ride.user_id] || [];
+        const selectedIds: string[] | null = ride.selected_children;
+        const filteredChildren = selectedIds && selectedIds.length > 0
+          ? allChildren.filter((c: any) => selectedIds.includes(c.id))
+          : allChildren;
+        return {
+          ...ride,
+          profiles: profilesMap[ride.user_id] || null,
+          userEmail: emailsMap[ride.user_id] || null,
+          children: filteredChildren,
+        };
+      });
 
       setRides(ridesWithProfiles as unknown as Ride[]);
     } catch (error) {
@@ -443,45 +451,14 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     const hasConnection = !!connection;
     const rideIsFull = ride.is_fulfilled === true && !isOwnRide && !hasAcceptedResponse;
     const [showProfilePopup, setShowProfilePopup] = useState(false);
-    const [fetchedChildren, setFetchedChildren] = useState<RideChild[]>([]);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
     const badgeTooltipText = ride.type === 'request'
       ? 'This parent is requesting help from someone to fulfill this route'
       : 'This parent is offering to drive others this route';
 
-    console.log('[RidesList] Rendering ride badge', {
-      rideId: ride.id,
-      rideType: ride.type,
-      badgeLabel: ride.type === 'request' ? 'Ride Request' : 'Ride Offer',
-      badgeTooltipText,
-    });
-
-    // Fetch children from children table via edge function if client-side data is empty (RLS)
-    useEffect(() => {
-      if (ride.children && ride.children.length > 0) {
-        setFetchedChildren(ride.children);
-        return;
-      }
-      const fetchChildren = async () => {
-        try {
-          const { data, error } = await supabase.functions.invoke('get-parent-profile', {
-            body: { parentId: ride.user_id },
-          });
-          if (!error && data?.profile?.linked_students) {
-            setFetchedChildren(data.profile.linked_students.map((s: any) => ({
-              first_name: s.first_name,
-              last_name: s.last_name,
-              grade_level: s.grade_level,
-            })));
-          }
-        } catch (err) {
-          console.error('Error fetching children:', err);
-        }
-      };
-      fetchChildren();
-    }, [ride.user_id, ride.children]);
-
+    const displayChildren = ride.children || [];
     const seatsCount = ride.type === "offer" ? ride.seats_available : ride.seats_needed;
 
     // Render action button based on state
@@ -662,10 +639,10 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           )}
 
           {/* Children */}
-          {fetchedChildren.length > 0 && (
+          {displayChildren.length > 0 && (
             <div className="border-t pt-2">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Children</p>
-              {fetchedChildren.map((child, idx) => (
+              <p className="text-xs font-medium text-muted-foreground mb-1">Children Joining This Ride:</p>
+              {displayChildren.map((child, idx) => (
                 <div key={idx} className="text-sm flex items-center gap-1.5">
                   <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>{child.first_name} {child.last_name}</span>
