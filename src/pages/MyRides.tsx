@@ -98,6 +98,7 @@ const MyRides = () => {
               licensePlate: data.profile.license_plate || null,
             };
             phoneByParent[parentId] = data.profile.phone_number || null;
+            console.log(`[Student MyRides] Phone for ${parentId}:`, data.profile.phone_number);
         }
       } catch (err) {
         console.warn(`Failed to fetch children for parent ${parentId}:`, err);
