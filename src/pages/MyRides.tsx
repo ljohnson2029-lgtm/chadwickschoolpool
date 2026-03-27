@@ -565,6 +565,9 @@ const MyRides = () => {
       const req = ride.originalData;
       const isSender = req.sender_id === user?.id;
 
+      // Delete chat messages
+      await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', ride.id).eq('ride_source', 'private');
+
       const { error } = await supabase
         .from('private_ride_requests')
         .update({ status: 'cancelled' } as any)
