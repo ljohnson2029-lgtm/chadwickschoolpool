@@ -411,6 +411,20 @@ const RideOfferForm = ({
           </div>
 
           {!isBroadcast && recipientParentName && (
+            <div>
+              <Label htmlFor="message" className="text-sm sm:text-base">Personal Message (Optional)</Label>
+              <Textarea
+                id="message"
+                value={personalMessage}
+                onChange={(e) => setPersonalMessage(e.target.value)}
+                placeholder="Add any additional details or notes..."
+                rows={3}
+                className="text-base sm:text-sm"
+              />
+            </div>
+          )}
+
+          <ChildrenRidingSelector
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
             error={childError}
