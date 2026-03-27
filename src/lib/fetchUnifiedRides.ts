@@ -67,6 +67,26 @@ function toParticipant(p: any, children: { name: string; grade: string }[]): Par
   };
 }
 
+function extractCarInfo(vehicleInfoJson: any, profileFallback?: any): UnifiedRide['myCarInfo'] {
+  if (vehicleInfoJson && typeof vehicleInfoJson === 'object') {
+    return {
+      carMake: vehicleInfoJson.car_make || null,
+      carModel: vehicleInfoJson.car_model || null,
+      carColor: vehicleInfoJson.car_color || null,
+      licensePlate: vehicleInfoJson.license_plate || null,
+    };
+  }
+  if (profileFallback) {
+    return {
+      carMake: profileFallback.car_make || null,
+      carModel: profileFallback.car_model || null,
+      carColor: profileFallback.car_color || null,
+      licensePlate: profileFallback.license_plate || null,
+    };
+  }
+  return undefined;
+}
+
 export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
