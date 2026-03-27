@@ -292,14 +292,12 @@ const MyRides = () => {
         }
 
         case 'leave-offer': {
-          // Passenger leaves a ride offer - reset ride to open, then remove conversation
           const conv = ride.originalData?.conversation;
           if (!conv) break;
           const rideId = conv.ride_id;
-          // FIRST re-open the ride (must happen before deleting conversation,
-          // because the RPC checks conversation membership for authorization)
           await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
-          // THEN delete conversation so no trace remains
+          // Delete chat messages
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
           const { error } = await supabase
             .from('ride_conversations')
             .delete()
