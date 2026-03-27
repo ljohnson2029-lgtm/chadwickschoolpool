@@ -41,6 +41,7 @@ interface RideProfile {
 }
 
 interface RideChild {
+  id: string;
   name: string;
   first_name: string;
   last_name: string;
