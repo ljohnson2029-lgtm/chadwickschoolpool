@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import { User, GraduationCap, Car, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle } from "lucide-react";
+import { User, GraduationCap, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle } from "lucide-react";
+import VehicleManager from "@/components/VehicleManager";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 
 interface Child {
@@ -79,11 +80,7 @@ const ProfileSetup = () => {
   const [homeLongitude, setHomeLongitude] = useState<number | null>(null);
   const [gradeLevel, setGradeLevel] = useState("");
 
-  // Parent fields
-  const [carMake, setCarMake] = useState("");
-  const [carModel, setCarModel] = useState("");
-  const [carColor, setCarColor] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
+  // Vehicle fields are now managed via VehicleManager component
   
   const [children, setChildren] = useState<Child[]>([{ first_name: "", last_name: "", age: "", grade_level: "" }]);
   const [childTouched, setChildTouched] = useState<Record<string, boolean>>({});
@@ -119,13 +116,7 @@ const ProfileSetup = () => {
       setHomeLatitude(profile.home_latitude || null);
       setHomeLongitude(profile.home_longitude || null);
       setGradeLevel(profile.grade_level || "");
-      setCarMake(profile.car_make || "");
-      setCarModel(profile.car_model || "");
-      setCarColor(profile.car_color || "");
-      setLicensePlate(profile.license_plate || "");
-      
-      
-      // Load student-specific fields
+      // Vehicle fields now managed via VehicleManager
       if (!isParent) {
         setParentGuardianName(profile.parent_guardian_name || "");
         setParentGuardianPhone(profile.parent_guardian_phone || "");
@@ -198,18 +189,7 @@ const ProfileSetup = () => {
       case "gradeLevel":
         if (!isParent && !gradeLevel) return { show, message: "This field is required" };
         break;
-      case "carMake":
-        if (isParent && !carMake.trim()) return { show, message: "This field is required" };
-        break;
-      case "carModel":
-        if (isParent && !carModel.trim()) return { show, message: "This field is required" };
-        break;
-      case "carColor":
-        if (isParent && !carColor.trim()) return { show, message: "This field is required" };
-        break;
-      case "licensePlate":
-        if (isParent && !licensePlate.trim()) return { show, message: "This field is required" };
-        break;
+      // Vehicle validation removed - handled by VehicleManager
     }
 
     return { show: false, message: "" };
@@ -258,7 +238,7 @@ const ProfileSetup = () => {
     if (!isParent && phoneNumber.trim() && !isValidPhone(phoneNumber)) return false;
     if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    if (isParent && (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim())) return false;
+    // Vehicle validation removed - VehicleManager handles separately
     
     // First child must be fully complete; additional children must not be partial
     if (isParent && (!children.length || !isChildComplete(children[0]))) return false;
@@ -318,11 +298,7 @@ const ProfileSetup = () => {
         updateData.home_latitude = homeLatitude;
         updateData.home_longitude = homeLongitude;
         updateData.grade_level = PARENT_GRADE_LEVEL;
-        updateData.car_make = carMake;
-        updateData.car_model = carModel;
-        updateData.car_color = carColor;
-        updateData.license_plate = licensePlate;
-        
+        // Vehicle info managed by VehicleManager
       } else {
         updateData.grade_level = gradeLevel;
       }
@@ -633,53 +609,7 @@ const ProfileSetup = () => {
             )}
 
             {/* Parent-only: Vehicle Information */}
-            {isParent && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Car className="h-5 w-5" /> Vehicle Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <RequiredLabel htmlFor="carMake">Car Make</RequiredLabel>
-                      <Input
-                        id="carMake"
-                        value={carMake}
-                        onChange={e => setCarMake(e.target.value)}
-                        onBlur={() => markTouched("carMake")}
-                        placeholder="e.g. Toyota"
-                        className={errorInputClass("carMake")}
-                      />
-                      <FieldErrorMessage error={getFieldError("carMake")} />
-                    </div>
-                    <div>
-                      <RequiredLabel htmlFor="carModel">Car Model</RequiredLabel>
-                      <Input
-                        id="carModel"
-                        value={carModel}
-                        onChange={e => setCarModel(e.target.value)}
-                        onBlur={() => markTouched("carModel")}
-                        placeholder="e.g. Camry"
-                        className={errorInputClass("carModel")}
-                      />
-                      <FieldErrorMessage error={getFieldError("carModel")} />
-                    </div>
-                    <div>
-                      <RequiredLabel htmlFor="carColor">Car Color</RequiredLabel>
-                      <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} onBlur={() => markTouched("carColor")} placeholder="e.g. Silver" className={errorInputClass("carColor")} />
-                      <FieldErrorMessage error={getFieldError("carColor")} />
-                    </div>
-                    <div>
-                      <RequiredLabel htmlFor="licensePlate">License Plate</RequiredLabel>
-                      <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} onBlur={() => markTouched("licensePlate")} placeholder="e.g. ABC1234" className={errorInputClass("licensePlate")} />
-                      <FieldErrorMessage error={getFieldError("licensePlate")} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {isParent && <VehicleManager />}
 
             {/* Parent-only: Children */}
             {isParent && (

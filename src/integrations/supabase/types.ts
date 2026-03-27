@@ -286,6 +286,7 @@ export type Database = {
           sender_id: string
           status: Database["public"]["Enums"]["private_request_status"]
           updated_at: string
+          vehicle_info: Json | null
         }
         Insert: {
           created_at?: string
@@ -312,6 +313,7 @@ export type Database = {
           sender_id: string
           status?: Database["public"]["Enums"]["private_request_status"]
           updated_at?: string
+          vehicle_info?: Json | null
         }
         Update: {
           created_at?: string
@@ -338,6 +340,7 @@ export type Database = {
           sender_id?: string
           status?: Database["public"]["Enums"]["private_request_status"]
           updated_at?: string
+          vehicle_info?: Json | null
         }
         Relationships: [
           {
@@ -536,6 +539,7 @@ export type Database = {
             | null
           type: string
           user_id: string
+          vehicle_info: Json | null
         }
         Insert: {
           created_at?: string | null
@@ -562,6 +566,7 @@ export type Database = {
             | null
           type: string
           user_id: string
+          vehicle_info?: Json | null
         }
         Update: {
           created_at?: string | null
@@ -588,6 +593,7 @@ export type Database = {
             | null
           type?: string
           user_id?: string
+          vehicle_info?: Json | null
         }
         Relationships: [
           {
@@ -752,6 +758,39 @@ export type Database = {
           phone_number?: string | null
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          car_color: string
+          car_make: string
+          car_model: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          license_plate: string
+          user_id: string
+        }
+        Insert: {
+          car_color: string
+          car_make: string
+          car_model: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          license_plate: string
+          user_id: string
+        }
+        Update: {
+          car_color?: string
+          car_make?: string
+          car_model?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          license_plate?: string
+          user_id?: string
         }
         Relationships: []
       }

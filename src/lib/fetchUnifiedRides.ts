@@ -67,6 +67,26 @@ function toParticipant(p: any, children: { name: string; grade: string }[]): Par
   };
 }
 
+function extractCarInfo(vehicleInfoJson: any, profileFallback?: any): UnifiedRide['myCarInfo'] {
+  if (vehicleInfoJson && typeof vehicleInfoJson === 'object') {
+    return {
+      carMake: vehicleInfoJson.car_make || null,
+      carModel: vehicleInfoJson.car_model || null,
+      carColor: vehicleInfoJson.car_color || null,
+      licensePlate: vehicleInfoJson.license_plate || null,
+    };
+  }
+  if (profileFallback) {
+    return {
+      carMake: profileFallback.car_make || null,
+      carModel: profileFallback.car_model || null,
+      carColor: profileFallback.car_color || null,
+      licensePlate: profileFallback.license_plate || null,
+    };
+  }
+  return undefined;
+}
+
 export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
@@ -77,7 +97,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     supabase.from('profiles').select('car_make, car_model, car_color, license_plate').eq('id', userId).single(),
   ]);
   const myChildren = userChildrenMap[userId] || [];
-  const myCarInfo = myProfile ? {
+  const myProfileCarInfo = myProfile ? {
     carMake: myProfile.car_make || null,
     carModel: myProfile.car_model || null,
     carColor: myProfile.car_color || null,
@@ -153,7 +173,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: ride.type === 'offer',
         otherParent: null,
         myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
-        myCarInfo,
+        myCarInfo: extractCarInfo((ride as any).vehicle_info, myProfile),
         originalData: ride,
         pendingRequests: pendingByRide[ride.id] || [],
       });
@@ -195,7 +215,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: isHelpingWithRequest,
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
-        myCarInfo,
+        myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
       });
     }
@@ -235,7 +255,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver: false,
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(ownerChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
-        myCarInfo,
+        myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
       });
     }
@@ -282,7 +302,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           isDriver: ride.type === 'offer',
           otherParent: participant,
           myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
-        myCarInfo,
+        myCarInfo: extractCarInfo(null, myProfile),
           originalData: { conversation: conv, ride },
         });
       }
@@ -356,7 +376,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver,
         otherParent: profile ? toParticipant(profile, filteredOtherKids) : null,
         myChildren: filteredMyChildren,
-        myCarInfo,
+        myCarInfo: extractCarInfo((req as any).vehicle_info, myProfile),
         originalData: req,
       });
     }

@@ -477,18 +477,29 @@ const MyRides = () => {
     }
   }, [activeRides]);
 
-  const confirmAcceptDirect = useCallback(async (selectedChildIds: string[]) => {
+  const confirmAcceptDirect = useCallback(async (selectedChildIds: string[], vehicleInfo?: any) => {
     if (!acceptingDirectRide) return;
     const requestId = acceptingDirectRide.id;
     setAcceptDeclineLoading(requestId);
     try {
+      const updateData: any = { 
+        status: 'accepted', 
+        responded_at: new Date().toISOString(),
+        recipient_selected_children: selectedChildIds,
+      };
+      // If the acceptor is the driver (accepting a ride request), save their vehicle
+      if (vehicleInfo) {
+        updateData.vehicle_info = {
+          car_make: vehicleInfo.car_make,
+          car_model: vehicleInfo.car_model,
+          car_color: vehicleInfo.car_color,
+          license_plate: vehicleInfo.license_plate,
+          vehicle_id: vehicleInfo.vehicle_id,
+        };
+      }
       const { error } = await supabase
         .from('private_ride_requests')
-        .update({ 
-          status: 'accepted', 
-          responded_at: new Date().toISOString(),
-          recipient_selected_children: selectedChildIds,
-        } as any)
+        .update(updateData)
         .eq('id', requestId);
       if (error) throw error;
 
@@ -714,6 +725,7 @@ const MyRides = () => {
             rideType={acceptingDirectRide.rideType}
             maxSeats={acceptingDirectRide.seatsAvailable || acceptingDirectRide.seatsNeeded || null}
             loading={acceptDeclineLoading === acceptingDirectRide.id}
+            isAcceptorDriver={acceptingDirectRide.rideType === 'request'}
           />
         )}
       </div>

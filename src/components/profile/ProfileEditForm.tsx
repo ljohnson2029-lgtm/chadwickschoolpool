@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, X, User, Phone, Home, Car, GraduationCap, Users, Plus, Trash2 } from "lucide-react";
+import { Save, X, User, Phone, Home, GraduationCap, Users, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
+import VehicleManager from "@/components/VehicleManager";
 
 interface EditChild {
   id?: string;
@@ -40,11 +41,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
   const [homeLatitude, setHomeLatitude] = useState<number | null>(profile.home_latitude || null);
   const [homeLongitude, setHomeLongitude] = useState<number | null>(profile.home_longitude || null);
 
-  // Parent fields
-  const [carMake, setCarMake] = useState(profile.car_make || "");
-  const [carModel, setCarModel] = useState(profile.car_model || "");
-  const [carColor, setCarColor] = useState(profile.car_color || "");
-  const [licensePlate, setLicensePlate] = useState(profile.license_plate || "");
+  // Parent vehicle fields are now managed via VehicleManager component
 
   // Student fields
   const [gradeLevel, setGradeLevel] = useState(profile.grade_level || "");
@@ -88,14 +85,14 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
     if (isParent) {
       if (!isValidPhoneNumber(phoneNumber)) return false;
       if (!homeAddress.trim() || !homeLatitude || !homeLongitude) return false;
-      if (!carMake.trim() || !carModel.trim() || !carColor.trim() || !licensePlate.trim()) return false;
+      // Vehicle validation is handled by VehicleManager separately
       // All children must be complete
       if (children.length > 0 && !children.every(isChildComplete)) return false;
     } else {
       if (!gradeLevel) return false;
     }
     return true;
-  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, carMake, carModel, carColor, licensePlate, gradeLevel, isParent, children]);
+  }, [firstName, lastName, phoneNumber, homeAddress, homeLatitude, homeLongitude, gradeLevel, isParent, children]);
 
   const fieldError = (value: string) => attempted && !value.trim();
   const addressError = attempted && isParent && (!homeAddress.trim() || !homeLatitude || !homeLongitude);
@@ -123,10 +120,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         updateData.home_address = homeAddress;
         updateData.home_latitude = homeLatitude;
         updateData.home_longitude = homeLongitude;
-        updateData.car_make = carMake.trim();
-        updateData.car_model = carModel.trim();
-        updateData.car_color = carColor.trim();
-        updateData.license_plate = licensePlate.trim();
+        // Vehicle info is managed via VehicleManager, not profile fields
       } else {
         updateData.grade_level = gradeLevel || null;
       }
@@ -252,41 +246,8 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
         </Card>
       )}
 
-      {/* Parent-specific: Vehicle */}
-      {isParent && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Car className="h-5 w-5" />
-              Vehicle Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="carMake">Make <RequiredStar /></Label>
-                <Input id="carMake" value={carMake} onChange={e => setCarMake(e.target.value)} placeholder="e.g., Toyota" className={fieldError(carMake) ? errorBorder : ""} />
-                <FieldError show={fieldError(carMake)} />
-              </div>
-              <div>
-                <Label htmlFor="carModel">Model <RequiredStar /></Label>
-                <Input id="carModel" value={carModel} onChange={e => setCarModel(e.target.value)} placeholder="e.g., Camry" className={fieldError(carModel) ? errorBorder : ""} />
-                <FieldError show={fieldError(carModel)} />
-              </div>
-              <div>
-                <Label htmlFor="carColor">Color <RequiredStar /></Label>
-                <Input id="carColor" value={carColor} onChange={e => setCarColor(e.target.value)} placeholder="e.g., Silver" className={fieldError(carColor) ? errorBorder : ""} />
-                <FieldError show={fieldError(carColor)} />
-              </div>
-              <div>
-                <Label htmlFor="licensePlate">License Plate <RequiredStar /></Label>
-                <Input id="licensePlate" value={licensePlate} onChange={e => setLicensePlate(e.target.value)} placeholder="e.g., ABC1234" className={fieldError(licensePlate) ? errorBorder : ""} />
-                <FieldError show={fieldError(licensePlate)} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Parent-specific: Vehicles */}
+      {isParent && <VehicleManager />}
 
       {/* Parent-specific: My Children */}
       {isParent && (

@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Car, Users, Home, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Users, Home, CheckCircle2 } from "lucide-react";
+import VehicleManager from "@/components/VehicleManager";
 import { GRADE_LEVELS } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 
@@ -24,42 +25,39 @@ interface Child {
 interface ParentProfileFormProps {
   homeAddress: string;
   onAddressSelect: (address: string, lat: number, lng: number) => void;
-  carMake: string;
-  setCarMake: (value: string) => void;
-  carModel: string;
-  setCarModel: (value: string) => void;
-  carColor: string;
-  setCarColor: (value: string) => void;
-  licensePlate: string;
-  setLicensePlate: (value: string) => void;
   children: Child[];
   onAddChild: () => void;
   onRemoveChild: (index: number) => void;
   onUpdateChild: (index: number, field: keyof Child, value: string) => void;
+  // Legacy vehicle props (ignored - VehicleManager handles this now)
+  carMake?: string;
+  setCarMake?: (value: string) => void;
+  carModel?: string;
+  setCarModel?: (value: string) => void;
+  carColor?: string;
+  setCarColor?: (value: string) => void;
+  licensePlate?: string;
+  setLicensePlate?: (value: string) => void;
 }
 
 /* ─── Profile Completeness ──────────────────────────────────────── */
 
 interface CompletenessBarProps {
   homeAddress: string;
-  carMake: string;
-  carModel: string;
   children: Child[];
 }
 
-const useCompleteness = ({ homeAddress, carMake, carModel, children }: CompletenessBarProps) => {
+const useCompleteness = ({ homeAddress, children }: CompletenessBarProps) => {
   return useMemo(() => {
     const checks = [
       homeAddress.length > 0,
-      carMake.length > 0,
-      carModel.length > 0,
       children.length > 0,
       children.length > 0 && children.every((c) => c.first_name.length > 0),
       children.length > 0 && children.every((c) => c.grade_level.length > 0),
     ];
     const filled = checks.filter(Boolean).length;
     return Math.round((filled / checks.length) * 100);
-  }, [homeAddress, carMake, carModel, children]);
+  }, [homeAddress, children]);
 };
 
 const CompletenessBar = (props: CompletenessBarProps) => {
@@ -219,43 +217,11 @@ const ChildCard = ({ child, index, canRemove, onRemove, onUpdate }: ChildCardPro
   );
 };
 
-/* ─── Vehicle Field ─────────────────────────────────────────────── */
-
-interface VehicleFieldConfig {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-}
-
-const VehicleField = ({ id, label, value, onChange, placeholder }: VehicleFieldConfig) => (
-  <div>
-    <Label htmlFor={id}>{label}</Label>
-    <Input
-      id={id}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      autoComplete="off"
-    />
-  </div>
-);
-
 /* ─── Main Form ─────────────────────────────────────────────────── */
 
 const ParentProfileForm = ({
   homeAddress,
   onAddressSelect,
-  carMake,
-  setCarMake,
-  carModel,
-  setCarModel,
-  carColor,
-  setCarColor,
-  licensePlate,
-  setLicensePlate,
-  
   children,
   onAddChild,
   onRemoveChild,
@@ -263,30 +229,12 @@ const ParentProfileForm = ({
 }: ParentProfileFormProps) => {
   const canRemoveChild = children.length > 1;
 
-  const vehicleFields = useMemo<VehicleFieldConfig[]>(
-    () => [
-      { id: "carMake", label: "Make", value: carMake, onChange: setCarMake, placeholder: "e.g., Toyota" },
-      { id: "carModel", label: "Model", value: carModel, onChange: setCarModel, placeholder: "e.g., Camry" },
-      { id: "carColor", label: "Color", value: carColor, onChange: setCarColor, placeholder: "e.g., Silver" },
-      {
-        id: "licensePlate",
-        label: "License Plate",
-        value: licensePlate,
-        onChange: setLicensePlate,
-        placeholder: "e.g., ABC1234",
-      },
-    ],
-    [carMake, carModel, carColor, licensePlate, setCarMake, setCarModel, setCarColor, setLicensePlate],
-  );
-
 
   return (
     <>
       {/* ── Completeness ──────────────────────────────────────── */}
       <CompletenessBar
         homeAddress={homeAddress}
-        carMake={carMake}
-        carModel={carModel}
         children={children}
       />
 
@@ -354,21 +302,7 @@ const ParentProfileForm = ({
       </Card>
 
       {/* ── Vehicle Information ────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5" />
-            Vehicle Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {vehicleFields.map((field) => (
-              <VehicleField key={field.id} {...field} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <VehicleManager />
     </>
   );
 };

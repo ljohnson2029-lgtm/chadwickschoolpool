@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canCreateCarpool, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import VehicleSelector from "@/components/VehicleSelector";
+import { type VehicleInfo } from "@/hooks/useVehicles";
 
 
 interface RideOfferFormProps {
@@ -70,6 +72,8 @@ const RideOfferForm = ({
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [childError, setChildError] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState<VehicleInfo | null>(null);
 
   useEffect(() => {
     const fetchUserEmail = async () => {
@@ -174,6 +178,13 @@ const RideOfferForm = ({
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
         selected_children: selectedChildIds,
+        vehicle_info: selectedVehicleInfo ? {
+          car_make: selectedVehicleInfo.car_make,
+          car_model: selectedVehicleInfo.car_model,
+          car_color: selectedVehicleInfo.car_color,
+          license_plate: selectedVehicleInfo.license_plate,
+          vehicle_id: selectedVehicleInfo.vehicle_id,
+        } : null,
       } as any).select();
 
       if (rideError) throw rideError;
@@ -462,6 +473,11 @@ const RideOfferForm = ({
             selectedChildIds={selectedChildIds}
             onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
             error={childError}
+          />
+
+          <VehicleSelector
+            selectedVehicleId={selectedVehicleId}
+            onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
           />
 
           <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
