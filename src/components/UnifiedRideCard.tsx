@@ -637,11 +637,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   )}
                 </Button>
               </div>
-              {!ride._studentView && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  View contact info for the other parent on this ride
-                </p>
-              )}
+              {/* Subtitle removed - label is self-descriptive */}
             </div>
           )}
 
@@ -725,7 +721,6 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           onClose={() => setContactOpen(false)}
           parentName={getParentName(ride.otherParent)}
           phone={ride.otherParent.phone}
-          email={ride.otherParent.email}
         />
       )}
     </>
