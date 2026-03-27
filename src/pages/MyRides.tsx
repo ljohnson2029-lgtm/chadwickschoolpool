@@ -366,7 +366,7 @@ const MyRides = () => {
         }
       }
 
-      loadRides();
+      invalidateRides();
     } catch (error: any) {
       toast.error('Failed: ' + error.message);
     }
@@ -425,7 +425,7 @@ const MyRides = () => {
       }
 
       toast.success('Request accepted! The parent has been added to your ride.');
-      loadRides();
+      invalidateRides();
     } catch (err: any) {
       toast.error('Failed to accept request: ' + err.message);
     }
@@ -458,7 +458,7 @@ const MyRides = () => {
       }
 
       toast.success('Request declined.');
-      loadRides();
+      invalidateRides();
     } catch (err: any) {
       toast.error('Failed to decline request: ' + err.message);
     }
@@ -516,7 +516,7 @@ const MyRides = () => {
 
       toast.success('Direct ride accepted!');
       setAcceptingDirectRide(null);
-      loadRides();
+      invalidateRides();
     } catch (err: any) {
       toast.error('Failed to accept: ' + err.message);
     }
@@ -548,7 +548,7 @@ const MyRides = () => {
       }
 
       toast.success('Direct ride declined.');
-      loadRides();
+      invalidateRides();
     } catch (err: any) {
       toast.error('Failed to decline: ' + err.message);
     }
@@ -578,7 +578,7 @@ const MyRides = () => {
       await sendNotification(otherId, 'direct_ride_cancelled', message);
 
       toast.success('Direct ride cancelled');
-      loadRides();
+      invalidateRides();
     } catch (err: any) {
       toast.error('Failed: ' + err.message);
     }
