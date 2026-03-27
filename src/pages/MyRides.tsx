@@ -284,14 +284,14 @@ const MyRides = () => {
         }
 
         case 'leave-offer': {
-          // Passenger leaves a ride offer - delete/update their conversation
+          // Passenger leaves a ride offer - delete the conversation entirely
           const conv = ride.originalData?.conversation;
           if (!conv) break;
           const rideId = conv.ride_id;
-          // Update conversation status
+          // Delete conversation completely so no "declined" trace remains
           const { error } = await supabase
             .from('ride_conversations')
-            .update({ status: 'declined' })
+            .delete()
             .eq('id', conv.id);
           if (error) throw error;
           // Re-open the ride (unfulfill it) via secure RPC
@@ -340,10 +340,10 @@ const MyRides = () => {
           const conv = ride.originalData?.conversation;
           if (!conv) break;
           const rideId = conv.ride_id;
-          // Update conversation
+          // Delete conversation completely so no "declined" trace remains
           const { error } = await supabase
             .from('ride_conversations')
-            .update({ status: 'declined' })
+            .delete()
             .eq('id', conv.id);
           if (error) throw error;
           // Re-open the request via secure RPC

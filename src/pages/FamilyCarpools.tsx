@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus } from "lucide-react";
+import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
@@ -37,6 +38,17 @@ const FamilyCarpools = () => {
     pickup_longitude: number | null;
     pickup_location: string;
   } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    setRefreshKey((prev) => prev + 1);
+    // Brief delay so loading state is visible
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success("Rides updated", { duration: 2000 });
+    }, 800);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -120,8 +132,17 @@ const FamilyCarpools = () => {
               </p>
             </div>
             
-            {/* View Toggle */}
+            {/* View Toggle & Refresh */}
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
