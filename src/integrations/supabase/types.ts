@@ -1249,6 +1249,14 @@ export type Database = {
         Args: { user_user_id: string }
         Returns: number
       }
+      get_student_series_child_selections: {
+        Args: { student_user_id: string }
+        Returns: {
+          child_id: string
+          parent_id: string
+          space_id: string
+        }[]
+      }
       get_student_series_rides: {
         Args: { student_user_id: string }
         Returns: {
