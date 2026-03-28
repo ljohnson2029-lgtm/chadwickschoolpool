@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { ContactCardModal } from "@/components/ContactCardModal";
 import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
