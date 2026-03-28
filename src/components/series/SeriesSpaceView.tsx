@@ -343,11 +343,16 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Needing a Ride in This Series:</p>
                 <p className="text-[10px] text-muted-foreground italic mb-1">These are the children from this parent's profile who will be included in this recurring carpool series</p>
-                {otherParentChildren.map((child, i) => (
-                  <p key={i} className="text-xs text-muted-foreground pl-2">
-                    {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
-                  </p>
-                ))}
+                {otherParentChildren
+                  .filter((child) => otherParentSelectedChildIds.includes(child.id))
+                  .map((child, i) => (
+                    <p key={i} className="text-xs text-muted-foreground pl-2">
+                      {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                    </p>
+                  ))}
+                {otherParentSelectedChildIds.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic pl-2">No children selected yet</p>
+                )}
               </div>
             )}
 
