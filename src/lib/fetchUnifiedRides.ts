@@ -381,12 +381,10 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   // ── 4. Series recurring ride occurrences ──
   if (seriesSpaces && seriesSpaces.length > 0) {
     const spaceIds = seriesSpaces.map(s => s.id);
-    const [{ data: schedules }, { data: cancellations }] = await Promise.all([
+    const [{ data: schedules }, { data: childSelections }, { data: allDriverVehicles }] = await Promise.all([
       supabase.from('recurring_schedules').select('*').in('space_id', spaceIds).eq('status', 'accepted'),
-      supabase.from('schedule_cancellations').select('*').in('schedule_id', 
-        // We'll filter after
-        spaceIds // placeholder, will re-filter
-      ),
+      supabase.from('series_child_selections').select('space_id, parent_id, child_id').in('space_id', spaceIds),
+      supabase.from('vehicles').select('user_id, car_make, car_model, car_color, license_plate, is_primary').in('user_id', [userId, ...Array.from(otherUserIds)]),
     ]);
 
     // Fetch actual cancellations for found schedules
@@ -401,6 +399,25 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       actualCancellations.map((c: any) => `${c.schedule_id}-${c.cancelled_date}-${c.cancelled_day}`)
     );
 
+    // Build selection map: spaceId -> parentId -> childIds[]
+    const selectionMap: Record<string, Record<string, string[]>> = {};
+    if (childSelections) {
+      for (const sel of childSelections) {
+        if (!selectionMap[sel.space_id]) selectionMap[sel.space_id] = {};
+        if (!selectionMap[sel.space_id][sel.parent_id]) selectionMap[sel.space_id][sel.parent_id] = [];
+        selectionMap[sel.space_id][sel.parent_id].push(sel.child_id);
+      }
+    }
+
+    // Build vehicles map: userId -> vehicle[]
+    const vehiclesMap: Record<string, any[]> = {};
+    if (allDriverVehicles) {
+      for (const v of allDriverVehicles) {
+        if (!vehiclesMap[v.user_id]) vehiclesMap[v.user_id] = [];
+        vehiclesMap[v.user_id].push(v);
+      }
+    }
+
     if (schedules) {
       for (const schedule of schedules) {
         const space = seriesSpaces.find(s => s.id === schedule.space_id);
@@ -414,16 +431,14 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         // Generate occurrences for next 4 weeks
         const occurrences = getNextOccurrences(days, 4);
 
-        // Get children names
-        const proposerKids = filterChildrenBySelection(
-          schedule.proposer_id === userId ? myChildren : (allChildren[otherId] || []),
-          schedule.proposer_children as string[] | null
-        );
-        const recipientKids = filterChildrenBySelection(
-          schedule.recipient_id === userId ? myChildren : (allChildren[otherId] || []),
-          schedule.recipient_children as string[] | null
-        );
-        const allKids = [...proposerKids, ...recipientKids].filter(
+        // Get children from series_child_selections instead of schedule snapshot
+        const spaceSelections = selectionMap[schedule.space_id] || {};
+        const mySelectedChildIds = spaceSelections[userId] || [];
+        const otherSelectedChildIds = spaceSelections[otherId] || [];
+
+        const mySeriesKids = filterChildrenBySelection(myChildren, mySelectedChildIds.length > 0 ? mySelectedChildIds : null);
+        const otherSeriesKids = filterChildrenBySelection(allChildren[otherId] || [], otherSelectedChildIds.length > 0 ? otherSelectedChildIds : null);
+        const allKids = [...mySeriesKids, ...otherSeriesKids].filter(
           (k, i, arr) => i === arr.findIndex(x => x.name === k.name)
         );
 
@@ -447,27 +462,14 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           }
           if (!pickupTime) pickupTime = '08:00';
 
-          // Get driver's address and vehicle
+          // Get driver's address
           const driverProfile = driverId === userId ? { ...myProfile, id: userId } : otherProfile;
-          const driverVehicle = driverId === schedule.proposer_id
-            ? schedule.proposer_vehicle
-            : schedule.recipient_vehicle;
-
           const pickupAddress = driverProfile?.home_address || 'Home address';
 
-          // Fetch driver's primary vehicle from DB if vehicle snapshot is missing
-          let resolvedDriverVehicle = driverVehicle;
-          if (!resolvedDriverVehicle || (typeof resolvedDriverVehicle === 'object' && resolvedDriverVehicle !== null && !Array.isArray(resolvedDriverVehicle) && !(resolvedDriverVehicle as any).car_make)) {
-            const { data: driverVehicles } = await supabase
-              .from('vehicles')
-              .select('car_make, car_model, car_color, license_plate')
-              .eq('user_id', driverId)
-              .eq('is_primary', true)
-              .limit(1);
-            if (driverVehicles && driverVehicles.length > 0) {
-              resolvedDriverVehicle = driverVehicles[0];
-            }
-          }
+          // Get ALL driver vehicles for series rides
+          const driverAllVehicles = vehiclesMap[driverId] || [];
+          const primaryVehicle = driverAllVehicles.find((v: any) => v.is_primary) || driverAllVehicles[0];
+          const driverCarInfo = primaryVehicle ? extractCarInfo(primaryVehicle) : myProfileCarInfo;
 
           const otherParentInfo = otherProfile ? {
             id: otherProfile.id,
@@ -476,7 +478,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
             username: otherProfile.username,
             email: null,
             phone: otherProfile.phone_number || null,
-            children: [],
+            children: otherSeriesKids,
             carMake: otherProfile.car_make || null,
             carModel: otherProfile.car_model || null,
             carColor: otherProfile.car_color || null,
@@ -498,7 +500,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
             isDriver: isUserDriver,
             otherParent: otherParentInfo,
             myChildren: allKids,
-            myCarInfo: resolvedDriverVehicle ? extractCarInfo(resolvedDriverVehicle) : myProfileCarInfo,
+            myCarInfo: driverCarInfo,
             originalData: {
               _seriesRide: true,
               scheduleId: schedule.id,
@@ -507,6 +509,13 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
               date: occ.date,
               driverId,
               otherParentId: otherId,
+              driverVehicles: driverAllVehicles.map((v: any) => ({
+                car_make: v.car_make,
+                car_model: v.car_model,
+                car_color: v.car_color,
+                license_plate: v.license_plate,
+                is_primary: v.is_primary,
+              })),
             },
           });
         }
