@@ -477,7 +477,10 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                 )}
               </div>
               {(() => {
-                const carInfo = (ride as any)._studentView ? ride.myCarInfo : (ride.isDriver ? ride.myCarInfo : ride.otherParent);
+                // For series rides, myCarInfo always holds the driver's vehicle regardless of perspective
+                const carInfo = isSeriesRide
+                  ? ride.myCarInfo
+                  : (ride as any)._studentView ? ride.myCarInfo : (ride.isDriver ? ride.myCarInfo : ride.otherParent);
                 const hasVehicle = carInfo && (carInfo.carMake || carInfo.carModel || carInfo.carColor);
                 if (!hasVehicle) return null;
                 const vehicleParts = [carInfo.carColor, carInfo.carMake, carInfo.carModel].filter(Boolean).join(' ');

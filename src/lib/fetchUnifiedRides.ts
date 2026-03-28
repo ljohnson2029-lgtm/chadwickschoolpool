@@ -455,6 +455,20 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
           const pickupAddress = driverProfile?.home_address || 'Home address';
 
+          // Fetch driver's primary vehicle from DB if vehicle snapshot is missing
+          let resolvedDriverVehicle = driverVehicle;
+          if (!resolvedDriverVehicle || (typeof resolvedDriverVehicle === 'object' && resolvedDriverVehicle !== null && !Array.isArray(resolvedDriverVehicle) && !(resolvedDriverVehicle as any).car_make)) {
+            const { data: driverVehicles } = await supabase
+              .from('vehicles')
+              .select('car_make, car_model, car_color, license_plate')
+              .eq('user_id', driverId)
+              .eq('is_primary', true)
+              .limit(1);
+            if (driverVehicles && driverVehicles.length > 0) {
+              resolvedDriverVehicle = driverVehicles[0];
+            }
+          }
+
           const otherParentInfo = otherProfile ? {
             id: otherProfile.id,
             firstName: otherProfile.first_name,
@@ -463,10 +477,10 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
             email: null,
             phone: otherProfile.phone_number || null,
             children: [],
-            carMake: null,
-            carModel: null,
-            carColor: null,
-            licensePlate: null,
+            carMake: otherProfile.car_make || null,
+            carModel: otherProfile.car_model || null,
+            carColor: otherProfile.car_color || null,
+            licensePlate: otherProfile.license_plate || null,
           } as ParticipantInfo : null;
 
           allRides.push({
@@ -484,7 +498,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
             isDriver: isUserDriver,
             otherParent: otherParentInfo,
             myChildren: allKids,
-            myCarInfo: driverVehicle ? extractCarInfo(driverVehicle) : undefined,
+            myCarInfo: resolvedDriverVehicle ? extractCarInfo(resolvedDriverVehicle) : myProfileCarInfo,
             originalData: {
               _seriesRide: true,
               scheduleId: schedule.id,
