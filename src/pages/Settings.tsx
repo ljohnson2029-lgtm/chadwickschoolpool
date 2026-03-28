@@ -4,11 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import TestDataGenerator from "@/components/TestDataGenerator";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
-import VerifiedBadge from "@/components/VerifiedBadge";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 
 const Settings = () => {
   const { user } = useAuth();
