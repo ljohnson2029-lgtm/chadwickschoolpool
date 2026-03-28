@@ -212,7 +212,13 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         {/* Chat Section */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => setContactOpen(true)}>
+                <Contact className="h-3.5 w-3.5" />
+                View Contact Info
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div ref={scrollRef} className="h-64 overflow-y-auto space-y-2 mb-3 border rounded-lg p-3 bg-muted/30">
