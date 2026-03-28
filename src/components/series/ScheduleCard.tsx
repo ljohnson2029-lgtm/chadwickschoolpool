@@ -167,10 +167,6 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
   );
 
   const handleAccept = async () => {
-    if (acceptChildren.length === 0) {
-      toast.error("Select at least one child");
-      return;
-    }
     if (recipientDrivesRegular && !acceptRegularTime) {
       toast.error("Please set your pickup time for regular days");
       return;
@@ -202,7 +198,7 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
       .from("recurring_schedules")
       .update({
         status: "accepted",
-        recipient_children: acceptChildren,
+        recipient_children: [],
         recipient_regular_time: recipientDrivesRegular ? acceptRegularTime : null,
         recipient_wednesday_time: recipientDrivesWed ? acceptWedTime : null,
         recipient_vehicle: recipientVehicle,
@@ -441,11 +437,9 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
                   </p>
                 </div>
               )}
-              <ChildrenRidingSelector
-                selectedChildIds={acceptChildren}
-                onSelectionChange={setAcceptChildren}
-                error={acceptChildren.length === 0 ? "Select at least one child" : null}
-              />
+              <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
+                Children are managed in the "Children in This Series" section in the Series space — no need to select them here.
+              </p>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAccept} disabled={accepting}>
                   {accepting && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
