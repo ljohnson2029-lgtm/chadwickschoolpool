@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
+import { fetchUnifiedRides, isRidePast } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -162,7 +162,7 @@ const MyRides = () => {
         source: 'posted' as const,
         rideType: r.type as 'request' | 'offer',
         status,
-        rideStatus: r.ride_date < today ? 'completed' : 'active',
+        rideStatus: isRidePast(r.ride_date, r.ride_time) ? 'completed' : 'active',
         pickupLocation: r.pickup_location,
         dropoffLocation: r.dropoff_location,
         rideDate: r.ride_date,
@@ -437,8 +437,8 @@ const MyRides = () => {
     });
 
     return {
-      active: rides.filter(r => r.rideStatus === 'active' && r.rideDate >= today),
-      past: rides.filter(r => r.rideStatus !== 'active' || r.rideDate < today).reverse(),
+      active: rides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime)),
+      past: rides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime)).reverse(),
       hasLinked: true,
     };
   }, [user, profile]);
