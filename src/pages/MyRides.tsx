@@ -343,6 +343,17 @@ const MyRides = () => {
             const parentBChildIds = spaceSelections[parentBId] || [];
             const parentAHasSubmitted = parentAChildIds.length > 0;
             const parentBHasSubmitted = parentBChildIds.length > 0;
+            
+            // Log once per schedule for debugging
+            if (w === 0 && days.indexOf(day) === 0) {
+              console.log(`[Student Series] Schedule ${schedId} space ${sched.space_id}:`, {
+                parentAId, parentBId,
+                parentAChildIds, parentBChildIds,
+                parentAChildren: seriesChildrenByParent[parentAId],
+                parentBChildren: seriesChildrenByParent[parentBId],
+              });
+            }
+
             const parentAKids = parentAHasSubmitted
               ? (seriesChildrenByParent[parentAId] || []).filter(c => parentAChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
               : [];
