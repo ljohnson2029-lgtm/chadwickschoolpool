@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap, Pencil, X } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap, Pencil, X, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ContactCardModal } from "@/components/ContactCardModal";
 import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
@@ -311,11 +312,23 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">Series with {otherParentName}</h1>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={refreshingSeries}
+          onClick={handleRefreshSeries}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshingSeries ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
-        <h1 className="text-xl font-bold text-foreground">Series with {otherParentName}</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

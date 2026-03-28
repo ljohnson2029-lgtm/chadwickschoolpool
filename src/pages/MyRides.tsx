@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { Car, History, Info, LinkIcon } from "lucide-react";
+import { Car, History, Info, LinkIcon, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
@@ -15,6 +15,7 @@ import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { addDays, addWeeks, startOfToday } from "date-fns";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
@@ -42,10 +43,19 @@ const MyRides = () => {
     gcTime: 5 * 60 * 1000, // keep in cache 5 minutes
   });
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const invalidateRides = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['my-rides'] });
     queryClient.invalidateQueries({ queryKey: ['student-rides'] });
   }, [queryClient]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: isStudent ? ['student-rides'] : ['my-rides'] });
+    setRefreshing(false);
+    toast.success('Rides updated', { duration: 2000 });
+  }, [queryClient, isStudent]);
 
   // Student rides fetcher for React Query
   const fetchStudentRides = useCallback(async (): Promise<{ active: UnifiedRide[]; past: UnifiedRide[]; hasLinked: boolean }> => {
