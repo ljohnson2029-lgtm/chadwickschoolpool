@@ -259,11 +259,12 @@ const MyRides = () => {
         }
       }
 
-      // Fetch children for series parents directly from children table (need IDs for selection matching)
+      // Fetch children for series parents — use edge function (has service role, bypasses RLS) with IDs
       const seriesChildrenByParent: Record<string, { id: string; name: string; grade: string }[]> = {};
       await Promise.all(seriesParentIdArr.map(async (pid) => {
         try {
-          const { data: cData } = await supabase
+          // First try direct children table (works if RLS allows)
+          const { data: cData, error: cErr } = await supabase
             .from('children')
             .select('id, first_name, last_name, grade_level')
             .eq('user_id', pid);
@@ -273,9 +274,26 @@ const MyRides = () => {
               name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
               grade: c.grade_level || 'N/A',
             }));
+            console.log(`[Student Series] Children for ${pid} from DB:`, seriesChildrenByParent[pid]);
+          } else {
+            // Fallback to edge function (service role bypass)
+            const prof = profileMap[pid];
+            if (prof?.linked_students) {
+              seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
+                id: s.id || '',
+                name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+                grade: s.grade_level || 'N/A',
+              }));
+              console.log(`[Student Series] Children for ${pid} from edge fn:`, seriesChildrenByParent[pid]);
+            }
           }
-        } catch {}
+        } catch (err) {
+          console.warn(`[Student Series] Failed to fetch children for ${pid}:`, err);
+        }
       }));
+      
+      console.log('[Student Series] selMap:', JSON.stringify(selMap));
+      console.log('[Student Series] seriesChildrenByParent keys:', Object.keys(seriesChildrenByParent));
 
       // Generate series ride occurrences
       for (const [schedId, sched] of scheduleMap) {
@@ -325,6 +343,17 @@ const MyRides = () => {
             const parentBChildIds = spaceSelections[parentBId] || [];
             const parentAHasSubmitted = parentAChildIds.length > 0;
             const parentBHasSubmitted = parentBChildIds.length > 0;
+            
+            // Log once per schedule for debugging
+            if (w === 0 && days.indexOf(day) === 0) {
+              console.log(`[Student Series] Schedule ${schedId} space ${sched.space_id}:`, {
+                parentAId, parentBId,
+                parentAChildIds, parentBChildIds,
+                parentAChildren: seriesChildrenByParent[parentAId],
+                parentBChildren: seriesChildrenByParent[parentBId],
+              });
+            }
+
             const parentAKids = parentAHasSubmitted
               ? (seriesChildrenByParent[parentAId] || []).filter(c => parentAChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
               : [];

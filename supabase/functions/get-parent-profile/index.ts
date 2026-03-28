@@ -70,10 +70,11 @@ serve(async (req) => {
     // Fetch children from the children table (parent's profile children)
     const { data: childrenData } = await supabase
       .from("children")
-      .select("first_name, last_name, grade_level")
+      .select("id, first_name, last_name, grade_level")
       .eq("user_id", parentId);
 
     const linkedStudents = (childrenData || []).map(c => ({
+      id: c.id,
       first_name: c.first_name || "Unknown",
       last_name: c.last_name || "",
       grade_level: c.grade_level,
