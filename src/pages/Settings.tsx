@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import TestDataGenerator from "@/components/TestDataGenerator";
-import PrivacySettings from "@/components/PrivacySettings";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
-import VerifiedBadge from "@/components/VerifiedBadge";
 
 const Settings = () => {
   const { user } = useAuth();
@@ -29,26 +27,9 @@ const Settings = () => {
         <Breadcrumbs items={[{ label: "Settings" }]} />
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Settings</h1>
-          <VerifiedBadge />
         </div>
 
         <div className="space-y-6">
-          {/* Privacy Settings */}
-          <PrivacySettings />
-
-          {/* Account Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-              <CardDescription>
-                Manage your account preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">More settings coming soon...</p>
-            </CardContent>
-          </Card>
-
           {/* Feedback */}
           <Card>
             <CardHeader>
