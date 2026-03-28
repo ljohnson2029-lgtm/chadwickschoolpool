@@ -96,63 +96,93 @@ const Dashboard = () => {
     fetchRides();
   }, [user, shouldUseStudentDashboard]);
 
-  // Fetch recurring rides for schedule
+  // Fetch recurring schedules for dashboard calendar
   useEffect(() => {
     if (!user || shouldUseStudentDashboard) return;
     const fetchRecurring = async () => {
       const DAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-      
-      // Get all accepted recurring rides for this user
+
+      // Get accepted recurring schedules
       const { data: spaces } = await supabase
         .from("series_spaces")
-        .select("id")
+        .select("id, parent_a_id, parent_b_id")
         .or(`parent_a_id.eq.${user.id},parent_b_id.eq.${user.id}`);
-      
+
       if (!spaces || spaces.length === 0) return;
-      
+
       const spaceIds = spaces.map(s => s.id);
-      const { data: rides } = await supabase
-        .from("recurring_rides")
+      const { data: schedules } = await supabase
+        .from("recurring_schedules")
         .select("*")
         .in("space_id", spaceIds)
         .eq("status", "accepted");
-      
-      if (!rides || rides.length === 0) return;
+
+      if (!schedules || schedules.length === 0) return;
 
       // Get cancellations
-      const rideIds = rides.map(r => r.id);
+      const scheduleIds = schedules.map((s: any) => s.id);
       const { data: cancellations } = await supabase
-        .from("recurring_ride_cancellations")
-        .select("recurring_ride_id, cancelled_date")
-        .in("recurring_ride_id", rideIds);
-      
-      const cancelledDates = new Set(
-        (cancellations || []).map(c => `${c.recurring_ride_id}-${c.cancelled_date}`)
+        .from("schedule_cancellations")
+        .select("schedule_id, cancelled_date, cancelled_day")
+        .in("schedule_id", scheduleIds);
+
+      const cancelledSet = new Set(
+        (cancellations || []).map(c => `${c.schedule_id}-${c.cancelled_date}`)
       );
+
+      // Get driver names
+      const driverIds = new Set<string>();
+      for (const sched of schedules) {
+        const assignments = (sched as any).day_assignments || [];
+        for (const a of assignments) {
+          driverIds.add(a.driver_id);
+        }
+      }
+      const { data: driverProfiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", Array.from(driverIds));
+      const driverNameMap: Record<string, string> = {};
+      for (const p of (driverProfiles || [])) {
+        driverNameMap[p.id] = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      }
 
       // Generate occurrences for next 4 weeks
       const today = new Date();
       const weekStart = startOfWeek(today, { weekStartsOn: 1 });
       const generated: FamilyRide[] = [];
 
-      for (const ride of rides) {
+      for (const sched of schedules) {
+        const assignments = ((sched as any).day_assignments || []) as { day: string; driver_id: string }[];
+
         for (let w = 0; w < 4; w++) {
-          for (const dayName of (ride.recurring_days as string[])) {
-            const dayIdx = DAY_INDEX[dayName];
+          for (const { day, driver_id } of assignments) {
+            const dayIdx = DAY_INDEX[day];
             if (dayIdx === undefined) continue;
-            const date = addDays(addDays(weekStart, w * 7), (dayIdx + 6) % 7); // Mon=0
+            const date = addDays(addDays(weekStart, w * 7), (dayIdx + 6) % 7);
             const dateStr = format(date, "yyyy-MM-dd");
-            if (date < today && !format(today, "yyyy-MM-dd").startsWith(dateStr)) continue;
-            
-            const isCancelled = cancelledDates.has(`${ride.id}-${dateStr}`);
-            
+            if (date < today && dateStr !== format(today, "yyyy-MM-dd")) continue;
+
+            const isCancelled = cancelledSet.has(`${(sched as any).id}-${dateStr}`);
+
+            // Pick the correct time
+            const isWed = day === "Wed";
+            let rideTime: string = "";
+            if (driver_id === (sched as any).proposer_id) {
+              rideTime = (isWed ? (sched as any).proposer_wednesday_time : (sched as any).proposer_regular_time) || "";
+            } else {
+              rideTime = (isWed ? (sched as any).recipient_wednesday_time : (sched as any).recipient_regular_time) || "";
+            }
+
+            const driverName = driverNameMap[driver_id] || "Driver";
+
             generated.push({
-              id: `recurring-${ride.id}-${dateStr}`,
-              type: ride.ride_type,
+              id: `schedule-${(sched as any).id}-${dateStr}-${day}`,
+              type: "offer",
               ride_date: dateStr,
-              ride_time: ride.ride_time,
-              pickup_location: ride.pickup_address,
-              dropoff_location: ride.dropoff_address,
+              ride_time: rideTime,
+              pickup_location: "Carpool pickup",
+              dropoff_location: "Chadwick School",
               pickup_latitude: null,
               pickup_longitude: null,
               dropoff_latitude: null,
@@ -160,10 +190,10 @@ const Dashboard = () => {
               seats_available: null,
               seats_needed: null,
               status: isCancelled ? "cancelled" : "active",
-              user_id: ride.creator_id,
+              user_id: driver_id,
               parent_id: user.id,
-              parent_name: profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : profile?.username || '',
-              parent_email: '',
+              parent_name: `${driverName} driving`,
+              parent_email: "",
               connected_parent_name: null,
             });
           }
