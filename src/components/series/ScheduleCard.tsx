@@ -234,7 +234,7 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
         body: {
           userId: schedule.proposer_id,
           type: "schedule_declined",
-          message: `❌ ${myName} has declined your proposed schedule. Coordinate in the chat to adjust.`,
+          message: `❌ ${myName} has declined your proposed carpool schedule. Head to your Series space to coordinate a new one.`,
         },
       });
     } catch {}
@@ -247,15 +247,15 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     setProcessing(true);
     await supabase.from("recurring_schedules").update({ status: "cancelled" }).eq("id", schedule.id);
     const otherId = isProposer ? schedule.recipient_id : schedule.proposer_id;
-    try {
-      await supabase.functions.invoke("create-notification", {
+      try {
+        await supabase.functions.invoke("create-notification", {
           body: {
             userId: otherId,
             type: "schedule_cancelled",
-            message: `🚫 Your carpool series with ${myName} has been cancelled`,
+            message: `🚫 Your carpool series with ${myName} has been cancelled. Please coordinate alternative rides.`,
           },
         });
-    } catch {}
+      } catch {}
     toast.info("Schedule cancelled");
     onUpdate();
     setProcessing(false);

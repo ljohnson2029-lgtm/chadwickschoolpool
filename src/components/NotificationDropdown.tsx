@@ -268,9 +268,16 @@ export const NotificationDropdown = () => {
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
       case 'series_message':
         return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      case 'schedule_proposal':
+        return <Repeat className="h-4 w-4 text-teal-500" />;
+      case 'schedule_accepted':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'schedule_declined':
+        return <XCircle className="h-4 w-4 text-destructive" />;
       case 'schedule_cancelled':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'schedule_cancel_one':
+      case 'schedule_leave_one':
         return <Clock className="h-4 w-4 text-amber-500" />;
       case 'series_ride':
         return <Car className="h-4 w-4 text-teal-500" />;
@@ -282,6 +289,7 @@ export const NotificationDropdown = () => {
   };
 
   const isRideNotification = (type: string) => {
+    if (type.startsWith('schedule_') || type.startsWith('series_')) return false;
     return type === 'ride_request' || type === 'ride_offer' || type.includes('ride');
   };
 
@@ -302,12 +310,15 @@ export const NotificationDropdown = () => {
     } else if (notification.type === 'ride_message') {
       setIsOpen(false);
       navigate('/my-rides');
-    } else if (notification.type === 'series_message' || notification.type === 'series_ride') {
+    } else if (notification.type === 'series_message' || notification.type === 'series_ride' || notification.type === 'schedule_proposal' || notification.type === 'schedule_accepted' || notification.type === 'schedule_declined') {
       setIsOpen(false);
       navigate('/series');
-    } else if (notification.type === 'schedule_cancelled' || notification.type === 'schedule_cancel_one') {
+    } else if (notification.type === 'schedule_cancelled') {
       setIsOpen(false);
       navigate('/family-carpools');
+    } else if (notification.type === 'schedule_cancel_one' || notification.type === 'schedule_leave_one') {
+      setIsOpen(false);
+      navigate('/my-rides');
     } else if (notification.type === 'ride_expiring') {
       setIsOpen(false);
       navigate('/my-rides');
@@ -441,7 +452,7 @@ export const NotificationDropdown = () => {
                     )}
 
                     {/* Action buttons for series notifications */}
-                    {(notification.type === 'series_message' || notification.type === 'series_ride') && (
+                    {(notification.type === 'series_message' || notification.type === 'series_ride' || notification.type === 'schedule_proposal' || notification.type === 'schedule_accepted' || notification.type === 'schedule_declined') && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -458,7 +469,7 @@ export const NotificationDropdown = () => {
                     )}
 
                     {/* Action buttons for schedule cancelled notifications */}
-                    {(notification.type === 'schedule_cancelled' || notification.type === 'schedule_cancel_one') && (
+                    {notification.type === 'schedule_cancelled' && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -471,6 +482,23 @@ export const NotificationDropdown = () => {
                       >
                         <Car className="h-3 w-3" />
                         View Family Carpools
+                      </Button>
+                    )}
+
+                    {/* Action buttons for individual ride cancel/leave */}
+                    {(notification.type === 'schedule_cancel_one' || notification.type === 'schedule_leave_one') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/my-rides');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <Car className="h-3 w-3" />
+                        View in My Rides
                       </Button>
                     )}
                     

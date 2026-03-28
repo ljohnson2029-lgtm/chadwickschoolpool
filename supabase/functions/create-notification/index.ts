@@ -90,7 +90,13 @@ serve(async (req) => {
       'direct_ride_cancelled',
       'ride_message',
       'series_message',
-      'series_ride'
+      'series_ride',
+      'schedule_proposal',
+      'schedule_accepted',
+      'schedule_declined',
+      'schedule_cancelled',
+      'schedule_cancel_one',
+      'schedule_leave_one'
     ];
     
     if (!allowedTypes.includes(type)) {
