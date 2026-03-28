@@ -458,13 +458,21 @@ const MyRides = () => {
     }
   }, [studentRideData]);
 
-  // Derive active/past rides from query data
-  const activeRides = isStudent
-    ? (studentRideData?.active || [])
-    : (parentRideData?.active || []);
-  const pastRides = isStudent
-    ? (studentRideData?.past || [])
-    : (parentRideData?.past || []);
+  // ── Real-time 1-minute tick to re-evaluate active/past split ──
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60_000); // every 60s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Derive active/past rides from query data, re-evaluated every tick
+  const allParentRides = parentRideData ? [...parentRideData.active, ...parentRideData.past] : [];
+  const allStudentRides = studentRideData ? [...studentRideData.active, ...studentRideData.past] : [];
+  const allRides = isStudent ? allStudentRides : allParentRides;
+
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
+  const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
+    .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}`).getTime() - new Date(`${a.rideDate}T${a.rideTime}`).getTime());
   const loadingData = isStudent ? loadingStudentRides : loadingParentRides;
 
   const getMyName = () => {
