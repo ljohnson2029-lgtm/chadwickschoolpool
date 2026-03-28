@@ -147,7 +147,9 @@ const getParentName = (p: ParticipantInfo | null) => {
   if (!p) return 'Unknown';
   if (p.firstName && p.lastName) return `${p.firstName} ${p.lastName}`;
   if (p.firstName) return p.firstName;
-  return p.username;
+  if (p.username) return p.username;
+  if (p.email) return p.email;
+  return 'Unknown';
 };
 
 const formatGrade = (grade: string) => {
