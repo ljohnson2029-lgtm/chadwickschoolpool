@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { MapPin, Clock, Car, Users, Loader2, Calendar as CalendarIcon, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInHours, startOfToday } from "date-fns";
-import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
@@ -76,7 +76,7 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
 
   // Acceptance state
   const [showAcceptForm, setShowAcceptForm] = useState(false);
-  const [acceptChildren, setAcceptChildren] = useState<string[]>([]);
+  
   const [acceptRegularTime, setAcceptRegularTime] = useState(schedule.recipient_regular_time || "");
   const [acceptWedTime, setAcceptWedTime] = useState(schedule.recipient_wednesday_time || "");
   const [accepting, setAccepting] = useState(false);
