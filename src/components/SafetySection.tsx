@@ -37,9 +37,7 @@ const SafetySection = () => {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 {[
-                  "Verify all passengers have proper car seats/boosters appropriate for their age and size",
                   "Ensure all passengers wear seatbelts at all times",
-                  "Check weather and road conditions before departing",
                   "Confirm pickup/dropoff times with all parents involved",
                   "Verify you have current contact information for all passengers' parents",
                   "Ensure your vehicle is in safe operating condition"
@@ -107,11 +105,8 @@ const SafetySection = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 {[
                   "Keep emergency contact information for all passengers readily accessible",
-                  "Have a first aid kit in your vehicle at all times",
-                  "Know the route to the nearest hospital from your carpool route",
                   "Immediately notify all parents of any issues, delays, or incidents",
-                  "In case of emergency, call 911 first, then notify parents",
-                  "Keep a list of any allergies or medical conditions for each child"
+                  "In case of emergency, call 911 first, then notify parents"
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                     <Heart className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -144,8 +139,7 @@ const SafetySection = () => {
                   { text: "Current vehicle registration", required: true },
                   { text: "Active auto insurance policy", required: true },
                   { text: "Vehicle in safe operating condition", required: true },
-                  { text: "Appropriate car seats/boosters for passenger ages", required: true },
-                  { text: "Background check (recommended)", required: false }
+                  { text: "Appropriate car seats/boosters for passenger ages", required: true }
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                     <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
