@@ -86,20 +86,22 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        const [{ data: otherProfile }, { data: otherChildrenData }, { data: myChildrenData }, { data: selections }] = await Promise.all([
+        const [{ data: otherProfile }, { data: otherChildrenData }, { data: myChildrenData }, { data: mySelections }, { data: otherSelections }] = await Promise.all([
           supabase.from("profiles").select("home_address, phone_number").eq("id", otherId).single(),
           supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", otherId),
           supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", user.id),
           supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", user.id),
+          supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", otherId),
         ]);
         setOtherParentAddress(otherProfile?.home_address || null);
         setOtherParentPhone(otherProfile?.phone_number || null);
         setOtherParentChildren(otherChildrenData || []);
         setMyChildren(myChildrenData || []);
+        setOtherParentSelectedChildIds((otherSelections || []).map((s: any) => s.child_id));
 
         // If saved selections exist, use them; otherwise default to all children selected
-        if (selections && selections.length > 0) {
-          setSelectedChildIds(selections.map((s: any) => s.child_id));
+        if (mySelections && mySelections.length > 0) {
+          setSelectedChildIds(mySelections.map((s: any) => s.child_id));
         } else if (myChildrenData && myChildrenData.length > 0) {
           // Auto-select all and persist
           const allIds = myChildrenData.map((c: any) => c.id);
