@@ -394,7 +394,7 @@ const MyRides = () => {
           await sendNotification(
             otherId,
             'schedule_cancel_one',
-            `📅 ${getMyName()} has cancelled the ${dayName} ride on ${formattedDate}. The rest of your series continues as scheduled.`
+            `📅 ${getMyName()} has cancelled the ${dayName} ride on ${formattedDate}. The rest of your carpool series continues as scheduled.`
           );
           
           toast.success(`Cancelled ride on ${formattedDate}`);
@@ -425,8 +425,8 @@ const MyRides = () => {
           const formattedDate = format(dateObj, 'MMMM d, yyyy');
           await sendNotification(
             otherId,
-            'schedule_cancel_one',
-            `📅 ${getMyName()} has left the ${dayName} ride on ${formattedDate}. The rest of your series continues as scheduled.`
+            'schedule_leave_one',
+            `📅 ${getMyName()} has left the ${dayName} ride on ${formattedDate}. The rest of your carpool series continues as scheduled.`
           );
           
           toast.success(`Left ride on ${formattedDate}`);
