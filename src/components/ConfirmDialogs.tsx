@@ -732,18 +732,25 @@ export const InstantOfferRideDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Car className="w-5 h-5 text-primary" />
-            Children Riding on This Trip
+            Fulfill Ride Request
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-4">
               <p>
                 Fulfill <strong>{requesterName}</strong>'s ride request on <strong>{formatDisplayDate(rideDate)}</strong> at <strong>{formatDisplayTime(rideTime)}</strong>?
               </p>
+              {maxSeats != null && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3">
+                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-amber-700 dark:text-amber-300 text-sm">
+                    Please make sure you have enough room for {maxSeats} seat{maxSeats !== 1 ? 's' : ''} needed for this ride request
+                  </p>
+                </div>
+              )}
               <ChildrenRidingSelector
                 selectedChildIds={selectedChildIds}
                 onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
                 error={childError}
-                maxSeats={maxSeats}
               />
               <p className="text-sm text-muted-foreground">
                 You'll be connected immediately and can coordinate pickup details.
@@ -753,7 +760,7 @@ export const InstantOfferRideDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={loading || (maxSeats != null && selectedChildIds.length > maxSeats)}>
+          <AlertDialogAction onClick={handleConfirm} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
