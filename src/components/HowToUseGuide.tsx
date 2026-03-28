@@ -160,14 +160,6 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
               A quick guide to get you started
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={() => setIsOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Page content */}
@@ -240,25 +232,15 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
             ))}
           </div>
 
-          {isLastPage ? (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-8 text-xs"
-              onClick={() => setIsOpen(false)}
-            >
-              Got it!
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
-              onClick={goNext}
-            >
-              Next
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs"
+            onClick={goNext}
+            disabled={isLastPage}
+          >
+            Next
+          </Button>
         </div>
       </CardContent>
     </Card>
