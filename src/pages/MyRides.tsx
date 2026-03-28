@@ -334,14 +334,29 @@ const MyRides = () => {
             // Build children list from series_child_selections
             const parentAChildIds = spaceSelections[parentAId] || [];
             const parentBChildIds = spaceSelections[parentBId] || [];
-            const parentAKids = parentAChildIds.length > 0
+            const parentAHasSubmitted = parentAChildIds.length > 0;
+            const parentBHasSubmitted = parentBChildIds.length > 0;
+            const parentAKids = parentAHasSubmitted
               ? (seriesChildrenByParent[parentAId] || []).filter(c => parentAChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
               : [];
-            const parentBKids = parentBChildIds.length > 0
+            const parentBKids = parentBHasSubmitted
               ? (seriesChildrenByParent[parentBId] || []).filter(c => parentBChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
               : [];
-            const allSeriesKids = [...parentAKids, ...parentBKids];
-            const finalKids = allSeriesKids.length > 0 ? allSeriesKids : [{ name: studentDisplayName, grade: studentGrade }];
+            const allSeriesKids = [...parentAKids, ...parentBKids].filter(
+              (k, i, arr) => i === arr.findIndex(x => x.name === k.name)
+            );
+
+            // Build pending message matching parent format
+            const parentAName = profileMap[parentAId] ? [profileMap[parentAId].first_name, profileMap[parentAId].last_name].filter(Boolean).join(' ') : 'Parent';
+            const parentBName = profileMap[parentBId] ? [profileMap[parentBId].first_name, profileMap[parentBId].last_name].filter(Boolean).join(' ') : 'Parent';
+            let pendingChildrenMessage: string | null = null;
+            if (!parentAHasSubmitted && !parentBHasSubmitted) {
+              pendingChildrenMessage = `Pending — awaiting children confirmation from both parents`;
+            } else if (!parentAHasSubmitted) {
+              pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentAName}`;
+            } else if (!parentBHasSubmitted) {
+              pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentBName}`;
+            }
 
             // Driver info
             const driverProfile = profileMap[driverId];
@@ -382,7 +397,7 @@ const MyRides = () => {
                 carColor: null,
                 licensePlate: null,
               } : null,
-              myChildren: finalKids,
+              myChildren: allSeriesKids,
               myCarInfo: primaryVehicle ? {
                 carMake: primaryVehicle.car_make,
                 carModel: primaryVehicle.car_model,
@@ -404,6 +419,7 @@ const MyRides = () => {
                   license_plate: v.license_plate,
                   is_primary: v.is_primary,
                 })),
+                pendingChildrenMessage,
               },
               _studentView: true,
               _driverName: driverName,
