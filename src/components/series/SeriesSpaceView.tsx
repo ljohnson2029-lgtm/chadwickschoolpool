@@ -78,6 +78,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
+  const [refreshingSeries, setRefreshingSeries] = useState(false);
 
   // Fetch space info, other parent data, and own children
   useEffect(() => {
@@ -208,6 +209,26 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   }, [spaceId]);
 
   useEffect(() => { fetchMessages(); fetchSchedules(); }, [fetchMessages, fetchSchedules]);
+
+  const handleRefreshSeries = useCallback(async () => {
+    setRefreshingSeries(true);
+    await Promise.all([fetchMessages(), fetchSchedules()]);
+    // Re-fetch children selections
+    if (otherParentId) {
+      const [{ data: mySelections }, { data: otherSelections }] = await Promise.all([
+        supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", user!.id),
+        supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", otherParentId),
+      ]);
+      const myHas = mySelections && mySelections.length > 0;
+      setMySubmitted(!!myHas);
+      if (myHas) setSelectedChildIds(mySelections.map((s: any) => s.child_id));
+      const otherHas = otherSelections && otherSelections.length > 0;
+      setOtherParentSubmitted(!!otherHas);
+      setOtherParentSelectedChildIds(otherHas ? otherSelections.map((s: any) => s.child_id) : []);
+    }
+    setRefreshingSeries(false);
+    toast.success('Series updated', { duration: 2000 });
+  }, [fetchMessages, fetchSchedules, otherParentId, spaceId, user]);
 
   // Mark messages as read
   useEffect(() => {
