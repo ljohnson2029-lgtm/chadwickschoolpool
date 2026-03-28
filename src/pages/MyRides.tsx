@@ -223,12 +223,16 @@ const MyRides = () => {
         seriesParentIds.add(s.parent_b_id);
       }
 
-      // Fetch profiles, vehicles, child selections for series parents
+      // Fetch profiles, vehicles, and confirmed child selections for series parents
       const seriesParentIdArr = [...seriesParentIds];
-      const [{ data: seriesProfiles }, { data: seriesVehicles }, { data: seriesChildSels }] = await Promise.all([
-        supabase.functions.invoke('get-parent-profile', { body: { parentId: seriesParentIdArr[0] } }).then(r => ({ data: [r.data?.profile] })),
-        supabase.from('vehicles' as any).select('user_id, car_make, car_model, car_color, license_plate, is_primary').in('user_id', seriesParentIdArr).then(r => r),
-        supabase.from('series_child_selections' as any).select('space_id, parent_id, child_id').in('space_id', [...new Set(Array.from(scheduleMap.values()).map((s: any) => s.space_id))]).then(r => r),
+      const seriesSpaceIds = [...new Set(Array.from(scheduleMap.values()).map((s: any) => s.space_id))];
+      const [{ data: seriesVehicles }, { data: seriesChildSels }] = await Promise.all([
+        supabase
+          .from('vehicles' as any)
+          .select('user_id, car_make, car_model, car_color, license_plate, is_primary')
+          .in('user_id', seriesParentIdArr)
+          .then(r => r),
+        supabase.rpc('get_student_series_child_selections', { student_user_id: user.id }),
       ]);
 
       // Fetch all series parent profiles via edge function
@@ -249,7 +253,7 @@ const MyRides = () => {
         }
       }
 
-      // Build child selection map
+      // Build child selection map from the same confirmed source used for parent logic
       const selMap: Record<string, Record<string, string[]>> = {};
       if (seriesChildSels) {
         for (const sel of seriesChildSels as any[]) {
@@ -259,41 +263,18 @@ const MyRides = () => {
         }
       }
 
-      // Fetch children for series parents — use edge function (has service role, bypasses RLS) with IDs
+      // Build children map from parent profile edge function data (service-role backed)
       const seriesChildrenByParent: Record<string, { id: string; name: string; grade: string }[]> = {};
-      await Promise.all(seriesParentIdArr.map(async (pid) => {
-        try {
-          // First try direct children table (works if RLS allows)
-          const { data: cData, error: cErr } = await supabase
-            .from('children')
-            .select('id, first_name, last_name, grade_level')
-            .eq('user_id', pid);
-          if (cData && cData.length > 0) {
-            seriesChildrenByParent[pid] = cData.map(c => ({
-              id: c.id,
-              name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
-              grade: c.grade_level || 'N/A',
-            }));
-            console.log(`[Student Series] Children for ${pid} from DB:`, seriesChildrenByParent[pid]);
-          } else {
-            // Fallback to edge function (service role bypass)
-            const prof = profileMap[pid];
-            if (prof?.linked_students) {
-              seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
-                id: s.id || '',
-                name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
-                grade: s.grade_level || 'N/A',
-              }));
-              console.log(`[Student Series] Children for ${pid} from edge fn:`, seriesChildrenByParent[pid]);
-            }
-          }
-        } catch (err) {
-          console.warn(`[Student Series] Failed to fetch children for ${pid}:`, err);
+      for (const pid of seriesParentIdArr) {
+        const prof = profileMap[pid];
+        if (prof?.linked_students?.length) {
+          seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
+            id: s.id,
+            name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+            grade: s.grade_level || 'N/A',
+          }));
         }
-      }));
-      
-      console.log('[Student Series] selMap:', JSON.stringify(selMap));
-      console.log('[Student Series] seriesChildrenByParent keys:', Object.keys(seriesChildrenByParent));
+      }
 
       // Generate series ride occurrences
       for (const [schedId, sched] of scheduleMap) {
@@ -338,42 +319,37 @@ const MyRides = () => {
             const passengerProfile = profileMap[passengerId];
             const pickupAddress = passengerProfile?.home_address || 'Passenger home address';
 
-            // Build children list from series_child_selections
+            // Build children list from confirmed series child selections (mirror parent My Rides)
             const parentAChildIds = spaceSelections[parentAId] || [];
             const parentBChildIds = spaceSelections[parentBId] || [];
             const parentAHasSubmitted = parentAChildIds.length > 0;
             const parentBHasSubmitted = parentBChildIds.length > 0;
-            
-            // Log once per schedule for debugging
-            if (w === 0 && days.indexOf(day) === 0) {
-              console.log(`[Student Series] Schedule ${schedId} space ${sched.space_id}:`, {
-                parentAId, parentBId,
-                parentAChildIds, parentBChildIds,
-                parentAChildren: seriesChildrenByParent[parentAId],
-                parentBChildren: seriesChildrenByParent[parentBId],
-              });
-            }
 
             const parentAKids = parentAHasSubmitted
-              ? (seriesChildrenByParent[parentAId] || []).filter(c => parentAChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
+              ? (seriesChildrenByParent[parentAId] || [])
+                  .filter(c => parentAChildIds.includes(c.id))
+                  .map(c => ({ name: c.name, grade: c.grade }))
               : [];
             const parentBKids = parentBHasSubmitted
-              ? (seriesChildrenByParent[parentBId] || []).filter(c => parentBChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
+              ? (seriesChildrenByParent[parentBId] || [])
+                  .filter(c => parentBChildIds.includes(c.id))
+                  .map(c => ({ name: c.name, grade: c.grade }))
               : [];
             const allSeriesKids = [...parentAKids, ...parentBKids].filter(
-              (k, i, arr) => i === arr.findIndex(x => x.name === k.name)
+              (k, i, arr) => i === arr.findIndex(x => `${x.name}-${x.grade}` === `${k.name}-${k.grade}`)
             );
 
-            // Build pending message matching parent format
             const parentAName = profileMap[parentAId] ? [profileMap[parentAId].first_name, profileMap[parentAId].last_name].filter(Boolean).join(' ') : 'Parent';
             const parentBName = profileMap[parentBId] ? [profileMap[parentBId].first_name, profileMap[parentBId].last_name].filter(Boolean).join(' ') : 'Parent';
             let pendingChildrenMessage: string | null = null;
-            if (!parentAHasSubmitted && !parentBHasSubmitted) {
-              pendingChildrenMessage = `Pending — awaiting children confirmation from both parents`;
-            } else if (!parentAHasSubmitted) {
-              pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentAName}`;
-            } else if (!parentBHasSubmitted) {
-              pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentBName}`;
+            if (allSeriesKids.length === 0) {
+              if (!parentAHasSubmitted && !parentBHasSubmitted) {
+                pendingChildrenMessage = `Pending — awaiting children confirmation from both parents`;
+              } else if (!parentAHasSubmitted) {
+                pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentAName}`;
+              } else if (!parentBHasSubmitted) {
+                pendingChildrenMessage = `Pending — awaiting children confirmation from ${parentBName}`;
+              }
             }
 
             // Driver info
