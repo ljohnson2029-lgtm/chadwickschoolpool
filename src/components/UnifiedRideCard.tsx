@@ -109,6 +109,10 @@ interface UnifiedRideCardProps {
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  // Series recurring ride
+  if (ride.source === 'series') {
+    return { label: 'Recurring Series Ride', className: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800', icon: Repeat };
+  }
   if (ride.status === 'pending-direct-sent') {
     return { label: 'Pending - Awaiting Response', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
   }
