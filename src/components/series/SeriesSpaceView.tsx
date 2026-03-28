@@ -66,6 +66,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
   const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
   const [otherParentChildren, setOtherParentChildren] = useState<ChildInfo[]>([]);
+  const [otherParentSelectedChildIds, setOtherParentSelectedChildIds] = useState<string[]>([]);
   const [myChildren, setMyChildren] = useState<ChildInfo[]>([]);
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [contactOpen, setContactOpen] = useState(false);
@@ -85,20 +86,22 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        const [{ data: otherProfile }, { data: otherChildrenData }, { data: myChildrenData }, { data: selections }] = await Promise.all([
+        const [{ data: otherProfile }, { data: otherChildrenData }, { data: myChildrenData }, { data: mySelections }, { data: otherSelections }] = await Promise.all([
           supabase.from("profiles").select("home_address, phone_number").eq("id", otherId).single(),
           supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", otherId),
           supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", user.id),
           supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", user.id),
+          supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", otherId),
         ]);
         setOtherParentAddress(otherProfile?.home_address || null);
         setOtherParentPhone(otherProfile?.phone_number || null);
         setOtherParentChildren(otherChildrenData || []);
         setMyChildren(myChildrenData || []);
+        setOtherParentSelectedChildIds((otherSelections || []).map((s: any) => s.child_id));
 
         // If saved selections exist, use them; otherwise default to all children selected
-        if (selections && selections.length > 0) {
-          setSelectedChildIds(selections.map((s: any) => s.child_id));
+        if (mySelections && mySelections.length > 0) {
+          setSelectedChildIds(mySelections.map((s: any) => s.child_id));
         } else if (myChildrenData && myChildrenData.length > 0) {
           // Auto-select all and persist
           const allIds = myChildrenData.map((c: any) => c.id);
@@ -199,6 +202,29 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [spaceId]);
+
+  // Realtime for child selections — sync between parents
+  useEffect(() => {
+    if (!otherParentId) return;
+    const channel = supabase
+      .channel(`series-children-${spaceId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "series_child_selections",
+        filter: `space_id=eq.${spaceId}`,
+      }, async () => {
+        // Refetch the other parent's selections
+        const { data } = await supabase
+          .from("series_child_selections")
+          .select("child_id")
+          .eq("space_id", spaceId)
+          .eq("parent_id", otherParentId);
+        if (data) setOtherParentSelectedChildIds(data.map((s: any) => s.child_id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [spaceId, otherParentId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -317,11 +343,16 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Needing a Ride in This Series:</p>
                 <p className="text-[10px] text-muted-foreground italic mb-1">These are the children from this parent's profile who will be included in this recurring carpool series</p>
-                {otherParentChildren.map((child, i) => (
-                  <p key={i} className="text-xs text-muted-foreground pl-2">
-                    {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
-                  </p>
-                ))}
+                {otherParentChildren
+                  .filter((child) => otherParentSelectedChildIds.includes(child.id))
+                  .map((child, i) => (
+                    <p key={i} className="text-xs text-muted-foreground pl-2">
+                      {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                    </p>
+                  ))}
+                {otherParentSelectedChildIds.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground italic pl-2">No children selected yet</p>
+                )}
               </div>
             )}
 
