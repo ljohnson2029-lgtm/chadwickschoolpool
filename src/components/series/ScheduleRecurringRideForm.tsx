@@ -156,7 +156,7 @@ const ScheduleRecurringRideForm = ({
       proposer_vehicle: vehicleInfo,
     };
 
-    const { error } = await supabase.from("recurring_schedules").insert(insertData);
+    const { error } = await supabase.from("recurring_schedules").insert(insertData as any);
 
     if (error) {
       toast.error("Failed to propose schedule");
