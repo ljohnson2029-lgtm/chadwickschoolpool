@@ -451,7 +451,7 @@ export const NotificationDropdown = () => {
                     )}
 
                     {/* Action buttons for series notifications */}
-                    {(notification.type === 'series_message' || notification.type === 'series_ride') && (
+                    {(notification.type === 'series_message' || notification.type === 'series_ride' || notification.type === 'schedule_proposal' || notification.type === 'schedule_accepted' || notification.type === 'schedule_declined') && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -468,7 +468,7 @@ export const NotificationDropdown = () => {
                     )}
 
                     {/* Action buttons for schedule cancelled notifications */}
-                    {(notification.type === 'schedule_cancelled' || notification.type === 'schedule_cancel_one') && (
+                    {notification.type === 'schedule_cancelled' && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -481,6 +481,23 @@ export const NotificationDropdown = () => {
                       >
                         <Car className="h-3 w-3" />
                         View Family Carpools
+                      </Button>
+                    )}
+
+                    {/* Action buttons for individual ride cancel/leave */}
+                    {(notification.type === 'schedule_cancel_one' || notification.type === 'schedule_leave_one') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          navigate('/my-rides');
+                        }}
+                        className="h-7 mt-2 gap-1 text-xs"
+                      >
+                        <Car className="h-3 w-3" />
+                        View in My Rides
                       </Button>
                     )}
                     
