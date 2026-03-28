@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SkeletonCarpoolItem } from "@/components/ui/skeleton-card";
+import HowToUseGuide from "@/components/HowToUseGuide";
 import { 
   GraduationCap,
   Calendar,
@@ -80,9 +81,13 @@ import {
                   <p className="text-sm text-muted-foreground">Edit your profile information</p>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-        </div>
+           </div>
+           
+           {/* How to Use Guide */}
+           <div className="mt-6">
+             <HowToUseGuide isStudent={true} />
+           </div>
+         </div>
       </DashboardLayout>
    );
  };
