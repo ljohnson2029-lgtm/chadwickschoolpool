@@ -119,6 +119,14 @@ function getNextOccurrences(
   return results;
 }
 
+/** Returns true if the ride's scheduled time + 20 minutes has passed */
+export function isRidePast(rideDate: string, rideTime: string): boolean {
+  const scheduled = new Date(`${rideDate}T${rideTime}`);
+  if (isNaN(scheduled.getTime())) return rideDate < new Date().toISOString().split('T')[0];
+  const cutoff = new Date(scheduled.getTime() + 20 * 60 * 1000); // +20 minutes
+  return new Date() > cutoff;
+}
+
 export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
@@ -343,7 +351,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         }
       }
 
-      const isPast = req.ride_date < today;
+      const isPast = isRidePast(req.ride_date, req.pickup_time);
       const profile = allProfiles[otherId];
 
       const senderChildIds = (req as any).selected_children as string[] | null;
@@ -546,8 +554,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     return dateA.getTime() - dateB.getTime();
   });
 
-  const active = allRides.filter(r => r.rideStatus === 'active' && r.rideDate >= today);
-  const past = allRides.filter(r => r.rideStatus !== 'active' || r.rideDate < today).reverse();
+  const active = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
+  const past = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime)).reverse();
 
   return { active, past };
 }

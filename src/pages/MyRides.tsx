@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
+import { fetchUnifiedRides, isRidePast } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -162,7 +162,7 @@ const MyRides = () => {
         source: 'posted' as const,
         rideType: r.type as 'request' | 'offer',
         status,
-        rideStatus: r.ride_date < today ? 'completed' : 'active',
+        rideStatus: isRidePast(r.ride_date, r.ride_time) ? 'completed' : 'active',
         pickupLocation: r.pickup_location,
         dropoffLocation: r.dropoff_location,
         rideDate: r.ride_date,
@@ -437,8 +437,8 @@ const MyRides = () => {
     });
 
     return {
-      active: rides.filter(r => r.rideStatus === 'active' && r.rideDate >= today),
-      past: rides.filter(r => r.rideStatus !== 'active' || r.rideDate < today).reverse(),
+      active: rides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime)),
+      past: rides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime)).reverse(),
       hasLinked: true,
     };
   }, [user, profile]);
@@ -458,13 +458,21 @@ const MyRides = () => {
     }
   }, [studentRideData]);
 
-  // Derive active/past rides from query data
-  const activeRides = isStudent
-    ? (studentRideData?.active || [])
-    : (parentRideData?.active || []);
-  const pastRides = isStudent
-    ? (studentRideData?.past || [])
-    : (parentRideData?.past || []);
+  // ── Real-time 1-minute tick to re-evaluate active/past split ──
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60_000); // every 60s
+    return () => clearInterval(interval);
+  }, []);
+
+  // Derive active/past rides from query data, re-evaluated every tick
+  const allParentRides = parentRideData ? [...parentRideData.active, ...parentRideData.past] : [];
+  const allStudentRides = studentRideData ? [...studentRideData.active, ...studentRideData.past] : [];
+  const allRides = isStudent ? allStudentRides : allParentRides;
+
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
+  const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
+    .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}`).getTime() - new Date(`${a.rideDate}T${a.rideTime}`).getTime());
   const loadingData = isStudent ? loadingStudentRides : loadingParentRides;
 
   const getMyName = () => {
