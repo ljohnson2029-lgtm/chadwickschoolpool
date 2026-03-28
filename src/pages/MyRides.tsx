@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
 import { Car, History, Info, LinkIcon } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -366,6 +367,70 @@ const MyRides = () => {
         case 'cancel-direct': {
           await handleCancelDirect(ride);
           return;
+        }
+        case 'cancel-series': {
+          // Driver cancels a single series occurrence
+          const seriesData = ride.originalData;
+          if (!seriesData?._seriesRide) break;
+          
+          const dateObj = new Date(seriesData.date + 'T00:00:00');
+          const dayName = seriesData.day;
+          const dateStr = seriesData.date;
+          
+          const { error } = await supabase.from('schedule_cancellations').insert({
+            schedule_id: seriesData.scheduleId,
+            cancelled_date: dateStr,
+            cancelled_day: dayName,
+            cancelled_by: user.id,
+          });
+          
+          if (error) {
+            toast.error('Already cancelled for that date');
+            break;
+          }
+          
+          const otherId = seriesData.otherParentId;
+          const formattedDate = format(dateObj, 'MMMM d, yyyy');
+          await sendNotification(
+            otherId,
+            'schedule_cancel_one',
+            `📅 ${getMyName()} has cancelled the ${dayName} ride on ${formattedDate}. The rest of your series continues as scheduled.`
+          );
+          
+          toast.success(`Cancelled ride on ${formattedDate}`);
+          break;
+        }
+        case 'leave-series': {
+          // Passenger leaves a single series occurrence
+          const seriesData = ride.originalData;
+          if (!seriesData?._seriesRide) break;
+          
+          const dateObj = new Date(seriesData.date + 'T00:00:00');
+          const dayName = seriesData.day;
+          const dateStr = seriesData.date;
+          
+          const { error } = await supabase.from('schedule_cancellations').insert({
+            schedule_id: seriesData.scheduleId,
+            cancelled_date: dateStr,
+            cancelled_day: dayName,
+            cancelled_by: user.id,
+          });
+          
+          if (error) {
+            toast.error('Already left for that date');
+            break;
+          }
+          
+          const otherId = seriesData.otherParentId;
+          const formattedDate = format(dateObj, 'MMMM d, yyyy');
+          await sendNotification(
+            otherId,
+            'schedule_cancel_one',
+            `📅 ${getMyName()} has left the ${dayName} ride on ${formattedDate}. The rest of your series continues as scheduled.`
+          );
+          
+          toast.success(`Left ride on ${formattedDate}`);
+          break;
         }
       }
 

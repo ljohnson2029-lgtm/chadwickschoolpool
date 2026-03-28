@@ -233,12 +233,12 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     const otherId = isProposer ? schedule.recipient_id : schedule.proposer_id;
     try {
       await supabase.functions.invoke("create-notification", {
-        body: {
-          userId: otherId,
-          type: "schedule_cancelled",
-          message: `🚫 ${myName} has cancelled the recurring carpool schedule. Please coordinate a new one in your Series space.`,
-        },
-      });
+          body: {
+            userId: otherId,
+            type: "schedule_cancelled",
+            message: `🚫 Your carpool series with ${myName} has been cancelled`,
+          },
+        });
     } catch {}
     toast.info("Schedule cancelled");
     onUpdate();
@@ -435,9 +435,6 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
           {/* Active - Cancellation Actions */}
           {isAccepted && (
             <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowCancelOne(true)}>
-                Cancel One Occurrence
-              </Button>
               <Button size="sm" variant="destructive" className="text-xs" onClick={() => setShowCancelAll(true)}>
                 Cancel Entire Schedule
               </Button>

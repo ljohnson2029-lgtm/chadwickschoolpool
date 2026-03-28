@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   MessageCircle,
   Contact,
+  Repeat,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +68,7 @@ export interface PendingJoinRequest {
 
 export interface UnifiedRide {
   id: string;
-  source: 'posted' | 'conversation' | 'private';
+  source: 'posted' | 'conversation' | 'private' | 'series';
   rideType: 'request' | 'offer';
   status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval' | 'pending-direct-sent' | 'pending-direct-received';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
@@ -93,7 +94,7 @@ export interface UnifiedRide {
   };
 }
 
-export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct';
+export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct' | 'cancel-series' | 'leave-series';
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
@@ -108,6 +109,10 @@ interface UnifiedRideCardProps {
 }
 
 const getStatusConfig = (ride: UnifiedRide) => {
+  // Series recurring ride
+  if (ride.source === 'series') {
+    return { label: 'Recurring Series Ride', className: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800', icon: Repeat };
+  }
   if (ride.status === 'pending-direct-sent') {
     return { label: 'Pending - Awaiting Response', className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800', icon: Clock };
   }
@@ -240,6 +245,30 @@ function getCancelActionConfig(ride: UnifiedRide): {
       timeRestrictedMessage: 'This ride cannot be cancelled within 9 hours of departure',
     };
   }
+  // Series ride - driver cancels (9-hour rule), passenger leaves (no restriction)
+  if (ride.source === 'series') {
+    if (ride.isDriver) {
+      return {
+        action: 'cancel-series' as CancelAction,
+        label: 'Cancel This Ride',
+        icon: X,
+        confirmTitle: 'Cancel This Series Ride',
+        confirmDescription: 'Are you sure you want to cancel this occurrence? The rest of the series continues as scheduled.',
+        hasTimeRestriction: true,
+        timeRestrictedMessage: 'This ride cannot be cancelled within 9 hours of departure',
+      };
+    } else {
+      return {
+        action: 'leave-series' as CancelAction,
+        label: 'Leave This Ride',
+        icon: LogOut,
+        confirmTitle: 'Leave This Series Ride',
+        confirmDescription: 'Are you sure you want to leave this ride? The rest of the series continues as scheduled.',
+        hasTimeRestriction: false,
+        timeRestrictedMessage: '',
+      };
+    }
+  }
   return null;
 }
 
@@ -272,12 +301,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const StatusIcon = statusConfig.icon;
 
   // Determine if this is a confirmed ride with another parent
+  const isSeriesRide = ride.source === 'series';
   const isConfirmed = !!(ride.otherParent && !isPast && (
     ride.status === 'joined-ride' as string ||
     ride.status === 'helping-out' as string ||
     ride.status === 'confirmed' as string ||
     (ride.source === 'posted' && ride.otherParent) ||
-    (ride.source === 'private')
+    (ride.source === 'private') ||
+    isSeriesRide
   ));
 
   const rideSource = ride.source === 'private' ? 'private' : 'public';
@@ -610,17 +641,19 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </div>
           )}
 
-          {/* Seats Info */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
-            <span>
-              {ride.seatsAvailable
-                ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
-                : ride.seatsNeeded
-                  ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
-                  : '—'}
-            </span>
-          </div>
+          {/* Seats Info - hide for series rides */}
+          {!isSeriesRide && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              <span>
+                {ride.seatsAvailable
+                  ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
+                  : ride.seatsNeeded
+                    ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
+                    : '—'}
+              </span>
+            </div>
+          )}
 
           {/* Contact & Messages buttons for confirmed rides */}
           {isConfirmed && ride.otherParent && (
@@ -636,30 +669,41 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   <Contact className="h-3.5 w-3.5" />
                   View Contact Info for the Other Parent on This Ride
                 </Button>
-                {/* Messages button - hidden for students */}
+                {/* Messages button - for series rides, link to Series tab */}
                 {!ride._studentView && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1.5 text-xs relative"
-                    onClick={() => setChatOpen(!chatOpen)}
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    Messages
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Button>
+                  isSeriesRide ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => window.location.href = '/series'}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Messages (in Series)
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs relative"
+                      onClick={() => setChatOpen(!chatOpen)}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Messages
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  )
                 )}
               </div>
-              {/* Subtitle removed - label is self-descriptive */}
             </div>
           )}
 
-          {/* Expandable Chat Thread - hidden for students */}
-          {chatOpen && !ride._studentView && isConfirmed && ride.otherParent && authUserId && (
+          {/* Expandable Chat Thread - hidden for students and series rides */}
+          {chatOpen && !ride._studentView && !isSeriesRide && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
               rideRefId={chatRideRefId}
               rideSource={rideSource}

@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Loader2, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info } from "lucide-react";
 import { format } from "date-fns";
+import { ContactCardModal } from "@/components/ContactCardModal";
 import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
 import ScheduleCard from "./ScheduleCard";
 
@@ -54,6 +55,8 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [otherParentId, setOtherParentId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
+  const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
 
@@ -70,13 +73,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        // Get other parent's address
+        // Get other parent's address and phone
         const { data: otherProfile } = await supabase
           .from("profiles")
-          .select("home_address")
+          .select("home_address, phone_number")
           .eq("id", otherId)
           .single();
         setOtherParentAddress(otherProfile?.home_address || null);
+        setOtherParentPhone(otherProfile?.phone_number || null);
       }
     };
     fetchSpace();
@@ -208,7 +212,13 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         {/* Chat Section */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => setContactOpen(true)}>
+                <Contact className="h-3.5 w-3.5" />
+                View Contact Info
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div ref={scrollRef} className="h-64 overflow-y-auto space-y-2 mb-3 border rounded-lg p-3 bg-muted/30">
@@ -261,6 +271,13 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
             </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
+            {/* Info banner */}
+            <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
+              <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                This schedule is for recurring weekly carpools coordinated between you and this parent
+              </p>
+            </div>
             {showForm ? (
               <ScheduleRecurringRideForm
                 spaceId={spaceId}
@@ -299,6 +316,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Contact Card Modal */}
+      <ContactCardModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        parentName={otherParentName}
+        phone={otherParentPhone}
+      />
     </div>
   );
 };
