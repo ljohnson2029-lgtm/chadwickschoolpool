@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { ContactCardModal } from "@/components/ContactCardModal";
@@ -36,6 +38,13 @@ interface ScheduleData {
   created_at: string;
 }
 
+interface ChildInfo {
+  id: string;
+  first_name: string;
+  last_name: string;
+  grade_level: string | null;
+}
+
 interface Props {
   spaceId: string;
   otherParentName: string;
@@ -56,12 +65,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [currentUserName, setCurrentUserName] = useState("");
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
   const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
-  const [otherParentChildren, setOtherParentChildren] = useState<{ first_name: string; last_name: string; grade_level: string | null }[]>([]);
+  const [otherParentChildren, setOtherParentChildren] = useState<ChildInfo[]>([]);
+  const [myChildren, setMyChildren] = useState<ChildInfo[]>([]);
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
 
-  // Determine other parent ID, addresses, and names
+  // Fetch space info, other parent data, and own children
   useEffect(() => {
     if (!user) return;
     const fetchSpace = async () => {
@@ -74,14 +85,27 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        // Get other parent's address, phone, and children
-        const [{ data: otherProfile }, { data: childrenData }] = await Promise.all([
+        const [{ data: otherProfile }, { data: otherChildrenData }, { data: myChildrenData }, { data: selections }] = await Promise.all([
           supabase.from("profiles").select("home_address, phone_number").eq("id", otherId).single(),
-          supabase.from("children").select("first_name, last_name, grade_level").eq("user_id", otherId),
+          supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", otherId),
+          supabase.from("children").select("id, first_name, last_name, grade_level").eq("user_id", user.id),
+          supabase.from("series_child_selections").select("child_id").eq("space_id", spaceId).eq("parent_id", user.id),
         ]);
         setOtherParentAddress(otherProfile?.home_address || null);
         setOtherParentPhone(otherProfile?.phone_number || null);
-        setOtherParentChildren(childrenData || []);
+        setOtherParentChildren(otherChildrenData || []);
+        setMyChildren(myChildrenData || []);
+
+        // If saved selections exist, use them; otherwise default to all children selected
+        if (selections && selections.length > 0) {
+          setSelectedChildIds(selections.map((s: any) => s.child_id));
+        } else if (myChildrenData && myChildrenData.length > 0) {
+          // Auto-select all and persist
+          const allIds = myChildrenData.map((c: any) => c.id);
+          setSelectedChildIds(allIds);
+          const inserts = allIds.map((cid: string) => ({ space_id: spaceId, parent_id: user.id, child_id: cid }));
+          await supabase.from("series_child_selections").insert(inserts);
+        }
       }
     };
     fetchSpace();
@@ -89,6 +113,23 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.username || "A parent";
     setCurrentUserName(name);
   }, [user, spaceId, profile]);
+
+  // Toggle child selection with auto-save
+  const toggleChild = async (childId: string) => {
+    if (!user) return;
+    const isSelected = selectedChildIds.includes(childId);
+
+    // Enforce at least one child selected
+    if (isSelected && selectedChildIds.length <= 1) return;
+
+    if (isSelected) {
+      setSelectedChildIds((prev) => prev.filter((id) => id !== childId));
+      await supabase.from("series_child_selections").delete().eq("space_id", spaceId).eq("parent_id", user.id).eq("child_id", childId);
+    } else {
+      setSelectedChildIds((prev) => [...prev, childId]);
+      await supabase.from("series_child_selections").insert({ space_id: spaceId, parent_id: user.id, child_id: childId });
+    }
+  };
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
@@ -110,7 +151,6 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
       .order("created_at", { ascending: false });
     if (data) {
       setSchedules(data as unknown as ScheduleData[]);
-      // Fetch proposer names
       const ids = [...new Set(data.map((s: any) => s.proposer_id))];
       if (ids.length > 0) {
         const { data: profiles } = await supabase
@@ -201,7 +241,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
@@ -210,75 +250,103 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chat Section */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => setContactOpen(true)}>
-                <Contact className="h-3.5 w-3.5" />
-                View Contact Info
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-3 pt-0">
-            <div ref={scrollRef} className="h-64 overflow-y-auto space-y-2 mb-3 border rounded-lg p-3 bg-muted/30">
-              {loadingMsgs ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : messages.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
-              ) : (
-                messages.map((msg) => {
-                  const isMe = msg.sender_id === user?.id;
-                  return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                      <p className="text-[10px] text-muted-foreground mb-0.5">
-                        {isMe ? "You" : otherParentName}
-                      </p>
-                      <div className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm ${isMe ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
-                        {msg.message_text}
+        {/* LEFT COLUMN: Chat + Children */}
+        <div className="space-y-4">
+          {/* Chat Section */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Coordinate recurring rides with this parent here</CardTitle>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs shrink-0" onClick={() => setContactOpen(true)}>
+                  <Contact className="h-3.5 w-3.5" />
+                  View Contact Info
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <div ref={scrollRef} className="h-64 overflow-y-auto space-y-2 mb-3 border rounded-lg p-3 bg-muted/30">
+                {loadingMsgs ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Start a conversation!</p>
+                ) : (
+                  messages.map((msg) => {
+                    const isMe = msg.sender_id === user?.id;
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">
+                          {isMe ? "You" : otherParentName}
+                        </p>
+                        <div className={`max-w-[80%] rounded-lg px-3 py-1.5 text-sm ${isMe ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                          {msg.message_text}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {format(new Date(msg.created_at), "h:mm a")}
+                        </p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {format(new Date(msg.created_at), "h:mm a")}
-                      </p>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="h-9 text-sm"
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-              />
-              <Button size="sm" className="h-9 px-3" onClick={handleSend} disabled={sending || !newMessage.trim()}>
-                {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                    );
+                  })
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="h-9 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                />
+                <Button size="sm" className="h-9 px-3" onClick={handleSend} disabled={sending || !newMessage.trim()}>
+                  {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Other Parent's Children */}
-        {otherParentChildren.length > 0 && (
-          <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-3 lg:col-span-2">
-            <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Who Will Need a Ride:</p>
-              {otherParentChildren.map((child, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
-                </p>
-              ))}
+          {/* Children Info Section */}
+          <div className="bg-muted/40 border border-border rounded-lg p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Children in This Series</p>
             </div>
+
+            {/* Other Parent's Children — read only */}
+            {otherParentChildren.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-foreground">{otherParentName}'s Children:</p>
+                {otherParentChildren.map((child, i) => (
+                  <p key={i} className="text-xs text-muted-foreground pl-2">
+                    {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {/* My Children — with checkboxes */}
+            {myChildren.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Your Children:</p>
+                {myChildren.map((child) => (
+                  <div key={child.id} className="flex items-center space-x-2 pl-2">
+                    <Checkbox
+                      id={`series-child-${child.id}`}
+                      checked={selectedChildIds.includes(child.id)}
+                      onCheckedChange={() => toggleChild(child.id)}
+                    />
+                    <Label htmlFor={`series-child-${child.id}`} className="cursor-pointer text-xs text-muted-foreground">
+                      {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                    </Label>
+                  </div>
+                ))}
+                <p className="text-[10px] text-muted-foreground italic pl-2">At least one child must be selected. Selections save automatically.</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Recurring Rides Section */}
+        {/* RIGHT COLUMN: Recurring Rides */}
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-start gap-2">
