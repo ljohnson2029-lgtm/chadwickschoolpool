@@ -38,9 +38,9 @@ export const AcceptDirectRideDialog = ({ open, onClose, onConfirm, senderName, r
         </DialogHeader>
 
         {isRequestType && maxSeats != null && (
-          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+          <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
+            <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
               Please make sure you have enough room for {maxSeats} seat{maxSeats !== 1 ? 's' : ''} needed for this ride request
             </AlertDescription>
           </Alert>
