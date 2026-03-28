@@ -535,6 +535,12 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   })}
                 </div>
               </div>
+            ) : ride.originalData?._seriesRide && ride.originalData?.pendingChildrenMessage ? (
+              <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 border border-dashed border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-700 dark:text-amber-300 italic text-center">
+                  {ride.originalData.pendingChildrenMessage}
+                </p>
+              </div>
             ) : (
               !isPast && (ride.status === 'posted-looking' || ride.status === 'posted-offering') && (
                 <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border">
