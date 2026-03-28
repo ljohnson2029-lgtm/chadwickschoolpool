@@ -889,6 +889,45 @@ export type Database = {
         }
         Relationships: []
       }
+      series_child_selections: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          parent_id: string
+          space_id: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          space_id: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "series_child_selections_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "series_child_selections_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "series_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       series_messages: {
         Row: {
           created_at: string
