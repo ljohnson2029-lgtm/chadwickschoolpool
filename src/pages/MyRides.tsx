@@ -397,7 +397,7 @@ const MyRides = () => {
                 carColor: null,
                 licensePlate: null,
               } : null,
-              myChildren: finalKids,
+              myChildren: allSeriesKids,
               myCarInfo: primaryVehicle ? {
                 carMake: primaryVehicle.car_make,
                 carModel: primaryVehicle.car_model,
@@ -419,6 +419,7 @@ const MyRides = () => {
                   license_plate: v.license_plate,
                   is_primary: v.is_primary,
                 })),
+                pendingChildrenMessage,
               },
               _studentView: true,
               _driverName: driverName,
