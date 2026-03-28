@@ -1,18 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, ChevronLeft, Calendar, Clock, MapPin, Users, Car, Check } from "lucide-react";
+import { Loader2, ChevronRight, ChevronLeft, Clock, MapPin, Car, Check } from "lucide-react";
 import { toast } from "sonner";
-import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 import { useVehicles } from "@/hooks/useVehicles";
 
 const SCHOOL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
-const CHADWICK_ADDRESS = "26800 S Academy Dr, Palos Verdes Peninsula, CA 90274";
 
 interface Props {
   spaceId: string;
@@ -44,12 +41,9 @@ const ScheduleRecurringRideForm = ({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [driverAssignments, setDriverAssignments] = useState<Record<string, string>>({});
 
-  // Step 2: Pickup Times (only proposer's own times)
+  // Step 2: Pickup Times
   const [myRegularTime, setMyRegularTime] = useState("");
   const [myWednesdayTime, setMyWednesdayTime] = useState("");
-
-  // Step 3: Children
-  const [childIds, setChildIds] = useState<string[]>([]);
 
   const myName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "You";
   const myId = user?.id || "";
@@ -57,7 +51,6 @@ const ScheduleRecurringRideForm = ({
   const toggleDay = (day: string) => {
     setSelectedDays((prev) => {
       const next = prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day];
-      // Clean up driver assignments for removed days
       if (!next.includes(day)) {
         setDriverAssignments((a) => {
           const copy = { ...a };
@@ -73,7 +66,6 @@ const ScheduleRecurringRideForm = ({
     setDriverAssignments((prev) => ({ ...prev, [day]: driverId }));
   };
 
-  // Derived
   const regularDays = selectedDays.filter((d) => d !== "Wed");
   const hasWednesday = selectedDays.includes("Wed");
   const myDrivingRegular = regularDays.filter((d) => driverAssignments[d] === myId);
@@ -86,15 +78,12 @@ const ScheduleRecurringRideForm = ({
   const otherDriveCount = selectedDays.filter((d) => driverAssignments[d] === otherParentId).length;
   const bothDrive = myDriveCount > 0 && otherDriveCount > 0;
 
-  // Step validation
   const step1Valid = selectedDays.length > 0 && allDaysAssigned && bothDrive;
   const step2Valid = (() => {
     if (myDrivingRegular.length > 0 && !myRegularTime) return false;
     if (myDrivingWed && !myWednesdayTime) return false;
-    // Other parent times are optional (they confirm at acceptance)
     return true;
   })();
-  const step3Valid = childIds.length > 0;
 
   const getRouteForDay = (day: string) => {
     const driverId = driverAssignments[day];
@@ -149,7 +138,7 @@ const ScheduleRecurringRideForm = ({
       proposer_wednesday_time: myDrivingWed ? myWednesdayTime || null : null,
       recipient_regular_time: null,
       recipient_wednesday_time: null,
-      proposer_children: childIds,
+      proposer_children: [],
       proposer_vehicle: vehicleInfo,
     };
 
@@ -178,7 +167,7 @@ const ScheduleRecurringRideForm = ({
     <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-sm">Schedule Recurring Ride</h4>
-        <Badge variant="outline" className="text-xs">Step {step} of 4</Badge>
+        <Badge variant="outline" className="text-xs">Step {step} of 3</Badge>
       </div>
 
       {/* ─── STEP 1: Select Days & Assign Drivers ─── */}
@@ -186,6 +175,9 @@ const ScheduleRecurringRideForm = ({
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
             Select which school days this carpool runs and assign who drives each day. Both parents must drive at least one day.
+          </p>
+          <p className="text-[10px] text-muted-foreground italic">
+            Children riding in this series are managed in the "Children in This Series" section below the chat.
           </p>
 
           <div className="space-y-3">
@@ -238,7 +230,6 @@ const ScheduleRecurringRideForm = ({
             Set your pickup times for the days you are driving. {otherParentName} will set their own times when they accept.
           </p>
 
-          {/* My regular days */}
           {myDrivingRegular.length > 0 && (
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">
@@ -251,7 +242,6 @@ const ScheduleRecurringRideForm = ({
             </div>
           )}
 
-          {/* My Wednesday */}
           {myDrivingWed && (
             <div className="space-y-1 border-t pt-3">
               <Label className="text-xs text-muted-foreground">Your pickup time for Wednesday (Late Start)</Label>
@@ -262,7 +252,6 @@ const ScheduleRecurringRideForm = ({
             </div>
           )}
 
-          {/* Info about other parent's days */}
           {(otherDrivingRegular.length > 0 || otherDrivingWed) && (
             <p className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/40">
               {otherParentName} will set their own pickup times for their driving days ({[...otherDrivingRegular, ...(otherDrivingWed ? ["Wed"] : [])].join(", ")}) when they accept this schedule.
@@ -280,31 +269,8 @@ const ScheduleRecurringRideForm = ({
         </div>
       )}
 
-      {/* ─── STEP 3: Select Children ─── */}
+      {/* ─── STEP 3: Summary ─── */}
       {step === 3 && (
-        <div className="space-y-4">
-          <ChildrenRidingSelector
-            selectedChildIds={childIds}
-            onSelectionChange={setChildIds}
-            error={childIds.length === 0 ? "At least one child must be selected" : null}
-          />
-          <p className="text-xs text-muted-foreground">
-            The other parent will select their children when they accept this schedule.
-          </p>
-
-          <div className="flex justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setStep(2)} className="gap-1">
-              <ChevronLeft className="h-3.5 w-3.5" /> Back
-            </Button>
-            <Button size="sm" disabled={!step3Valid} onClick={() => setStep(4)} className="gap-1">
-              Next <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── STEP 4: Summary ─── */}
-      {step === 4 && (
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
             Review the proposed schedule before sending. This schedule will repeat every week until either parent cancels.
@@ -345,7 +311,7 @@ const ScheduleRecurringRideForm = ({
           )}
 
           <div className="flex justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setStep(3)} className="gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setStep(2)} className="gap-1">
               <ChevronLeft className="h-3.5 w-3.5" /> Back
             </Button>
             <Button size="sm" onClick={handleSubmit} disabled={submitting} className="gap-1">

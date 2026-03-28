@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info, GraduationCap, Pencil, X } from "lucide-react";
 import { format } from "date-fns";
 import { ContactCardModal } from "@/components/ContactCardModal";
 import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
@@ -67,8 +67,13 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
   const [otherParentChildren, setOtherParentChildren] = useState<ChildInfo[]>([]);
   const [otherParentSelectedChildIds, setOtherParentSelectedChildIds] = useState<string[]>([]);
+  const [otherParentSubmitted, setOtherParentSubmitted] = useState(false);
   const [myChildren, setMyChildren] = useState<ChildInfo[]>([]);
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  const [mySubmitted, setMySubmitted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingChildIds, setEditingChildIds] = useState<string[]>([]);
+  const [submittingChildren, setSubmittingChildren] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
@@ -97,17 +102,17 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         setOtherParentPhone(otherProfile?.phone_number || null);
         setOtherParentChildren(otherChildrenData || []);
         setMyChildren(myChildrenData || []);
-        setOtherParentSelectedChildIds((otherSelections || []).map((s: any) => s.child_id));
 
-        // If saved selections exist, use them; otherwise default to all children selected
-        if (mySelections && mySelections.length > 0) {
+        // Other parent submitted = has selections in DB
+        const otherHasSelections = otherSelections && otherSelections.length > 0;
+        setOtherParentSubmitted(!!otherHasSelections);
+        setOtherParentSelectedChildIds(otherHasSelections ? otherSelections.map((s: any) => s.child_id) : []);
+
+        // My submitted state
+        const myHasSelections = mySelections && mySelections.length > 0;
+        setMySubmitted(!!myHasSelections);
+        if (myHasSelections) {
           setSelectedChildIds(mySelections.map((s: any) => s.child_id));
-        } else if (myChildrenData && myChildrenData.length > 0) {
-          // Auto-select all and persist
-          const allIds = myChildrenData.map((c: any) => c.id);
-          setSelectedChildIds(allIds);
-          const inserts = allIds.map((cid: string) => ({ space_id: spaceId, parent_id: user.id, child_id: cid }));
-          await supabase.from("series_child_selections").insert(inserts);
         }
       }
     };
@@ -117,21 +122,50 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     setCurrentUserName(name);
   }, [user, spaceId, profile]);
 
-  // Toggle child selection with auto-save
-  const toggleChild = async (childId: string) => {
-    if (!user) return;
-    const isSelected = selectedChildIds.includes(childId);
+  // Submit children selections
+  const handleSubmitChildren = async () => {
+    if (!user || selectedChildIds.length === 0) return;
+    setSubmittingChildren(true);
+    // Delete existing, then insert new
+    await supabase.from("series_child_selections").delete().eq("space_id", spaceId).eq("parent_id", user.id);
+    const inserts = selectedChildIds.map((cid) => ({ space_id: spaceId, parent_id: user.id, child_id: cid }));
+    await supabase.from("series_child_selections").insert(inserts);
+    setMySubmitted(true);
+    setSubmittingChildren(false);
+  };
 
-    // Enforce at least one child selected
-    if (isSelected && selectedChildIds.length <= 1) return;
+  // Save edited children
+  const handleSaveEdit = async () => {
+    if (!user || editingChildIds.length === 0) return;
+    setSubmittingChildren(true);
+    await supabase.from("series_child_selections").delete().eq("space_id", spaceId).eq("parent_id", user.id);
+    const inserts = editingChildIds.map((cid) => ({ space_id: spaceId, parent_id: user.id, child_id: cid }));
+    await supabase.from("series_child_selections").insert(inserts);
+    setSelectedChildIds(editingChildIds);
+    setIsEditing(false);
+    setSubmittingChildren(false);
+  };
 
-    if (isSelected) {
-      setSelectedChildIds((prev) => prev.filter((id) => id !== childId));
-      await supabase.from("series_child_selections").delete().eq("space_id", spaceId).eq("parent_id", user.id).eq("child_id", childId);
-    } else {
-      setSelectedChildIds((prev) => [...prev, childId]);
-      await supabase.from("series_child_selections").insert({ space_id: spaceId, parent_id: user.id, child_id: childId });
-    }
+  const handleStartEdit = () => {
+    setEditingChildIds([...selectedChildIds]);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingChildIds([]);
+  };
+
+  const toggleChildForSubmit = (childId: string) => {
+    setSelectedChildIds((prev) =>
+      prev.includes(childId) ? prev.filter((id) => id !== childId) : [...prev, childId]
+    );
+  };
+
+  const toggleChildForEdit = (childId: string) => {
+    setEditingChildIds((prev) =>
+      prev.includes(childId) ? prev.filter((id) => id !== childId) : [...prev, childId]
+    );
   };
 
   const fetchMessages = useCallback(async () => {
@@ -214,13 +248,18 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         table: "series_child_selections",
         filter: `space_id=eq.${spaceId}`,
       }, async () => {
-        // Refetch the other parent's selections
         const { data } = await supabase
           .from("series_child_selections")
           .select("child_id")
           .eq("space_id", spaceId)
           .eq("parent_id", otherParentId);
-        if (data) setOtherParentSelectedChildIds(data.map((s: any) => s.child_id));
+        if (data && data.length > 0) {
+          setOtherParentSelectedChildIds(data.map((s: any) => s.child_id));
+          setOtherParentSubmitted(true);
+        } else {
+          setOtherParentSelectedChildIds([]);
+          setOtherParentSubmitted(false);
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -265,6 +304,10 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     setShowForm(false);
     fetchSchedules();
   };
+
+  // Active checkbox IDs depending on mode
+  const activeIds = isEditing ? editingChildIds : selectedChildIds;
+  const toggleFn = isEditing ? toggleChildForEdit : toggleChildForSubmit;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -339,41 +382,97 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
             </div>
 
             {/* Other Parent's Children — read only */}
-            {otherParentChildren.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Needing a Ride in This Series:</p>
-                <p className="text-[10px] text-muted-foreground italic mb-1">These are the children from this parent's profile who will be included in this recurring carpool series</p>
-                {otherParentChildren
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Needing a Ride in This Series:</p>
+              <p className="text-[10px] text-muted-foreground italic mb-1">These are the children from this parent's profile who will be included in this recurring carpool series</p>
+              {otherParentSubmitted ? (
+                otherParentChildren
                   .filter((child) => otherParentSelectedChildIds.includes(child.id))
                   .map((child, i) => (
                     <p key={i} className="text-xs text-muted-foreground pl-2">
                       {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
                     </p>
-                  ))}
-                {otherParentSelectedChildIds.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground italic pl-2">No children selected yet</p>
-                )}
-              </div>
-            )}
+                  ))
+              ) : (
+                <p className="text-xs text-muted-foreground italic pl-2">
+                  Pending — {otherParentName} has not yet confirmed their children
+                </p>
+              )}
+            </div>
 
-            {/* My Children — with checkboxes */}
+            {/* My Children — submit/edit flow */}
             {myChildren.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-foreground">Your Children Needing a Ride in This Series:</p>
-                <p className="text-[10px] text-muted-foreground italic mb-1">Check the children who will be included in this recurring carpool series</p>
-                {myChildren.map((child) => (
-                  <div key={child.id} className="flex items-center space-x-2 pl-2">
-                    <Checkbox
-                      id={`series-child-${child.id}`}
-                      checked={selectedChildIds.includes(child.id)}
-                      onCheckedChange={() => toggleChild(child.id)}
-                    />
-                    <Label htmlFor={`series-child-${child.id}`} className="cursor-pointer text-xs text-muted-foreground">
-                      {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
-                    </Label>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Your Children Needing a Ride in This Series:</p>
+                    <p className="text-[10px] text-muted-foreground italic">Check the children who will be included in this recurring carpool series</p>
                   </div>
-                ))}
-                <p className="text-[10px] text-muted-foreground italic pl-2">At least one child must be selected. Selections save automatically.</p>
+                  {mySubmitted && !isEditing && (
+                    <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleStartEdit}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </Button>
+                  )}
+                </div>
+
+                {/* Show checkboxes if not yet submitted OR in edit mode */}
+                {(!mySubmitted || isEditing) && (
+                  <>
+                    {myChildren.map((child) => (
+                      <div key={child.id} className="flex items-center space-x-2 pl-2">
+                        <Checkbox
+                          id={`series-child-${child.id}`}
+                          checked={activeIds.includes(child.id)}
+                          onCheckedChange={() => toggleFn(child.id)}
+                        />
+                        <Label htmlFor={`series-child-${child.id}`} className="cursor-pointer text-xs text-muted-foreground">
+                          {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                        </Label>
+                      </div>
+                    ))}
+                    <div className="flex gap-2 pt-1">
+                      {!mySubmitted ? (
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={selectedChildIds.length === 0 || submittingChildren}
+                          onClick={handleSubmitChildren}
+                        >
+                          {submittingChildren ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                          Submit
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={editingChildIds.length === 0 || submittingChildren}
+                            onClick={handleSaveEdit}
+                          >
+                            {submittingChildren ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                            Save Changes
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={handleCancelEdit}>
+                            <X className="h-3 w-3" /> Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Show confirmed list when submitted and not editing */}
+                {mySubmitted && !isEditing && (
+                  <div className="pl-2 space-y-1">
+                    {myChildren
+                      .filter((child) => selectedChildIds.includes(child.id))
+                      .map((child, i) => (
+                        <p key={i} className="text-xs text-muted-foreground">
+                          ✓ {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                        </p>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
