@@ -10,6 +10,7 @@ import { Car, Hand, Map as MapIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
+import HowToUseGuide from "@/components/HowToUseGuide";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -127,6 +128,11 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Browse rides and parents near you</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* ── HOW TO USE GUIDE ── */}
+        <div className="mt-6 sm:mt-8">
+          <HowToUseGuide isStudent={false} />
         </div>
 
       </div>
