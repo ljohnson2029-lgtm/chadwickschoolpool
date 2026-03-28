@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, Loader2, CalendarPlus } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus, Contact, Info } from "lucide-react";
 import { format } from "date-fns";
+import { ContactCardModal } from "@/components/ContactCardModal";
 import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
 import ScheduleCard from "./ScheduleCard";
 
@@ -54,6 +55,8 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [otherParentId, setOtherParentId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
+  const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
 
@@ -70,13 +73,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        // Get other parent's address
+        // Get other parent's address and phone
         const { data: otherProfile } = await supabase
           .from("profiles")
-          .select("home_address")
+          .select("home_address, phone_number")
           .eq("id", otherId)
           .single();
         setOtherParentAddress(otherProfile?.home_address || null);
+        setOtherParentPhone(otherProfile?.phone_number || null);
       }
     };
     fetchSpace();
