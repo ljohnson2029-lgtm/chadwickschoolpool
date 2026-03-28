@@ -336,6 +336,11 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" /> {getTimeForDay(day)}
                   </p>
+                  {isAccepted && (
+                    <p className="text-[10px] text-muted-foreground ml-4">
+                      Pickup time from your home address to arrive at Chadwick School on time
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -398,12 +403,18 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
                 <div className="space-y-1">
                   <Label className="text-xs">Your pickup time for regular days</Label>
                   <Input type="time" value={acceptRegularTime} onChange={(e) => setAcceptRegularTime(e.target.value)} />
+                  <p className="text-[10px] text-muted-foreground">
+                    Pickup time from your home address to arrive at Chadwick School on time
+                  </p>
                 </div>
               )}
               {recipientDrivesWed && (
                 <div className="space-y-1">
                   <Label className="text-xs">Your pickup time for Wednesday (Late Start)</Label>
                   <Input type="time" value={acceptWedTime} onChange={(e) => setAcceptWedTime(e.target.value)} />
+                  <p className="text-[10px] text-muted-foreground">
+                    Pickup time from your home address to arrive at Chadwick School on time
+                  </p>
                 </div>
               )}
               <ChildrenRidingSelector
