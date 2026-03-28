@@ -284,7 +284,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         rideTime: ride.ride_time,
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
-        isDriver: false,
+        isDriver: ride.type === 'request',
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo: extractCarInfo(null, myProfile),
