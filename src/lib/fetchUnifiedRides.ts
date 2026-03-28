@@ -436,11 +436,26 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         const mySelectedChildIds = spaceSelections[userId] || [];
         const otherSelectedChildIds = spaceSelections[otherId] || [];
 
-        const mySeriesKids = filterChildrenBySelection(myChildren, mySelectedChildIds.length > 0 ? mySelectedChildIds : null);
-        const otherSeriesKids = filterChildrenBySelection(allChildren[otherId] || [], otherSelectedChildIds.length > 0 ? otherSelectedChildIds : null);
+        const myHasSubmitted = mySelectedChildIds.length > 0;
+        const otherHasSubmitted = otherSelectedChildIds.length > 0;
+
+        const mySeriesKids = myHasSubmitted ? filterChildrenBySelection(myChildren, mySelectedChildIds) : [];
+        const otherSeriesKids = otherHasSubmitted ? filterChildrenBySelection(allChildren[otherId] || [], otherSelectedChildIds) : [];
         const allKids = [...mySeriesKids, ...otherSeriesKids].filter(
           (k, i, arr) => i === arr.findIndex(x => x.name === k.name)
         );
+
+        // Build pending message
+        const otherName = otherProfile ? [otherProfile.first_name, otherProfile.last_name].filter(Boolean).join(' ') : 'Other parent';
+        const myName = myProfile ? 'you' : 'you';
+        let pendingChildrenMessage: string | null = null;
+        if (!myHasSubmitted && !otherHasSubmitted) {
+          pendingChildrenMessage = `Pending — awaiting children confirmation from both parents`;
+        } else if (!myHasSubmitted) {
+          pendingChildrenMessage = `Pending — awaiting children confirmation from you`;
+        } else if (!otherHasSubmitted) {
+          pendingChildrenMessage = `Pending — awaiting children confirmation from ${otherName}`;
+        }
 
         for (const occ of occurrences) {
           const cancelKey = `${schedule.id}-${occ.date}-${occ.day}`;
@@ -516,6 +531,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
                 license_plate: v.license_plate,
                 is_primary: v.is_primary,
               })),
+              pendingChildrenMessage,
             },
           });
         }
