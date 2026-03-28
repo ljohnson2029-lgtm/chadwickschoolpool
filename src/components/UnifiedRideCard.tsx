@@ -477,10 +477,28 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                 )}
               </div>
               {(() => {
-                // For series rides, myCarInfo always holds the driver's vehicle regardless of perspective
-                const carInfo = isSeriesRide
-                  ? ride.myCarInfo
-                  : (ride as any)._studentView ? ride.myCarInfo : (ride.isDriver ? ride.myCarInfo : ride.otherParent);
+                // For series rides, show ALL driver vehicles in a row
+                if (isSeriesRide && ride.originalData?.driverVehicles?.length > 0) {
+                  const vehicles = ride.originalData.driverVehicles as { car_make: string; car_model: string; car_color: string; license_plate: string; is_primary: boolean }[];
+                  return (
+                    <div className="mt-1.5 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Driver's Vehicles:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {vehicles.map((v, i) => {
+                          const parts = [v.car_color, v.car_make, v.car_model].filter(Boolean).join(' ');
+                          return (
+                            <span key={i} className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/60 rounded px-2 py-1">
+                              {parts} — Plate: {v.license_plate || 'N/A'}
+                              {v.is_primary && <span className="text-[10px] text-primary font-medium">(Primary)</span>}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                // For non-series rides, show single vehicle as before
+                const carInfo = (ride as any)._studentView ? ride.myCarInfo : (ride.isDriver ? ride.myCarInfo : ride.otherParent);
                 const hasVehicle = carInfo && (carInfo.carMake || carInfo.carModel || carInfo.carColor);
                 if (!hasVehicle) return null;
                 const vehicleParts = [carInfo.carColor, carInfo.carMake, carInfo.carModel].filter(Boolean).join(' ');
