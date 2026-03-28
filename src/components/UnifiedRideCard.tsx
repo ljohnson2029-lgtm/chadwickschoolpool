@@ -245,6 +245,30 @@ function getCancelActionConfig(ride: UnifiedRide): {
       timeRestrictedMessage: 'This ride cannot be cancelled within 9 hours of departure',
     };
   }
+  // Series ride - driver cancels (9-hour rule), passenger leaves (no restriction)
+  if (ride.source === 'series') {
+    if (ride.isDriver) {
+      return {
+        action: 'cancel-series' as CancelAction,
+        label: 'Cancel This Ride',
+        icon: X,
+        confirmTitle: 'Cancel This Series Ride',
+        confirmDescription: 'Are you sure you want to cancel this occurrence? The rest of the series continues as scheduled.',
+        hasTimeRestriction: true,
+        timeRestrictedMessage: 'This ride cannot be cancelled within 9 hours of departure',
+      };
+    } else {
+      return {
+        action: 'leave-series' as CancelAction,
+        label: 'Leave This Ride',
+        icon: LogOut,
+        confirmTitle: 'Leave This Series Ride',
+        confirmDescription: 'Are you sure you want to leave this ride? The rest of the series continues as scheduled.',
+        hasTimeRestriction: false,
+        timeRestrictedMessage: '',
+      };
+    }
+  }
   return null;
 }
 
