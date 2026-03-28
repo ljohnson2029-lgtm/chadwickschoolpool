@@ -66,6 +66,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
   const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
   const [otherParentChildren, setOtherParentChildren] = useState<ChildInfo[]>([]);
+  const [otherParentSelectedChildIds, setOtherParentSelectedChildIds] = useState<string[]>([]);
   const [myChildren, setMyChildren] = useState<ChildInfo[]>([]);
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [contactOpen, setContactOpen] = useState(false);
