@@ -457,7 +457,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
           // Fetch driver's primary vehicle from DB if vehicle snapshot is missing
           let resolvedDriverVehicle = driverVehicle;
-          if (!resolvedDriverVehicle || !resolvedDriverVehicle.car_make) {
+          if (!resolvedDriverVehicle || (typeof resolvedDriverVehicle === 'object' && resolvedDriverVehicle !== null && !Array.isArray(resolvedDriverVehicle) && !(resolvedDriverVehicle as any).car_make)) {
             const { data: driverVehicles } = await supabase
               .from('vehicles')
               .select('car_make, car_model, car_color, license_plate')
