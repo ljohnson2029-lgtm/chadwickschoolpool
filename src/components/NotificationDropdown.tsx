@@ -289,6 +289,7 @@ export const NotificationDropdown = () => {
   };
 
   const isRideNotification = (type: string) => {
+    if (type.startsWith('schedule_') || type.startsWith('series_')) return false;
     return type === 'ride_request' || type === 'ride_offer' || type.includes('ride');
   };
 
