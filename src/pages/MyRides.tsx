@@ -753,13 +753,25 @@ const MyRides = () => {
       <div className="container mx-auto px-4 max-w-4xl">
         <Breadcrumbs items={[{ label: "My Rides" }]} />
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">My Rides</h1>
-          <p className="text-muted-foreground">
-            {isStudent
-              ? "Rides scheduled by your parent"
-              : "All your rides in one place"}
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">My Rides</h1>
+            <p className="text-muted-foreground">
+              {isStudent
+                ? "Rides scheduled by your parent"
+                : "All your rides in one place"}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shrink-0"
+            disabled={refreshing || loadingData}
+            onClick={handleRefresh}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {isStudent && (
