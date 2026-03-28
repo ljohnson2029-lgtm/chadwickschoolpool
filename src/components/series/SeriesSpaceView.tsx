@@ -315,7 +315,8 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
             {/* Other Parent's Children — read only */}
             {otherParentChildren.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-foreground">{otherParentName}'s Children:</p>
+                <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Needing a Ride in This Series:</p>
+                <p className="text-[10px] text-muted-foreground italic mb-1">These are the children from this parent's profile who will be included in this recurring carpool series</p>
                 {otherParentChildren.map((child, i) => (
                   <p key={i} className="text-xs text-muted-foreground pl-2">
                     {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
@@ -327,7 +328,8 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
             {/* My Children — with checkboxes */}
             {myChildren.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-foreground">Your Children:</p>
+                <p className="text-xs font-medium text-foreground">Your Children Needing a Ride in This Series:</p>
+                <p className="text-[10px] text-muted-foreground italic mb-1">Check the children who will be included in this recurring carpool series</p>
                 {myChildren.map((child) => (
                   <div key={child.id} className="flex items-center space-x-2 pl-2">
                     <Checkbox
