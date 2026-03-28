@@ -271,6 +271,13 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
             </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
+            {/* Info banner */}
+            <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-2.5">
+              <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                This schedule is for recurring weekly carpools coordinated between you and this parent
+              </p>
+            </div>
             {showForm ? (
               <ScheduleRecurringRideForm
                 spaceId={spaceId}
@@ -309,6 +316,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Contact Card Modal */}
+      <ContactCardModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        parentName={otherParentName}
+        phone={otherParentPhone}
+      />
     </div>
   );
 };
