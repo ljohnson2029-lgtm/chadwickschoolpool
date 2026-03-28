@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { UnifiedRide, ParticipantInfo, PendingJoinRequest } from "@/components/UnifiedRideCard";
+import { addDays, format, startOfToday, addWeeks } from "date-fns";
 
 interface FetchResult {
   active: UnifiedRide[];
@@ -10,7 +11,7 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
   if (ids.length === 0) return {};
   
   const [{ data: profiles }, { data: users }] = await Promise.all([
-    supabase.from('profiles').select('id, first_name, last_name, username, phone_number, share_phone, share_email, car_make, car_model, car_color, license_plate').in('id', ids),
+    supabase.from('profiles').select('id, first_name, last_name, username, phone_number, share_phone, share_email, car_make, car_model, car_color, license_plate, home_address').in('id', ids),
     supabase.from('users').select('user_id, email').in('user_id', ids),
   ]);
 
@@ -87,6 +88,37 @@ function extractCarInfo(vehicleInfoJson: any, profileFallback?: any): UnifiedRid
   return undefined;
 }
 
+const DAY_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+function getNextOccurrences(
+  days: string[],
+  weeksAhead: number = 4
+): { day: string; date: string }[] {
+  const today = startOfToday();
+  const results: { day: string; date: string }[] = [];
+  
+  for (let w = 0; w < weeksAhead; w++) {
+    for (const day of days) {
+      const dayIndex = DAY_MAP[day];
+      if (dayIndex === undefined) continue;
+      
+      const todayIndex = today.getDay();
+      let daysUntil = dayIndex - todayIndex;
+      if (w === 0 && daysUntil < 0) continue; // skip past days in current week
+      if (w === 0 && daysUntil === 0) {
+        // include today
+      }
+      
+      const date = addDays(addWeeks(today, w), daysUntil);
+      if (date >= today) {
+        results.push({ day, date: format(date, 'yyyy-MM-dd') });
+      }
+    }
+  }
+  
+  return results;
+}
+
 export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const allRides: UnifiedRide[] = [];
   const today = new Date().toISOString().split('T')[0];
@@ -101,15 +133,17 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     { data: pendingSentConvos },
     { data: receivedConvos },
     { data: privateRequests },
+    { data: seriesSpaces },
   ] = await Promise.all([
     fetchChildrenForIds([userId]),
-    supabase.from('profiles').select('car_make, car_model, car_color, license_plate').eq('id', userId).single(),
+    supabase.from('profiles').select('car_make, car_model, car_color, license_plate, home_address').eq('id', userId).single(),
     supabase.from('rides').select('*').eq('user_id', userId),
     supabase.from('ride_conversations').select('id, ride_id, sender_id, message, created_at, status, selected_children').eq('recipient_id', userId).eq('status', 'pending'),
     supabase.from('ride_conversations').select('*, rides(*)').eq('sender_id', userId).eq('status', 'accepted'),
     supabase.from('ride_conversations').select('*, rides(*)').eq('sender_id', userId).eq('status', 'pending'),
     supabase.from('ride_conversations').select('*, rides(*)').eq('recipient_id', userId).eq('status', 'accepted'),
     supabase.from('private_ride_requests').select('*').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).in('status', ['accepted', 'pending']),
+    supabase.from('series_spaces').select('id, parent_a_id, parent_b_id').or(`parent_a_id.eq.${userId},parent_b_id.eq.${userId}`),
   ]);
 
   const myChildren = userChildrenMap[userId] || [];
@@ -129,6 +163,10 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   if (receivedConvos) receivedConvos.forEach(c => otherUserIds.add(c.sender_id));
   if (privateRequests) privateRequests.forEach(r => {
     otherUserIds.add(r.sender_id === userId ? r.recipient_id : r.sender_id);
+  });
+  if (seriesSpaces) seriesSpaces.forEach(s => {
+    const otherId = s.parent_a_id === userId ? s.parent_b_id : s.parent_a_id;
+    otherUserIds.add(otherId);
   });
   otherUserIds.delete(userId);
 
@@ -337,6 +375,128 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         myCarInfo: extractCarInfo((req as any).vehicle_info, myProfile),
         originalData: req,
       });
+    }
+  }
+
+  // ── 4. Series recurring ride occurrences ──
+  if (seriesSpaces && seriesSpaces.length > 0) {
+    const spaceIds = seriesSpaces.map(s => s.id);
+    const [{ data: schedules }, { data: cancellations }] = await Promise.all([
+      supabase.from('recurring_schedules').select('*').in('space_id', spaceIds).eq('status', 'accepted'),
+      supabase.from('schedule_cancellations').select('*').in('schedule_id', 
+        // We'll filter after
+        spaceIds // placeholder, will re-filter
+      ),
+    ]);
+
+    // Fetch actual cancellations for found schedules
+    const scheduleIds = schedules?.map(s => s.id) || [];
+    let actualCancellations: any[] = [];
+    if (scheduleIds.length > 0) {
+      const { data } = await supabase.from('schedule_cancellations').select('*').in('schedule_id', scheduleIds);
+      actualCancellations = data || [];
+    }
+
+    const cancelledSet = new Set(
+      actualCancellations.map((c: any) => `${c.schedule_id}-${c.cancelled_date}-${c.cancelled_day}`)
+    );
+
+    if (schedules) {
+      for (const schedule of schedules) {
+        const space = seriesSpaces.find(s => s.id === schedule.space_id);
+        if (!space) continue;
+
+        const otherId = space.parent_a_id === userId ? space.parent_b_id : space.parent_a_id;
+        const otherProfile = allProfiles[otherId];
+        const assignments = (schedule.day_assignments as any[]) || [];
+        const days = assignments.map((a: any) => a.day);
+
+        // Generate occurrences for next 4 weeks
+        const occurrences = getNextOccurrences(days, 4);
+
+        // Get children names
+        const proposerKids = filterChildrenBySelection(
+          schedule.proposer_id === userId ? myChildren : (allChildren[otherId] || []),
+          schedule.proposer_children as string[] | null
+        );
+        const recipientKids = filterChildrenBySelection(
+          schedule.recipient_id === userId ? myChildren : (allChildren[otherId] || []),
+          schedule.recipient_children as string[] | null
+        );
+        const allKids = [...proposerKids, ...recipientKids].filter(
+          (k, i, arr) => i === arr.findIndex(x => x.name === k.name)
+        );
+
+        for (const occ of occurrences) {
+          const cancelKey = `${schedule.id}-${occ.date}-${occ.day}`;
+          if (cancelledSet.has(cancelKey)) continue;
+
+          const assignment = assignments.find((a: any) => a.day === occ.day);
+          if (!assignment) continue;
+
+          const driverId = assignment.driver_id;
+          const isUserDriver = driverId === userId;
+          const isWed = occ.day === 'Wed';
+
+          // Get the pickup time for this day
+          let pickupTime: string | null = null;
+          if (driverId === schedule.proposer_id) {
+            pickupTime = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
+          } else {
+            pickupTime = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+          }
+          if (!pickupTime) pickupTime = '08:00';
+
+          // Get driver's address and vehicle
+          const driverProfile = driverId === userId ? { ...myProfile, id: userId } : otherProfile;
+          const driverVehicle = driverId === schedule.proposer_id
+            ? schedule.proposer_vehicle
+            : schedule.recipient_vehicle;
+
+          const pickupAddress = driverProfile?.home_address || 'Home address';
+
+          const otherParentInfo = otherProfile ? {
+            id: otherProfile.id,
+            firstName: otherProfile.first_name,
+            lastName: otherProfile.last_name,
+            username: otherProfile.username,
+            email: null,
+            phone: otherProfile.phone_number || null,
+            children: [],
+            carMake: null,
+            carModel: null,
+            carColor: null,
+            licensePlate: null,
+          } as ParticipantInfo : null;
+
+          allRides.push({
+            id: `series-${schedule.id}-${occ.date}-${occ.day}`,
+            source: 'series' as any,
+            rideType: 'offer',
+            status: 'confirmed',
+            rideStatus: 'active',
+            pickupLocation: pickupAddress,
+            dropoffLocation: 'Chadwick School — 26800 S Academy Dr, Palos Verdes Peninsula, CA 90274',
+            rideDate: occ.date,
+            rideTime: pickupTime,
+            seatsAvailable: null,
+            seatsNeeded: null,
+            isDriver: isUserDriver,
+            otherParent: otherParentInfo,
+            myChildren: allKids,
+            myCarInfo: driverVehicle ? extractCarInfo(driverVehicle) : undefined,
+            originalData: {
+              _seriesRide: true,
+              scheduleId: schedule.id,
+              spaceId: schedule.space_id,
+              day: occ.day,
+              date: occ.date,
+              driverId,
+              otherParentId: otherId,
+            },
+          });
+        }
+      }
     }
   }
 
