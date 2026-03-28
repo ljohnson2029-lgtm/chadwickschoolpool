@@ -259,34 +259,23 @@ const MyRides = () => {
         }
       }
 
-      // Fetch children for series parents
+      // Fetch children for series parents directly from children table (need IDs for selection matching)
       const seriesChildrenByParent: Record<string, { id: string; name: string; grade: string }[]> = {};
-      for (const pid of seriesParentIdArr) {
-        const prof = profileMap[pid];
-        if (prof?.linked_students) {
-          seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
-            id: s.id || '',
-            name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
-            grade: s.grade_level || 'N/A',
-          }));
-        }
-        // Also try children directly
-        if (!seriesChildrenByParent[pid]) {
-          try {
-            const { data: cData } = await supabase
-              .from('children')
-              .select('id, first_name, last_name, grade_level')
-              .eq('user_id', pid);
-            if (cData) {
-              seriesChildrenByParent[pid] = cData.map(c => ({
-                id: c.id,
-                name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
-                grade: c.grade_level || 'N/A',
-              }));
-            }
-          } catch {}
-        }
-      }
+      await Promise.all(seriesParentIdArr.map(async (pid) => {
+        try {
+          const { data: cData } = await supabase
+            .from('children')
+            .select('id, first_name, last_name, grade_level')
+            .eq('user_id', pid);
+          if (cData && cData.length > 0) {
+            seriesChildrenByParent[pid] = cData.map(c => ({
+              id: c.id,
+              name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
+              grade: c.grade_level || 'N/A',
+            }));
+          }
+        } catch {}
+      }));
 
       // Generate series ride occurrences
       for (const [schedId, sched] of scheduleMap) {
