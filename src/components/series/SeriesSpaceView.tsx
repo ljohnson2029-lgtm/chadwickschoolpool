@@ -4,11 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Send, Loader2, CalendarPlus } from "lucide-react";
 import { format } from "date-fns";
-import RecurringRideForm from "./RecurringRideForm";
-import RecurringRideCard from "./RecurringRideCard";
+import ScheduleRecurringRideForm from "./ScheduleRecurringRideForm";
+import ScheduleCard from "./ScheduleCard";
 
 interface Message {
   id: string;
@@ -18,22 +17,20 @@ interface Message {
   created_at: string;
 }
 
-interface RecurringRide {
+interface ScheduleData {
   id: string;
   space_id: string;
-  creator_id: string;
+  proposer_id: string;
   recipient_id: string;
-  ride_type: string;
-  pickup_address: string;
-  dropoff_address: string;
-  pickup_latitude: number;
-  pickup_longitude: number;
-  dropoff_latitude: number;
-  dropoff_longitude: number;
-  ride_time: string;
-  recurring_days: string[];
-  creator_children: any;
-  recipient_children: any;
+  day_assignments: any;
+  proposer_regular_time: string | null;
+  proposer_wednesday_time: string | null;
+  recipient_regular_time: string | null;
+  recipient_wednesday_time: string | null;
+  proposer_children: string[];
+  recipient_children: string[] | null;
+  proposer_vehicle: any;
+  recipient_vehicle: any;
   status: string;
   created_at: string;
 }
@@ -47,17 +44,20 @@ interface Props {
 const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [rides, setRides] = useState<RecurringRide[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleData[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
-  const [loadingRides, setLoadingRides] = useState(true);
-  const [showForm, setShowForm] = useState<"offer" | "request" | null>(null);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
+  const [showForm, setShowForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [otherParentId, setOtherParentId] = useState<string>("");
+  const [otherParentId, setOtherParentId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
+  const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
+  const [myAddress, setMyAddress] = useState<string | null>(null);
+  const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
 
-  // Determine other parent ID and current user name
+  // Determine other parent ID, addresses, and names
   useEffect(() => {
     if (!user) return;
     const fetchSpace = async () => {
@@ -67,10 +67,20 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         .eq("id", spaceId)
         .single();
       if (data) {
-        setOtherParentId(data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id);
+        const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
+        setOtherParentId(otherId);
+
+        // Get other parent's address
+        const { data: otherProfile } = await supabase
+          .from("profiles")
+          .select("home_address")
+          .eq("id", otherId)
+          .single();
+        setOtherParentAddress(otherProfile?.home_address || null);
       }
     };
     fetchSpace();
+    setMyAddress(profile?.home_address || null);
     const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.username || "A parent";
     setCurrentUserName(name);
   }, [user, spaceId, profile]);
@@ -86,18 +96,35 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     setLoadingMsgs(false);
   }, [spaceId]);
 
-  const fetchRides = useCallback(async () => {
+  const fetchSchedules = useCallback(async () => {
     const { data } = await supabase
-      .from("recurring_rides")
+      .from("recurring_schedules")
       .select("*")
       .eq("space_id", spaceId)
-      .neq("status", "cancelled")
+      .not("status", "in", '("cancelled","declined")')
       .order("created_at", { ascending: false });
-    if (data) setRides(data as RecurringRide[]);
-    setLoadingRides(false);
+    if (data) {
+      setSchedules(data as unknown as ScheduleData[]);
+      // Fetch proposer names
+      const ids = [...new Set(data.map((s: any) => s.proposer_id))];
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, username")
+          .in("id", ids);
+        if (profiles) {
+          const nameMap: Record<string, string> = {};
+          for (const p of profiles) {
+            nameMap[p.id] = [p.first_name, p.last_name].filter(Boolean).join(" ") || p.username;
+          }
+          setProposerNames(nameMap);
+        }
+      }
+    }
+    setLoadingSchedules(false);
   }, [spaceId]);
 
-  useEffect(() => { fetchMessages(); fetchRides(); }, [fetchMessages, fetchRides]);
+  useEffect(() => { fetchMessages(); fetchSchedules(); }, [fetchMessages, fetchSchedules]);
 
   // Mark messages as read
   useEffect(() => {
@@ -148,7 +175,6 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     if (error) {
       setNewMessage(text);
     } else {
-      // Send notification
       if (otherParentId) {
         try {
           await supabase.functions.invoke("create-notification", {
@@ -164,9 +190,9 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     setSending(false);
   };
 
-  const handleRidePosted = () => {
-    setShowForm(null);
-    fetchRides();
+  const handleSchedulePosted = () => {
+    setShowForm(false);
+    fetchSchedules();
   };
 
   return (
@@ -233,38 +259,37 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
             {showForm ? (
-              <RecurringRideForm
+              <ScheduleRecurringRideForm
                 spaceId={spaceId}
                 otherParentId={otherParentId}
                 otherParentName={otherParentName}
-                rideType={showForm}
-                onCancel={() => setShowForm(null)}
-                onSuccess={handleRidePosted}
+                otherParentAddress={otherParentAddress}
+                myAddress={myAddress}
+                onCancel={() => setShowForm(false)}
+                onSuccess={handleSchedulePosted}
               />
             ) : (
-              <div className="flex gap-2 flex-wrap">
-                <Button size="sm" onClick={() => setShowForm("offer")} className="gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Post Recurring Ride Offer
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowForm("request")} className="gap-1">
-                  <Plus className="h-3.5 w-3.5" /> Post Recurring Ride Request
-                </Button>
-              </div>
+              <Button size="sm" onClick={() => setShowForm(true)} className="gap-1">
+                <CalendarPlus className="h-3.5 w-3.5" /> Schedule Recurring Ride
+              </Button>
             )}
 
-            {loadingRides ? (
+            {loadingSchedules ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
-            ) : rides.length === 0 ? (
+            ) : schedules.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No recurring rides yet.</p>
             ) : (
-              rides.map((ride) => (
-                <RecurringRideCard
-                  key={ride.id}
-                  ride={ride}
+              schedules.map((schedule) => (
+                <ScheduleCard
+                  key={schedule.id}
+                  schedule={schedule}
                   otherParentName={otherParentName}
-                  onUpdate={fetchRides}
+                  proposerName={proposerNames[schedule.proposer_id] || otherParentName}
+                  proposerAddress={schedule.proposer_id === user?.id ? myAddress : otherParentAddress}
+                  recipientAddress={schedule.recipient_id === user?.id ? myAddress : otherParentAddress}
+                  onUpdate={fetchSchedules}
                 />
               ))
             )}
