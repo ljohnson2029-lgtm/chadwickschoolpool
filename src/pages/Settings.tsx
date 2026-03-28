@@ -4,10 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import TestDataGenerator from "@/components/TestDataGenerator";
-import DeleteAccountSection from "@/components/DeleteAccountSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 
 const Settings = () => {
@@ -28,7 +27,6 @@ const Settings = () => {
         <Breadcrumbs items={[{ label: "Settings" }]} />
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Settings</h1>
-          <VerifiedBadge />
         </div>
 
         <div className="space-y-6">
