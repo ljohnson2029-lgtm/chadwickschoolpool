@@ -117,7 +117,6 @@ interface HowToUseGuideProps {
 }
 
 const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [animating, setAnimating] = useState(false);
@@ -145,22 +144,6 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
     if (!isFirstPage) goToPage(currentPage - 1, "left");
   };
 
-  if (!isOpen) {
-    return (
-      <Button
-        variant="outline"
-        className="gap-2 w-full sm:w-auto"
-        onClick={() => {
-          setCurrentPage(0);
-          setIsOpen(true);
-        }}
-      >
-        <BookOpen className="h-4 w-4" />
-        How to Use School Pool
-      </Button>
-    );
-  }
-
   const page = pages[currentPage];
   const colorClass = iconColors[currentPage % iconColors.length];
 
@@ -177,14 +160,6 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
               A quick guide to get you started
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={() => setIsOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Page content */}
@@ -257,25 +232,15 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
             ))}
           </div>
 
-          {isLastPage ? (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-8 text-xs"
-              onClick={() => setIsOpen(false)}
-            >
-              Got it!
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
-              onClick={goNext}
-            >
-              Next
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs"
+            onClick={goNext}
+            disabled={isLastPage}
+          >
+            Next
+          </Button>
         </div>
       </CardContent>
     </Card>
