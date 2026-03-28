@@ -301,12 +301,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const StatusIcon = statusConfig.icon;
 
   // Determine if this is a confirmed ride with another parent
+  const isSeriesRide = ride.source === 'series';
   const isConfirmed = !!(ride.otherParent && !isPast && (
     ride.status === 'joined-ride' as string ||
     ride.status === 'helping-out' as string ||
     ride.status === 'confirmed' as string ||
     (ride.source === 'posted' && ride.otherParent) ||
-    (ride.source === 'private')
+    (ride.source === 'private') ||
+    isSeriesRide
   ));
 
   const rideSource = ride.source === 'private' ? 'private' : 'public';
