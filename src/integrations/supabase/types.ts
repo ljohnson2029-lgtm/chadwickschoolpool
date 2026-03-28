@@ -564,6 +564,71 @@ export type Database = {
           },
         ]
       }
+      recurring_schedules: {
+        Row: {
+          created_at: string
+          day_assignments: Json
+          id: string
+          proposer_children: Json
+          proposer_id: string
+          proposer_regular_time: string | null
+          proposer_vehicle: Json | null
+          proposer_wednesday_time: string | null
+          recipient_children: Json | null
+          recipient_id: string
+          recipient_regular_time: string | null
+          recipient_vehicle: Json | null
+          recipient_wednesday_time: string | null
+          space_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_assignments: Json
+          id?: string
+          proposer_children?: Json
+          proposer_id: string
+          proposer_regular_time?: string | null
+          proposer_vehicle?: Json | null
+          proposer_wednesday_time?: string | null
+          recipient_children?: Json | null
+          recipient_id: string
+          recipient_regular_time?: string | null
+          recipient_vehicle?: Json | null
+          recipient_wednesday_time?: string | null
+          space_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_assignments?: Json
+          id?: string
+          proposer_children?: Json
+          proposer_id?: string
+          proposer_regular_time?: string | null
+          proposer_vehicle?: Json | null
+          proposer_wednesday_time?: string | null
+          recipient_children?: Json | null
+          recipient_id?: string
+          recipient_regular_time?: string | null
+          recipient_vehicle?: Json | null
+          recipient_wednesday_time?: string | null
+          space_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_schedules_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "series_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_conversations: {
         Row: {
           created_at: string | null
@@ -743,6 +808,41 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_cancellations: {
+        Row: {
+          cancelled_by: string
+          cancelled_date: string
+          cancelled_day: string
+          created_at: string
+          id: string
+          schedule_id: string
+        }
+        Insert: {
+          cancelled_by: string
+          cancelled_date: string
+          cancelled_day: string
+          created_at?: string
+          id?: string
+          schedule_id: string
+        }
+        Update: {
+          cancelled_by?: string
+          cancelled_date?: string
+          cancelled_day?: string
+          created_at?: string
+          id?: string
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_cancellations_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_schedules"
             referencedColumns: ["id"]
           },
         ]
