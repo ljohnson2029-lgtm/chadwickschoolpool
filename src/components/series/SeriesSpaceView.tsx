@@ -255,7 +255,10 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         {/* Recurring Rides Section */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Recurring Rides</CardTitle>
+            <div className="flex items-start gap-2">
+              <CardTitle className="text-base">Recurring Rides</CardTitle>
+              <p className="text-xs text-muted-foreground italic">(Sort this information out in the chat before filling out the schedule)</p>
+            </div>
           </CardHeader>
           <CardContent className="p-3 pt-0 space-y-3">
             {showForm ? (
