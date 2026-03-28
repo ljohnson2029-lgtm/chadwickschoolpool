@@ -117,7 +117,6 @@ interface HowToUseGuideProps {
 }
 
 const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [animating, setAnimating] = useState(false);
@@ -144,22 +143,6 @@ const HowToUseGuide = ({ isStudent }: HowToUseGuideProps) => {
   const goPrev = () => {
     if (!isFirstPage) goToPage(currentPage - 1, "left");
   };
-
-  if (!isOpen) {
-    return (
-      <Button
-        variant="outline"
-        className="gap-2 w-full sm:w-auto"
-        onClick={() => {
-          setCurrentPage(0);
-          setIsOpen(true);
-        }}
-      >
-        <BookOpen className="h-4 w-4" />
-        How to Use School Pool
-      </Button>
-    );
-  }
 
   const page = pages[currentPage];
   const colorClass = iconColors[currentPage % iconColors.length];
