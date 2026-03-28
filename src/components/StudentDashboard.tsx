@@ -87,6 +87,7 @@ import {
            <div className="mt-6">
              <HowToUseGuide isStudent={true} />
            </div>
+          </div>
          </div>
       </DashboardLayout>
    );
