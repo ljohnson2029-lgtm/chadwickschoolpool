@@ -91,6 +91,22 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
   const [proposerChildNames, setProposerChildNames] = useState<string[]>([]);
   const [recipientChildNames, setRecipientChildNames] = useState<string[]>([]);
 
+  // All vehicles for both parents
+  const [proposerVehicles, setProposerVehicles] = useState<any[]>([]);
+  const [recipientVehicles, setRecipientVehicles] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAllVehicles = async () => {
+      const [{ data: pVehicles }, { data: rVehicles }] = await Promise.all([
+        supabase.from("vehicles").select("*").eq("user_id", schedule.proposer_id).order("is_primary", { ascending: false }),
+        supabase.from("vehicles").select("*").eq("user_id", schedule.recipient_id).order("is_primary", { ascending: false }),
+      ]);
+      setProposerVehicles(pVehicles || []);
+      setRecipientVehicles(rVehicles || []);
+    };
+    fetchAllVehicles();
+  }, [schedule.proposer_id, schedule.recipient_id]);
+
   useEffect(() => {
     const fetchNames = async (ids: any, setter: (v: string[]) => void) => {
       if (!ids || !Array.isArray(ids) || ids.length === 0) return;
@@ -346,29 +362,37 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
             ))}
           </div>
 
-          {/* Vehicle Info */}
+          {/* Vehicle Info - All vehicles for both parents */}
           {isAccepted && (
-            <div className="space-y-1.5">
-              {schedule.proposer_vehicle && (
-                <div className="text-xs space-y-0.5 bg-muted/30 rounded-md p-2">
-                  <div className="flex items-center gap-1.5">
+            <div className="space-y-2">
+              {/* Proposer's vehicles */}
+              {proposerVehicles.length > 0 && (
+                <div className="text-xs space-y-1 bg-muted/30 rounded-md p-2">
+                  <div className="flex items-center gap-1.5 font-medium">
                     <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-medium">
-                      {isProposer ? "Your" : proposerName + "'s"} Vehicle: {schedule.proposer_vehicle.car_color} {schedule.proposer_vehicle.car_make} {schedule.proposer_vehicle.car_model}
-                    </span>
+                    <span>{isProposer ? "Your" : proposerName + "'s"} Vehicles:</span>
                   </div>
-                  <p className="text-muted-foreground ml-5">License Plate: {schedule.proposer_vehicle.license_plate}</p>
+                  {proposerVehicles.map((v: any) => (
+                    <div key={v.id} className="ml-5 text-muted-foreground">
+                      {v.car_color} {v.car_make} {v.car_model} — License Plate: {v.license_plate}
+                      {v.is_primary && <span className="text-xs font-medium text-primary ml-1">(Primary)</span>}
+                    </div>
+                  ))}
                 </div>
               )}
-              {schedule.recipient_vehicle && (
-                <div className="text-xs space-y-0.5 bg-muted/30 rounded-md p-2">
-                  <div className="flex items-center gap-1.5">
+              {/* Recipient's vehicles */}
+              {recipientVehicles.length > 0 && (
+                <div className="text-xs space-y-1 bg-muted/30 rounded-md p-2">
+                  <div className="flex items-center gap-1.5 font-medium">
                     <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-medium">
-                      {isRecipient ? "Your" : otherParentName + "'s"} Vehicle: {schedule.recipient_vehicle.car_color} {schedule.recipient_vehicle.car_make} {schedule.recipient_vehicle.car_model}
-                    </span>
+                    <span>{isRecipient ? "Your" : otherParentName + "'s"} Vehicles:</span>
                   </div>
-                  <p className="text-muted-foreground ml-5">License Plate: {schedule.recipient_vehicle.license_plate}</p>
+                  {recipientVehicles.map((v: any) => (
+                    <div key={v.id} className="ml-5 text-muted-foreground">
+                      {v.car_color} {v.car_make} {v.car_model} — License Plate: {v.license_plate}
+                      {v.is_primary && <span className="text-xs font-medium text-primary ml-1">(Primary)</span>}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

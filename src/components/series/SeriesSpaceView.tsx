@@ -56,6 +56,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
   const [currentUserName, setCurrentUserName] = useState("");
   const [otherParentAddress, setOtherParentAddress] = useState<string | null>(null);
   const [otherParentPhone, setOtherParentPhone] = useState<string | null>(null);
+  const [otherParentChildren, setOtherParentChildren] = useState<{ first_name: string; last_name: string; grade_level: string | null }[]>([]);
   const [contactOpen, setContactOpen] = useState(false);
   const [myAddress, setMyAddress] = useState<string | null>(null);
   const [proposerNames, setProposerNames] = useState<Record<string, string>>({});
@@ -73,14 +74,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         const otherId = data.parent_a_id === user.id ? data.parent_b_id : data.parent_a_id;
         setOtherParentId(otherId);
 
-        // Get other parent's address and phone
-        const { data: otherProfile } = await supabase
-          .from("profiles")
-          .select("home_address, phone_number")
-          .eq("id", otherId)
-          .single();
+        // Get other parent's address, phone, and children
+        const [{ data: otherProfile }, { data: childrenData }] = await Promise.all([
+          supabase.from("profiles").select("home_address, phone_number").eq("id", otherId).single(),
+          supabase.from("children").select("first_name, last_name, grade_level").eq("user_id", otherId),
+        ]);
         setOtherParentAddress(otherProfile?.home_address || null);
         setOtherParentPhone(otherProfile?.phone_number || null);
+        setOtherParentChildren(childrenData || []);
       }
     };
     fetchSpace();
