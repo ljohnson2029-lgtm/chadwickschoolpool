@@ -309,12 +309,15 @@ export const NotificationDropdown = () => {
     } else if (notification.type === 'ride_message') {
       setIsOpen(false);
       navigate('/my-rides');
-    } else if (notification.type === 'series_message' || notification.type === 'series_ride') {
+    } else if (notification.type === 'series_message' || notification.type === 'series_ride' || notification.type === 'schedule_proposal' || notification.type === 'schedule_accepted' || notification.type === 'schedule_declined') {
       setIsOpen(false);
       navigate('/series');
-    } else if (notification.type === 'schedule_cancelled' || notification.type === 'schedule_cancel_one') {
+    } else if (notification.type === 'schedule_cancelled') {
       setIsOpen(false);
       navigate('/family-carpools');
+    } else if (notification.type === 'schedule_cancel_one' || notification.type === 'schedule_leave_one') {
+      setIsOpen(false);
+      navigate('/my-rides');
     } else if (notification.type === 'ride_expiring') {
       setIsOpen(false);
       navigate('/my-rides');
