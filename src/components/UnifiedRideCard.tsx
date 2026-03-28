@@ -634,7 +634,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           )}
 
           {/* Direct Ride Accept/Decline */}
-          {!isPast && ride.status === 'pending-direct-received' && ride.otherParent && (
+          {!isPast && ride.status === 'pending-direct-received' && (
             <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 space-y-2 border border-amber-200/50 dark:border-amber-800/50">
               <p className="text-sm font-medium text-foreground">
                 {getParentName(ride.otherParent)} sent you a direct ride {ride.rideType}
