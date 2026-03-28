@@ -203,6 +203,29 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
     return () => { supabase.removeChannel(channel); };
   }, [spaceId]);
 
+  // Realtime for child selections — sync between parents
+  useEffect(() => {
+    if (!otherParentId) return;
+    const channel = supabase
+      .channel(`series-children-${spaceId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "series_child_selections",
+        filter: `space_id=eq.${spaceId}`,
+      }, async () => {
+        // Refetch the other parent's selections
+        const { data } = await supabase
+          .from("series_child_selections")
+          .select("child_id")
+          .eq("space_id", spaceId)
+          .eq("parent_id", otherParentId);
+        if (data) setOtherParentSelectedChildIds(data.map((s: any) => s.child_id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [spaceId, otherParentId]);
+
   // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
