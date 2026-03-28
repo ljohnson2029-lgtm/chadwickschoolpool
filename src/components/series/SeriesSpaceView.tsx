@@ -263,6 +263,21 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
           </CardContent>
         </Card>
 
+        {/* Other Parent's Children */}
+        {otherParentChildren.length > 0 && (
+          <div className="flex items-start gap-2 bg-muted/40 border border-border rounded-md p-3 lg:col-span-2">
+            <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-foreground">{otherParentName}'s Children Who Will Need a Ride:</p>
+              {otherParentChildren.map((child, i) => (
+                <p key={i} className="text-xs text-muted-foreground">
+                  {child.first_name} {child.last_name}{child.grade_level ? `, ${child.grade_level}` : ''}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recurring Rides Section */}
         <Card>
           <CardHeader className="pb-2">
