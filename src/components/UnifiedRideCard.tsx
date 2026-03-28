@@ -641,17 +641,19 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
             </div>
           )}
 
-          {/* Seats Info */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
-            <span>
-              {ride.seatsAvailable
-                ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
-                : ride.seatsNeeded
-                  ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
-                  : '—'}
-            </span>
-          </div>
+          {/* Seats Info - hide for series rides */}
+          {!isSeriesRide && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              <span>
+                {ride.seatsAvailable
+                  ? `${ride.seatsAvailable} seat${ride.seatsAvailable > 1 ? 's' : ''} available`
+                  : ride.seatsNeeded
+                    ? `${ride.seatsNeeded} seat${ride.seatsNeeded > 1 ? 's' : ''} needed`
+                    : '—'}
+              </span>
+            </div>
+          )}
 
           {/* Contact & Messages buttons for confirmed rides */}
           {isConfirmed && ride.otherParent && (
@@ -667,30 +669,41 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   <Contact className="h-3.5 w-3.5" />
                   View Contact Info for the Other Parent on This Ride
                 </Button>
-                {/* Messages button - hidden for students */}
+                {/* Messages button - for series rides, link to Series tab */}
                 {!ride._studentView && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1.5 text-xs relative"
-                    onClick={() => setChatOpen(!chatOpen)}
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    Messages
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Button>
+                  isSeriesRide ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs"
+                      onClick={() => window.location.href = '/series'}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Messages (in Series)
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-1.5 text-xs relative"
+                      onClick={() => setChatOpen(!chatOpen)}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                      Messages
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  )
                 )}
               </div>
-              {/* Subtitle removed - label is self-descriptive */}
             </div>
           )}
 
-          {/* Expandable Chat Thread - hidden for students */}
-          {chatOpen && !ride._studentView && isConfirmed && ride.otherParent && authUserId && (
+          {/* Expandable Chat Thread - hidden for students and series rides */}
+          {chatOpen && !ride._studentView && !isSeriesRide && isConfirmed && ride.otherParent && authUserId && (
             <RideChatThread
               rideRefId={chatRideRefId}
               rideSource={rideSource}
