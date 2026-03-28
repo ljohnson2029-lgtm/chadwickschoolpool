@@ -268,9 +268,16 @@ export const NotificationDropdown = () => {
         return <MessageSquare className="h-4 w-4 text-blue-500" />;
       case 'series_message':
         return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      case 'schedule_proposal':
+        return <Repeat className="h-4 w-4 text-teal-500" />;
+      case 'schedule_accepted':
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case 'schedule_declined':
+        return <XCircle className="h-4 w-4 text-destructive" />;
       case 'schedule_cancelled':
         return <XCircle className="h-4 w-4 text-destructive" />;
       case 'schedule_cancel_one':
+      case 'schedule_leave_one':
         return <Clock className="h-4 w-4 text-amber-500" />;
       case 'series_ride':
         return <Car className="h-4 w-4 text-teal-500" />;
