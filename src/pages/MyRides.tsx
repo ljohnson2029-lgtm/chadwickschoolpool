@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { Car, History, Info, LinkIcon } from "lucide-react";
+import { Car, History, Info, LinkIcon, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
@@ -15,6 +16,7 @@ import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { addDays, addWeeks, startOfToday } from "date-fns";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
@@ -42,10 +44,19 @@ const MyRides = () => {
     gcTime: 5 * 60 * 1000, // keep in cache 5 minutes
   });
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const invalidateRides = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['my-rides'] });
     queryClient.invalidateQueries({ queryKey: ['student-rides'] });
   }, [queryClient]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: isStudent ? ['student-rides'] : ['my-rides'] });
+    setRefreshing(false);
+    toast.success('Rides updated', { duration: 2000 });
+  }, [queryClient, isStudent]);
 
   // Student rides fetcher for React Query
   const fetchStudentRides = useCallback(async (): Promise<{ active: UnifiedRide[]; past: UnifiedRide[]; hasLinked: boolean }> => {
@@ -182,6 +193,226 @@ const MyRides = () => {
         _studentPassengerName: studentDisplayName,
       } as UnifiedRide & { _studentView?: boolean; _driverName?: string; _studentPassengerName?: string };
     });
+
+    // ── Fetch series rides for student ──
+    const DAY_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const { data: seriesData } = await supabase.rpc('get_student_series_rides', { student_user_id: user.id });
+    
+    console.log('[Student MyRides] Series data:', seriesData);
+
+    if (seriesData && seriesData.length > 0) {
+      // Build cancelled set
+      const cancelledSet = new Set(
+        seriesData
+          .filter((r: any) => r.cancelled_date)
+          .map((r: any) => `${r.cancelled_schedule_id}-${r.cancelled_date}-${r.cancelled_day}`)
+      );
+
+      // Get unique schedules
+      const scheduleMap = new Map<string, any>();
+      for (const row of seriesData) {
+        if (!scheduleMap.has(row.schedule_id)) {
+          scheduleMap.set(row.schedule_id, row);
+        }
+      }
+
+      // Get all parent IDs for profiles, vehicles, children
+      const seriesParentIds = new Set<string>();
+      for (const s of scheduleMap.values()) {
+        seriesParentIds.add(s.parent_a_id);
+        seriesParentIds.add(s.parent_b_id);
+      }
+
+      // Fetch profiles, vehicles, child selections for series parents
+      const seriesParentIdArr = [...seriesParentIds];
+      const [{ data: seriesProfiles }, { data: seriesVehicles }, { data: seriesChildSels }] = await Promise.all([
+        supabase.functions.invoke('get-parent-profile', { body: { parentId: seriesParentIdArr[0] } }).then(r => ({ data: [r.data?.profile] })),
+        supabase.from('vehicles' as any).select('user_id, car_make, car_model, car_color, license_plate, is_primary').in('user_id', seriesParentIdArr).then(r => r),
+        supabase.from('series_child_selections' as any).select('space_id, parent_id, child_id').in('space_id', [...new Set(Array.from(scheduleMap.values()).map((s: any) => s.space_id))]).then(r => r),
+      ]);
+
+      // Fetch all series parent profiles via edge function
+      const profileMap: Record<string, any> = {};
+      await Promise.all(seriesParentIdArr.map(async (pid) => {
+        try {
+          const { data } = await supabase.functions.invoke('get-parent-profile', { body: { parentId: pid } });
+          if (data?.profile) profileMap[pid] = data.profile;
+        } catch {}
+      }));
+
+      // Build vehicles map
+      const vMap: Record<string, any[]> = {};
+      if (seriesVehicles) {
+        for (const v of seriesVehicles as any[]) {
+          if (!vMap[v.user_id]) vMap[v.user_id] = [];
+          vMap[v.user_id].push(v);
+        }
+      }
+
+      // Build child selection map
+      const selMap: Record<string, Record<string, string[]>> = {};
+      if (seriesChildSels) {
+        for (const sel of seriesChildSels as any[]) {
+          if (!selMap[sel.space_id]) selMap[sel.space_id] = {};
+          if (!selMap[sel.space_id][sel.parent_id]) selMap[sel.space_id][sel.parent_id] = [];
+          selMap[sel.space_id][sel.parent_id].push(sel.child_id);
+        }
+      }
+
+      // Fetch children for series parents
+      const seriesChildrenByParent: Record<string, { id: string; name: string; grade: string }[]> = {};
+      for (const pid of seriesParentIdArr) {
+        const prof = profileMap[pid];
+        if (prof?.linked_students) {
+          seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
+            id: s.id || '',
+            name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+            grade: s.grade_level || 'N/A',
+          }));
+        }
+        // Also try children directly
+        if (!seriesChildrenByParent[pid]) {
+          try {
+            const { data: cData } = await supabase
+              .from('children')
+              .select('id, first_name, last_name, grade_level')
+              .eq('user_id', pid);
+            if (cData) {
+              seriesChildrenByParent[pid] = cData.map(c => ({
+                id: c.id,
+                name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unknown',
+                grade: c.grade_level || 'N/A',
+              }));
+            }
+          } catch {}
+        }
+      }
+
+      // Generate series ride occurrences
+      for (const [schedId, sched] of scheduleMap) {
+        const assignments = (sched.day_assignments as any[]) || [];
+        const days = assignments.map((a: any) => a.day);
+        const parentAId = sched.parent_a_id;
+        const parentBId = sched.parent_b_id;
+        const spaceSelections = selMap[sched.space_id] || {};
+
+        // Generate 4 weeks of occurrences
+        const todayDate = startOfToday();
+        for (let w = 0; w < 4; w++) {
+          for (const day of days) {
+            const dayIndex = DAY_MAP[day];
+            if (dayIndex === undefined) continue;
+            const todayIndex = todayDate.getDay();
+            let daysUntil = dayIndex - todayIndex;
+            if (w === 0 && daysUntil < 0) continue;
+            const date = addDays(addWeeks(todayDate, w), daysUntil);
+            if (date < todayDate) continue;
+            const dateStr = format(date, 'yyyy-MM-dd');
+
+            const cancelKey = `${schedId}-${dateStr}-${day}`;
+            if (cancelledSet.has(cancelKey)) continue;
+
+            const assignment = assignments.find((a: any) => a.day === day);
+            if (!assignment) continue;
+
+            const driverId = assignment.driver_id;
+            const passengerId = driverId === parentAId ? parentBId : parentAId;
+            const isWed = day === 'Wed';
+
+            let pickupTime: string | null = null;
+            if (driverId === sched.proposer_id) {
+              pickupTime = isWed ? sched.proposer_wednesday_time : sched.proposer_regular_time;
+            } else {
+              pickupTime = isWed ? sched.recipient_wednesday_time : sched.recipient_regular_time;
+            }
+            if (!pickupTime) pickupTime = '08:00';
+
+            // Pickup = passenger parent's home address
+            const passengerProfile = profileMap[passengerId];
+            const pickupAddress = passengerProfile?.home_address || 'Passenger home address';
+
+            // Build children list from series_child_selections
+            const parentAChildIds = spaceSelections[parentAId] || [];
+            const parentBChildIds = spaceSelections[parentBId] || [];
+            const parentAKids = parentAChildIds.length > 0
+              ? (seriesChildrenByParent[parentAId] || []).filter(c => parentAChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
+              : [];
+            const parentBKids = parentBChildIds.length > 0
+              ? (seriesChildrenByParent[parentBId] || []).filter(c => parentBChildIds.includes(c.id)).map(c => ({ name: c.name, grade: c.grade }))
+              : [];
+            const allSeriesKids = [...parentAKids, ...parentBKids];
+            const finalKids = allSeriesKids.length > 0 ? allSeriesKids : [{ name: studentDisplayName, grade: studentGrade }];
+
+            // Driver info
+            const driverProfile = profileMap[driverId];
+            const driverName = driverProfile
+              ? [driverProfile.first_name, driverProfile.last_name].filter(Boolean).join(' ')
+              : 'Driver';
+            const driverVehicles = vMap[driverId] || [];
+            const primaryVehicle = driverVehicles.find((v: any) => v.is_primary) || driverVehicles[0];
+
+            // Other parent (the one not linked to student — show contact for)
+            const linkedParentIds = links.map((l: any) => l.parent_id);
+            const otherSeriesParentId = linkedParentIds.includes(parentAId) ? parentBId : parentAId;
+            const otherSeriesProfile = profileMap[otherSeriesParentId];
+
+            rides.push({
+              id: `series-${schedId}-${dateStr}-${day}`,
+              source: 'series' as any,
+              rideType: 'offer',
+              status: 'confirmed',
+              rideStatus: 'active',
+              pickupLocation: pickupAddress,
+              dropoffLocation: 'Chadwick School — 26800 S Academy Dr, Palos Verdes Peninsula, CA 90274',
+              rideDate: dateStr,
+              rideTime: pickupTime,
+              seatsAvailable: null,
+              seatsNeeded: null,
+              isDriver: false,
+              otherParent: otherSeriesProfile ? {
+                id: otherSeriesParentId,
+                firstName: otherSeriesProfile.first_name || null,
+                lastName: otherSeriesProfile.last_name || null,
+                username: otherSeriesProfile.username || '',
+                email: null,
+                phone: otherSeriesProfile.phone_number || null,
+                children: [],
+                carMake: null,
+                carModel: null,
+                carColor: null,
+                licensePlate: null,
+              } : null,
+              myChildren: finalKids,
+              myCarInfo: primaryVehicle ? {
+                carMake: primaryVehicle.car_make,
+                carModel: primaryVehicle.car_model,
+                carColor: primaryVehicle.car_color,
+                licensePlate: primaryVehicle.license_plate,
+              } : undefined,
+              originalData: {
+                _seriesRide: true,
+                scheduleId: schedId,
+                spaceId: sched.space_id,
+                day,
+                date: dateStr,
+                driverId,
+                otherParentId: otherSeriesParentId,
+                driverVehicles: driverVehicles.map((v: any) => ({
+                  car_make: v.car_make,
+                  car_model: v.car_model,
+                  car_color: v.car_color,
+                  license_plate: v.license_plate,
+                  is_primary: v.is_primary,
+                })),
+              },
+              _studentView: true,
+              _driverName: driverName,
+              _studentPassengerName: studentDisplayName,
+            } as any);
+          }
+        }
+      }
+    }
 
     rides.sort((a, b) => {
       const dateA = new Date(`${a.rideDate}T${a.rideTime}`);
@@ -743,13 +974,25 @@ const MyRides = () => {
       <div className="container mx-auto px-4 max-w-4xl">
         <Breadcrumbs items={[{ label: "My Rides" }]} />
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">My Rides</h1>
-          <p className="text-muted-foreground">
-            {isStudent
-              ? "Rides scheduled by your parent"
-              : "All your rides in one place"}
-          </p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">My Rides</h1>
+            <p className="text-muted-foreground">
+              {isStudent
+                ? "Rides scheduled by your parent"
+                : "All your rides in one place"}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shrink-0"
+            disabled={refreshing || loadingData}
+            onClick={handleRefresh}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         {isStudent && (

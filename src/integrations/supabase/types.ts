@@ -1249,6 +1249,26 @@ export type Database = {
         Args: { user_user_id: string }
         Returns: number
       }
+      get_student_series_rides: {
+        Args: { student_user_id: string }
+        Returns: {
+          cancelled_date: string
+          cancelled_day: string
+          cancelled_schedule_id: string
+          day_assignments: Json
+          parent_a_id: string
+          parent_b_id: string
+          proposer_id: string
+          proposer_regular_time: string
+          proposer_wednesday_time: string
+          recipient_id: string
+          recipient_regular_time: string
+          recipient_wednesday_time: string
+          schedule_id: string
+          schedule_status: string
+          space_id: string
+        }[]
+      }
       get_top_connections: {
         Args: { current_user_id: string; result_limit?: number }
         Returns: {
