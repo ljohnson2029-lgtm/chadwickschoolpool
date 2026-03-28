@@ -68,7 +68,7 @@ export interface PendingJoinRequest {
 
 export interface UnifiedRide {
   id: string;
-  source: 'posted' | 'conversation' | 'private';
+  source: 'posted' | 'conversation' | 'private' | 'series';
   rideType: 'request' | 'offer';
   status: 'posted-looking' | 'posted-offering' | 'joined-ride' | 'helping-out' | 'confirmed' | 'pending-approval' | 'pending-direct-sent' | 'pending-direct-received';
   rideStatus?: 'active' | 'completed' | 'cancelled' | 'expired';
@@ -94,7 +94,7 @@ export interface UnifiedRide {
   };
 }
 
-export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct';
+export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct' | 'cancel-series' | 'leave-series';
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
