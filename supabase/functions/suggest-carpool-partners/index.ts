@@ -135,6 +135,7 @@ serve(async (req) => {
       their_active_days: string[];
       ride_count: number;
       score: number;
+      neighborhood: string;
     }
 
     const candidates: Candidate[] = [];
