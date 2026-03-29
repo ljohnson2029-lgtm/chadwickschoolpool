@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus, RefreshCw } from "lucide-react";
@@ -16,20 +15,16 @@ import RideOfferForm from "@/components/RideOfferForm";
 import RidesList, { type Ride } from "@/components/RidesList";
 import FindRidesMap from "@/components/FindRidesMap";
 import ParentSearchBar from "@/components/ParentSearchBar";
-import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 
 const FamilyCarpools = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [roleLoading, setRoleLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
   const [showHome, setShowHome] = useState(false);
   const [showSchool, setShowSchool] = useState(true);
-  const [isUserParent, setIsUserParent] = useState(false);
-  const [isUserStudent, setIsUserStudent] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [focusRide, setFocusRide] = useState<{
@@ -56,26 +51,8 @@ const FamilyCarpools = () => {
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user) return;
-
-      // Fetch email to determine parent/student
-      const { data: userData } = await supabase
-        .from('users')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (userData?.email) {
-        setIsUserParent(checkIsParent(userData.email));
-        setIsUserStudent(checkIsStudent(userData.email));
-      }
-      setRoleLoading(false);
-    };
-
-    fetchUserInfo();
-  }, [user]);
+  const isUserParent = profile?.account_type === 'parent';
+  const isUserStudent = profile?.account_type === 'student';
 
   const handleRideCreated = () => {
     setRefreshKey((prev) => prev + 1);
@@ -94,7 +71,7 @@ const FamilyCarpools = () => {
     });
   };
 
-  if (loading || roleLoading || !user || !profile) {
+  if (loading || !user || !profile) {
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4">

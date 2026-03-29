@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
 import { format } from "date-fns";
 
 interface RideChild {
@@ -90,10 +89,8 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [isUserParent, setIsUserParent] = useState(false);
-  const [isUserStudent, setIsUserStudent] = useState(false);
+  const userRole = profile?.account_type ?? null;
+  const isUserParent = userRole === "parent";
   
   // Response tracking
   const [userResponses, setUserResponses] = useState<RideResponse[]>([]);
@@ -104,35 +101,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [rideOwnerContact, setRideOwnerContact] = useState<OwnerContact | null>(null);
   const [showSuccessInfo, setShowSuccessInfo] = useState(false);
-
-  // Fetch user role and email
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user) return;
-      
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setUserRole(roleData?.role || null);
-      
-      const { data: userData } = await supabase
-        .from('users')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (userData?.email) {
-        setUserEmail(userData.email);
-        setIsUserParent(checkIsParent(userData.email));
-        setIsUserStudent(checkIsStudent(userData.email));
-      }
-    };
-
-    fetchUserInfo();
-  }, [user]);
 
   // Fetch user's existing responses
   const fetchUserResponses = useCallback(async () => {
@@ -200,10 +168,10 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   }, [user, fetchUserResponses, fetchRideConnections]);
 
   useEffect(() => {
-    if (userRole !== null) {
+    if (user && userRole) {
       fetchRides();
     }
-  }, [userRole]);
+  }, [user, userRole]);
 
   const fetchRides = async () => {
     try {
