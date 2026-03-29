@@ -15,6 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides, isRidePast } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, startOfToday } from "date-fns";
 
