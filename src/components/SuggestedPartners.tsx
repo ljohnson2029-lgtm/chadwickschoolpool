@@ -9,53 +9,108 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, Calendar, GraduationCap, Sparkles,
-  MessageCircle, Users, ChevronRight, Zap, TrendingUp, Bot,
+  MessageCircle, Users, ChevronRight, Bot,
+  Navigation, Route,
 } from "lucide-react";
 
-interface Suggestion {
+interface UnifiedSuggestion {
   id: string;
   first_name: string;
   last_name: string;
   username: string;
-  distance_miles: number;
-  grade_matches: string[];
-  schedule_overlap_days: string[];
-  ride_count: number;
-  score: number;
-  confidence: string;
+  badge_label: string;
+  badge_style: string;
   reasons: string[];
   ai_summary: string | null;
+  source: "route" | "proximity" | "smart";
+  already_connected?: boolean;
 }
 
 const SuggestedPartners = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<UnifiedSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [noAddress, setNoAddress] = useState(false);
   const [aiPowered, setAiPowered] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const fetchSuggestions = async () => {
+
+    const fetchAll = async () => {
       setLoading(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("suggest-carpool-partners");
-        if (error) throw error;
-        if (data?.reason === "no_address") {
-          setNoAddress(true);
-          setSuggestions([]);
-        } else {
-          setSuggestions(data?.suggestions || []);
-          setAiPowered(data?.ai_powered || false);
+      const unified: UnifiedSuggestion[] = [];
+      const seenIds = new Set<string>();
+
+      // Fetch both in parallel
+      const [piggybackRes, partnerRes] = await Promise.all([
+        supabase.functions.invoke("suggest-piggyback-routes").catch(() => ({ data: null, error: true })),
+        supabase.functions.invoke("suggest-carpool-partners").catch(() => ({ data: null, error: true })),
+      ]);
+
+      // Process piggyback/route matches first (higher priority)
+      const pbData = piggybackRes?.data;
+      if (pbData?.suggestions?.length > 0) {
+        for (const s of pbData.suggestions) {
+          if (seenIds.has(s.parent_id)) continue;
+          seenIds.add(s.parent_id);
+
+          const distLabel = s.detour_label || (s.distance_from_route_miles < 0.3 ? "Right on your route" : s.distance_from_route_miles < 1 ? "Tiny detour" : "Small detour");
+          const reasons: string[] = [];
+          if (pbData.match_mode === "route") {
+            reasons.push(s.distance_from_route_miles < 0.3 ? "Directly on your commute route" : `${s.distance_from_route_miles} mi from your route`);
+          } else {
+            reasons.push(`${s.distance_from_route_miles} mi from your home`);
+          }
+          if (s.their_grades?.length > 0) reasons.push(`Kids in ${[...new Set(s.their_grades)].join(", ")}`);
+          if (s.their_kids?.length > 0) reasons.push(`${s.their_kids.length} kid${s.their_kids.length > 1 ? "s" : ""} at Chadwick`);
+
+          unified.push({
+            id: s.parent_id,
+            first_name: s.first_name,
+            last_name: s.last_name,
+            username: s.username,
+            badge_label: distLabel,
+            badge_style: getBadgeStyle(distLabel),
+            reasons,
+            ai_summary: s.ai_summary,
+            source: pbData.match_mode === "route" ? "route" : "proximity",
+            already_connected: s.already_connected,
+          });
         }
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
+        if (pbData.ai_powered) setAiPowered(true);
       }
+
+      // Process smart match suggestions
+      const spData = partnerRes?.data;
+      if (spData?.reason === "no_address" && unified.length === 0) {
+        setNoAddress(true);
+      }
+      if (spData?.suggestions?.length > 0) {
+        for (const s of spData.suggestions) {
+          if (seenIds.has(s.id)) continue;
+          seenIds.add(s.id);
+
+          unified.push({
+            id: s.id,
+            first_name: s.first_name,
+            last_name: s.last_name,
+            username: s.username,
+            badge_label: getConfidenceLabel(s.confidence),
+            badge_style: getConfidenceStyle(s.confidence),
+            reasons: s.reasons?.slice(0, 3) || [],
+            ai_summary: s.ai_summary,
+            source: "smart",
+          });
+        }
+        if (spData.ai_powered) setAiPowered(true);
+      }
+
+      setSuggestions(unified.slice(0, 6));
+      setLoading(false);
     };
-    fetchSuggestions();
+
+    fetchAll();
   }, [user]);
 
   const getInitials = (first: string, last: string, username: string) => {
@@ -63,28 +118,16 @@ const SuggestedPartners = () => {
     return username.substring(0, 2).toUpperCase();
   };
 
-  const getName = (s: Suggestion) =>
+  const getName = (s: UnifiedSuggestion) =>
     [s.first_name, s.last_name].filter(Boolean).join(" ") || s.username;
 
   const getReasonIcon = (reason: string) => {
     const r = reason.toLowerCase();
-    if (r.includes("mile") || r.includes("away") || r.includes("nearby") || r.includes("close")) return <MapPin className="h-3 w-3" />;
+    if (r.includes("route") || r.includes("commute")) return <Navigation className="h-3 w-3" />;
+    if (r.includes("mile") || r.includes("away") || r.includes("nearby") || r.includes("close") || r.includes("home")) return <MapPin className="h-3 w-3" />;
     if (r.includes("schedule") || r.includes("day") || r.includes("mon") || r.includes("tue") || r.includes("wed") || r.includes("thu") || r.includes("fri")) return <Calendar className="h-3 w-3" />;
-    if (r.includes("grade") || r.includes("kid") || r.includes("child") || r.includes("th ") || r.includes("nd ") || r.includes("rd ") || r.includes("st ")) return <GraduationCap className="h-3 w-3" />;
-    if (r.includes("active") || r.includes("reliable") || r.includes("carpool")) return <TrendingUp className="h-3 w-3" />;
+    if (r.includes("grade") || r.includes("kid") || r.includes("child") || r.includes("th ") || r.includes("nd ") || r.includes("rd ") || r.includes("st ") || r.includes("chadwick")) return <GraduationCap className="h-3 w-3" />;
     return <Sparkles className="h-3 w-3" />;
-  };
-
-  const getConfidenceStyle = (confidence: string) => {
-    if (confidence === "great") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400";
-    if (confidence === "good") return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
-    return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
-  };
-
-  const getConfidenceLabel = (confidence: string) => {
-    if (confidence === "great") return "Great Match";
-    if (confidence === "good") return "Good Match";
-    return "Potential Match";
   };
 
   if (loading) {
@@ -132,14 +175,12 @@ const SuggestedPartners = () => {
           <h2 className="text-lg font-semibold text-foreground">Suggested for You</h2>
         </div>
         <Badge variant="secondary" className="text-xs gap-1">
-          {aiPowered ? <Bot className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-          {aiPowered ? "AI-Ranked" : "Smart Match"}
+          {aiPowered ? <Bot className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+          {aiPowered ? "AI-Powered" : "Smart Match"}
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground -mt-1">
-        {aiPowered
-          ? "AI-curated matches based on proximity, schedule, and grade level"
-          : "Families matched by proximity, schedule, and grade level"}
+        Families matched by route, proximity, schedule, and grade level
       </p>
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
@@ -160,13 +201,22 @@ const SuggestedPartners = () => {
                   <div>
                     <h3 className="font-semibold text-sm text-foreground leading-tight">{getName(s)}</h3>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Parent</span>
+                      {s.source === "route" ? (
+                        <>
+                          <Route className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">On your route</span>
+                        </>
+                      ) : (
+                        <>
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">Parent</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
-                <Badge className={`text-[10px] px-1.5 py-0.5 ${getConfidenceStyle(s.confidence)} border-0`}>
-                  {getConfidenceLabel(s.confidence)}
+                <Badge className={`text-[10px] px-1.5 py-0.5 ${s.badge_style} border-0`}>
+                  {s.badge_label}
                 </Badge>
               </div>
 
@@ -195,7 +245,7 @@ const SuggestedPartners = () => {
                 onClick={() => navigate(`/series?startWith=${s.id}`)}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                Start Series
+                {s.already_connected ? "View Series" : "Start Series"}
                 <ChevronRight className="h-3 w-3 ml-auto" />
               </Button>
             </CardContent>
@@ -205,5 +255,23 @@ const SuggestedPartners = () => {
     </div>
   );
 };
+
+function getBadgeStyle(label: string): string {
+  if (label.includes("Right on") || label.includes("Less than")) return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400";
+  if (label.includes("Tiny") || label.includes("Nearby")) return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
+  return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
+}
+
+function getConfidenceStyle(confidence: string): string {
+  if (confidence === "great") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400";
+  if (confidence === "good") return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
+  return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
+}
+
+function getConfidenceLabel(confidence: string): string {
+  if (confidence === "great") return "Great Match";
+  if (confidence === "good") return "Good Match";
+  return "Potential Match";
+}
 
 export default SuggestedPartners;
