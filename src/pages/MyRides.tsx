@@ -951,6 +951,7 @@ const MyRides = () => {
   }, [user, pastRides, invalidateRides]);
 
 
+  if (loading || !user || !profile) {
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4">
