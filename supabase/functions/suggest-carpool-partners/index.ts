@@ -361,16 +361,32 @@ Return the top 5 only.`;
   }
 });
 
-function buildFallbackReasons(c: { distance_miles: number; grade_matches: string[]; schedule_overlap_days: string[]; ride_count: number }): string[] {
+function buildVerifiedReasons(c: { distance_miles: number; grade_matches: string[]; their_kids: string[]; schedule_overlap_days: string[]; ride_count: number }): string[] {
   const reasons: string[] = [];
-  if (c.distance_miles < 1) reasons.push(`Only ${c.distance_miles} miles away`);
-  else if (c.distance_miles < 3) reasons.push(`${c.distance_miles} miles away`);
-  if (c.grade_matches.length > 0) reasons.push(`Kids in ${c.grade_matches.join(", ")}`);
+  
+  // Distance — always from haversine calculation
+  if (c.distance_miles < 0.5) reasons.push("Less than half a mile away");
+  else if (c.distance_miles < 1) reasons.push(`${c.distance_miles} miles away`);
+  else if (c.distance_miles < 5) reasons.push(`${c.distance_miles} miles away`);
+  
+  // Grade matches — from children table
+  if (c.grade_matches.length > 0) {
+    const uniqueGrades = [...new Set(c.grade_matches)];
+    reasons.push(`Kids in ${uniqueGrades.join(", ")}`);
+  }
+  
+  // Schedule overlap — from rides/recurring_schedules tables
   if (c.schedule_overlap_days.length > 0) {
     if (c.schedule_overlap_days.length >= 4) reasons.push("Same weekday schedule");
-    else reasons.push(`Shares ${c.schedule_overlap_days.slice(0, 2).join("/")} schedule`);
+    else reasons.push(`Shares ${c.schedule_overlap_days.slice(0, 3).join(", ")} schedule`);
   }
+  
+  // Activity — from ride count
   if (c.ride_count >= 5) reasons.push("Active carpooler");
+  
   if (reasons.length === 0) reasons.push("Nearby Chadwick family");
   return reasons;
 }
+
+// Alias for fallback paths
+const buildFallbackReasons = buildVerifiedReasons;
