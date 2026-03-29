@@ -223,7 +223,7 @@ serve(async (req) => {
       `base score: ${c.score}`
     ).join("\n");
 
-    const prompt = `You are a carpool matching assistant for Chadwick School families. Analyze these candidates and return your results.
+    const prompt = `You are a carpool matching assistant for Chadwick School families. Analyze these pre-scored candidates and re-rank them.
 
 ABOUT THE USER:
 - Name: ${myName}
@@ -234,11 +234,12 @@ ABOUT THE USER:
 CANDIDATES (pre-scored by proximity, schedule, grade, activity):
 ${candidateSummaries}
 
-TASK: Re-rank these candidates and for each, produce:
-1. A final rank (best match first) — consider real-world carpool practicality
+TASK: Re-rank these candidates by real-world carpool practicality and for each produce:
+1. A final rank (best match first)
 2. A confidence tier: "great", "good", or "potential"
-3. Exactly 2-3 short, specific, human-friendly reasons (max 8 words each) explaining WHY this is a match. Be specific — mention names, grades, distances, days. Examples: "Both have 3rd graders", "Only 0.4 miles apart", "Carpools Mon/Wed/Fri too"
-4. A one-sentence personalized summary (max 20 words) that makes this feel like a curated recommendation, not a database query.
+3. A single personalized summary sentence (max 25 words) that explains why this family is a great carpool partner. Write it warmly and conversationally, like a friend's recommendation. Do NOT include specific distances, grade levels, or child names — those facts will be displayed separately from verified data.
+
+IMPORTANT: The summary must NOT contain any specific numbers, distances, grade levels, or names. Only provide a qualitative, warm description of why the match works well. Example good summaries: "A reliable nearby family with a similar school schedule — a natural carpool fit." or "You're practically neighbors with overlapping routines — this could work great."
 
 Return the top 5 only.`;
 
@@ -259,7 +260,7 @@ Return the top 5 only.`;
             type: "function",
             function: {
               name: "rank_matches",
-              description: "Return the AI-ranked carpool partner suggestions",
+              description: "Return the AI-ranked carpool partner suggestions with confidence and a warm summary",
               parameters: {
                 type: "object",
                 properties: {
@@ -270,14 +271,9 @@ Return the top 5 only.`;
                       properties: {
                         candidate_index: { type: "number", description: "1-based index from the candidate list" },
                         confidence: { type: "string", enum: ["great", "good", "potential"] },
-                        reasons: {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "2-3 short specific reasons"
-                        },
-                        summary: { type: "string", description: "One-sentence personalized recommendation" }
+                        summary: { type: "string", description: "Warm one-sentence recommendation without specific numbers, grades, or names" }
                       },
-                      required: ["candidate_index", "confidence", "reasons", "summary"],
+                      required: ["candidate_index", "confidence", "summary"],
                       additionalProperties: false,
                     }
                   }
@@ -315,11 +311,13 @@ Return the top 5 only.`;
       const aiResult = JSON.parse(toolCall.function.arguments);
       const aiMatches = aiResult.matches || [];
 
-      // Map AI results back to candidates
-      const suggestions = aiMatches.map((m: { candidate_index: number; confidence: string; reasons: string[]; summary: string }) => {
+      // Map AI results back to candidates — use VERIFIED data for reasons
+      const suggestions = aiMatches.map((m: { candidate_index: number; confidence: string; summary: string }) => {
         const idx = m.candidate_index - 1;
         if (idx < 0 || idx >= topCandidates.length) return null;
         const c = topCandidates[idx];
+        // Build reasons from VERIFIED database data only
+        const verifiedReasons = buildVerifiedReasons(c);
         return {
           id: c.id,
           first_name: c.first_name,
@@ -331,7 +329,7 @@ Return the top 5 only.`;
           ride_count: c.ride_count,
           score: c.score,
           confidence: m.confidence,
-          reasons: m.reasons,
+          reasons: verifiedReasons,
           ai_summary: m.summary,
         };
       }).filter(Boolean).slice(0, 5);
@@ -363,16 +361,32 @@ Return the top 5 only.`;
   }
 });
 
-function buildFallbackReasons(c: { distance_miles: number; grade_matches: string[]; schedule_overlap_days: string[]; ride_count: number }): string[] {
+function buildVerifiedReasons(c: { distance_miles: number; grade_matches: string[]; their_kids: string[]; schedule_overlap_days: string[]; ride_count: number }): string[] {
   const reasons: string[] = [];
-  if (c.distance_miles < 1) reasons.push(`Only ${c.distance_miles} miles away`);
-  else if (c.distance_miles < 3) reasons.push(`${c.distance_miles} miles away`);
-  if (c.grade_matches.length > 0) reasons.push(`Kids in ${c.grade_matches.join(", ")}`);
+  
+  // Distance — always from haversine calculation
+  if (c.distance_miles < 0.5) reasons.push("Less than half a mile away");
+  else if (c.distance_miles < 1) reasons.push(`${c.distance_miles} miles away`);
+  else if (c.distance_miles < 5) reasons.push(`${c.distance_miles} miles away`);
+  
+  // Grade matches — from children table
+  if (c.grade_matches.length > 0) {
+    const uniqueGrades = [...new Set(c.grade_matches)];
+    reasons.push(`Kids in ${uniqueGrades.join(", ")}`);
+  }
+  
+  // Schedule overlap — from rides/recurring_schedules tables
   if (c.schedule_overlap_days.length > 0) {
     if (c.schedule_overlap_days.length >= 4) reasons.push("Same weekday schedule");
-    else reasons.push(`Shares ${c.schedule_overlap_days.slice(0, 2).join("/")} schedule`);
+    else reasons.push(`Shares ${c.schedule_overlap_days.slice(0, 3).join(", ")} schedule`);
   }
+  
+  // Activity — from ride count
   if (c.ride_count >= 5) reasons.push("Active carpooler");
+  
   if (reasons.length === 0) reasons.push("Nearby Chadwick family");
   return reasons;
 }
+
+// Alias for fallback paths
+const buildFallbackReasons = buildVerifiedReasons;
