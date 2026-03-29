@@ -931,7 +931,7 @@ const MyRides = () => {
       }
 
       const pastDirectIds = pastRides
-        .filter(r => r.source === 'direct' && (r.originalData?.sender_id === user.id || r.originalData?.recipient_id === user.id))
+        .filter(r => r.source === 'private' && (r.originalData?.sender_id === user.id || r.originalData?.recipient_id === user.id))
         .filter(r => ['cancelled', 'completed', 'declined'].includes(r.originalData?.status))
         .map(r => r.id);
 
