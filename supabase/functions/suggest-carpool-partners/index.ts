@@ -311,11 +311,13 @@ Return the top 5 only.`;
       const aiResult = JSON.parse(toolCall.function.arguments);
       const aiMatches = aiResult.matches || [];
 
-      // Map AI results back to candidates
-      const suggestions = aiMatches.map((m: { candidate_index: number; confidence: string; reasons: string[]; summary: string }) => {
+      // Map AI results back to candidates — use VERIFIED data for reasons
+      const suggestions = aiMatches.map((m: { candidate_index: number; confidence: string; summary: string }) => {
         const idx = m.candidate_index - 1;
         if (idx < 0 || idx >= topCandidates.length) return null;
         const c = topCandidates[idx];
+        // Build reasons from VERIFIED database data only
+        const verifiedReasons = buildVerifiedReasons(c);
         return {
           id: c.id,
           first_name: c.first_name,
@@ -327,7 +329,7 @@ Return the top 5 only.`;
           ride_count: c.ride_count,
           score: c.score,
           confidence: m.confidence,
-          reasons: m.reasons,
+          reasons: verifiedReasons,
           ai_summary: m.summary,
         };
       }).filter(Boolean).slice(0, 5);
