@@ -131,6 +131,11 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* ── SUGGESTED PARTNERS ── */}
+        <div className="mt-6 sm:mt-8">
+          <SuggestedPartners />
+        </div>
+
         {/* ── HOW TO USE GUIDE ── */}
         <div className="mt-6 sm:mt-8">
           <HowToUseGuide isStudent={false} />
