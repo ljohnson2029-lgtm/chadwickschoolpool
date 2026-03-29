@@ -46,6 +46,8 @@ const MyRides = () => {
     }
   }, [user, loading, navigate]);
 
+  const [clearingPast, setClearingPast] = useState(false);
+
   // Parent rides via React Query with caching
   const { data: parentRideData, isLoading: loadingParentRides } = useQuery({
     queryKey: ['my-rides', user?.id],
