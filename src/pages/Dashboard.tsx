@@ -131,12 +131,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* ── PIGGYBACK ROUTES ── */}
-        <div className="mt-6 sm:mt-8">
-          <PiggybackRoutes />
-        </div>
-
-        {/* ── SUGGESTED PARTNERS ── */}
+        {/* ── SUGGESTED PARTNERS (unified) ── */}
         <div className="mt-6 sm:mt-8">
           <SuggestedPartners />
         </div>
