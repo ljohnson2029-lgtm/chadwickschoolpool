@@ -2,19 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
-interface ScoredSuggestion {
-  id: string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  distance_miles: number;
-  grade_matches: string[];
-  schedule_overlap_days: string[];
-  ride_count: number;
-  score: number;
-  reasons: string[];
-}
-
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -50,6 +37,7 @@ serve(async (req) => {
       });
     }
 
+    // Fetch all data in parallel
     const [
       { data: myProfile },
       { data: myChildren },
@@ -59,8 +47,8 @@ serve(async (req) => {
       { data: recurringSchedules },
       { data: existingSpaces },
     ] = await Promise.all([
-      supabase.from("profiles").select("id, home_latitude, home_longitude, home_address").eq("id", user.id).single(),
-      supabase.from("children").select("grade_level").eq("user_id", user.id),
+      supabase.from("profiles").select("id, first_name, last_name, home_latitude, home_longitude, home_address").eq("id", user.id).single(),
+      supabase.from("children").select("first_name, grade_level").eq("user_id", user.id),
       supabase.from("profiles").select("id, first_name, last_name, username, home_latitude, home_longitude, home_address, account_type")
         .eq("account_type", "parent").neq("id", user.id)
         .not("home_latitude", "is", null).not("home_longitude", "is", null),
@@ -80,13 +68,16 @@ serve(async (req) => {
     }
 
     const myGrades = new Set((myChildren || []).map(c => c.grade_level).filter(Boolean));
+    const myKidNames = (myChildren || []).map(c => c.first_name).filter(Boolean);
 
+    // Build children lookup
     const childrenByParent: Record<string, { grade_level: string | null; first_name: string }[]> = {};
     for (const c of (allChildren || [])) {
       if (!childrenByParent[c.user_id]) childrenByParent[c.user_id] = [];
       childrenByParent[c.user_id].push({ grade_level: c.grade_level, first_name: c.first_name });
     }
 
+    // Build ride activity lookup
     const rideCountByUser: Record<string, number> = {};
     const activeDaysByUser: Record<string, Set<string>> = {};
     for (const r of (allRides || [])) {
@@ -101,6 +92,7 @@ serve(async (req) => {
       }
     }
 
+    // Add recurring schedule days
     for (const s of (recurringSchedules || [])) {
       for (const uid of [s.proposer_id, s.recipient_id]) {
         if (!activeDaysByUser[uid]) activeDaysByUser[uid] = new Set();
@@ -117,18 +109,35 @@ serve(async (req) => {
 
     const myDays = activeDaysByUser[user.id] || new Set();
 
+    // Existing connections to exclude
     const existingPartners = new Set<string>();
     for (const sp of (existingSpaces || [])) {
       existingPartners.add(sp.parent_a_id === user.id ? sp.parent_b_id : sp.parent_a_id);
     }
 
+    // Weights
     const W_DISTANCE = 40;
     const W_SCHEDULE = 25;
     const W_GRADE = 25;
     const W_ACTIVITY = 10;
     const MAX_DISTANCE = 10;
 
-    const scored: ScoredSuggestion[] = [];
+    // Stage 1: Score all candidates
+    interface Candidate {
+      id: string;
+      first_name: string;
+      last_name: string;
+      username: string;
+      distance_miles: number;
+      grade_matches: string[];
+      their_kids: string[];
+      schedule_overlap_days: string[];
+      their_active_days: string[];
+      ride_count: number;
+      score: number;
+    }
+
+    const candidates: Candidate[] = [];
 
     for (const p of (allParents || [])) {
       if (existingPartners.has(p.id)) continue;
@@ -136,76 +145,215 @@ serve(async (req) => {
       const dist = haversine(myProfile.home_latitude, myProfile.home_longitude, p.home_latitude!, p.home_longitude!);
       if (dist > MAX_DISTANCE) continue;
 
-      const reasons: string[] = [];
-
-      const distScore = Math.max(0, 1 - (dist / MAX_DISTANCE));
-      const distWeighted = distScore * W_DISTANCE;
-
-      if (dist < 1) reasons.push(`Lives ${dist < 0.5 ? 'less than half a mile' : dist.toFixed(1) + ' mi'} away`);
-      else if (dist < 3) reasons.push(`Lives ${dist.toFixed(1)} miles away`);
+      const distScore = Math.max(0, 1 - (dist / MAX_DISTANCE)) * W_DISTANCE;
 
       const theirDays = activeDaysByUser[p.id] || new Set();
       const overlapDays: string[] = [];
-      for (const d of myDays) {
-        if (theirDays.has(d)) overlapDays.push(d);
-      }
+      for (const d of myDays) { if (theirDays.has(d)) overlapDays.push(d); }
       const scheduleScore = myDays.size > 0 && theirDays.size > 0
-        ? (overlapDays.length / Math.max(myDays.size, theirDays.size))
-        : 0;
-      const scheduleWeighted = scheduleScore * W_SCHEDULE;
-
-      if (overlapDays.length > 0) {
-        if (overlapDays.length >= 4) reasons.push("Carpools on most of the same days");
-        else reasons.push(`Shares ${overlapDays.join(", ")} schedule`);
-      }
+        ? (overlapDays.length / Math.max(myDays.size, theirDays.size)) * W_SCHEDULE : 0;
 
       const theirChildren = childrenByParent[p.id] || [];
       const gradeMatches: string[] = [];
       for (const c of theirChildren) {
-        if (c.grade_level && myGrades.has(c.grade_level)) {
-          gradeMatches.push(c.grade_level);
-        }
+        if (c.grade_level && myGrades.has(c.grade_level)) gradeMatches.push(c.grade_level);
       }
       const gradeScore = myGrades.size > 0 && gradeMatches.length > 0
-        ? Math.min(1, gradeMatches.length / myGrades.size)
-        : 0;
-      const gradeWeighted = gradeScore * W_GRADE;
-
-      if (gradeMatches.length > 0) {
-        const uniqueGrades = [...new Set(gradeMatches)];
-        reasons.push(`Kids in ${uniqueGrades.join(", ")}`);
-      }
+        ? Math.min(1, gradeMatches.length / myGrades.size) * W_GRADE : 0;
 
       const rideCount = rideCountByUser[p.id] || 0;
-      const activityScore = Math.min(1, rideCount / 10);
-      const activityWeighted = activityScore * W_ACTIVITY;
+      const activityScore = Math.min(1, rideCount / 10) * W_ACTIVITY;
 
-      if (rideCount >= 5) reasons.push("Active carpooler");
+      const totalScore = distScore + scheduleScore + gradeScore + activityScore;
+      if (totalScore < 5) continue;
 
-      const totalScore = distWeighted + scheduleWeighted + gradeWeighted + activityWeighted;
-
-      if (totalScore < 5 || reasons.length === 0) continue;
-
-      scored.push({
+      candidates.push({
         id: p.id,
         first_name: p.first_name || "",
         last_name: p.last_name || "",
         username: p.username,
         distance_miles: Math.round(dist * 10) / 10,
         grade_matches: [...new Set(gradeMatches)],
+        their_kids: theirChildren.map(c => c.first_name).filter(Boolean),
         schedule_overlap_days: overlapDays,
+        their_active_days: [...theirDays],
         ride_count: rideCount,
         score: Math.round(totalScore * 10) / 10,
-        reasons,
       });
     }
 
-    scored.sort((a, b) => b.score - a.score);
-    const suggestions = scored.slice(0, 5);
+    // Sort and take top 8 for AI processing
+    candidates.sort((a, b) => b.score - a.score);
+    const topCandidates = candidates.slice(0, 8);
 
-    return new Response(JSON.stringify({ suggestions }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (topCandidates.length === 0) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Stage 2: Use AI to rank and generate personalized summaries
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    if (!LOVABLE_API_KEY) {
+      // Fallback to rule-based if no API key
+      const fallback = topCandidates.slice(0, 5).map(c => ({
+        ...c,
+        ai_summary: null,
+        reasons: buildFallbackReasons(c),
+        confidence: c.score >= 60 ? "great" : c.score >= 35 ? "good" : "potential",
+      }));
+      return new Response(JSON.stringify({ suggestions: fallback, ai_powered: false }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const myName = [myProfile.first_name, myProfile.last_name].filter(Boolean).join(" ");
+    const myGradeList = [...myGrades].join(", ");
+    const myDayList = [...myDays].join(", ");
+
+    const candidateSummaries = topCandidates.map((c, i) => 
+      `${i + 1}. "${c.first_name} ${c.last_name}" — ` +
+      `${c.distance_miles} mi away, ` +
+      `kids: ${c.their_kids.length > 0 ? c.their_kids.join(", ") : "unknown"}, ` +
+      `grade matches: ${c.grade_matches.length > 0 ? c.grade_matches.join(", ") : "none"}, ` +
+      `shared days: ${c.schedule_overlap_days.length > 0 ? c.schedule_overlap_days.join(", ") : "none"}, ` +
+      `their active days: ${c.their_active_days.length > 0 ? c.their_active_days.join(", ") : "none"}, ` +
+      `${c.ride_count} rides posted, ` +
+      `base score: ${c.score}`
+    ).join("\n");
+
+    const prompt = `You are a carpool matching assistant for Chadwick School families. Analyze these candidates and return your results.
+
+ABOUT THE USER:
+- Name: ${myName}
+- Children's grades: ${myGradeList || "unknown"}
+- Active carpool days: ${myDayList || "none yet"}
+- Children: ${myKidNames.join(", ") || "unknown"}
+
+CANDIDATES (pre-scored by proximity, schedule, grade, activity):
+${candidateSummaries}
+
+TASK: Re-rank these candidates and for each, produce:
+1. A final rank (best match first) — consider real-world carpool practicality
+2. A confidence tier: "great", "good", or "potential"
+3. Exactly 2-3 short, specific, human-friendly reasons (max 8 words each) explaining WHY this is a match. Be specific — mention names, grades, distances, days. Examples: "Both have 3rd graders", "Only 0.4 miles apart", "Carpools Mon/Wed/Fri too"
+4. A one-sentence personalized summary (max 20 words) that makes this feel like a curated recommendation, not a database query.
+
+Return the top 5 only.`;
+
+    try {
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: "You are a carpool matching AI. Return ONLY valid JSON, no markdown." },
+            { role: "user", content: prompt },
+          ],
+          tools: [{
+            type: "function",
+            function: {
+              name: "rank_matches",
+              description: "Return the AI-ranked carpool partner suggestions",
+              parameters: {
+                type: "object",
+                properties: {
+                  matches: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        candidate_index: { type: "number", description: "1-based index from the candidate list" },
+                        confidence: { type: "string", enum: ["great", "good", "potential"] },
+                        reasons: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "2-3 short specific reasons"
+                        },
+                        summary: { type: "string", description: "One-sentence personalized recommendation" }
+                      },
+                      required: ["candidate_index", "confidence", "reasons", "summary"],
+                      additionalProperties: false,
+                    }
+                  }
+                },
+                required: ["matches"],
+                additionalProperties: false,
+              }
+            }
+          }],
+          tool_choice: { type: "function", function: { name: "rank_matches" } },
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        console.error("AI gateway error:", aiResponse.status);
+        // Fallback
+        const fallback = topCandidates.slice(0, 5).map(c => ({
+          ...c,
+          ai_summary: null,
+          reasons: buildFallbackReasons(c),
+          confidence: c.score >= 60 ? "great" : c.score >= 35 ? "good" : "potential",
+        }));
+        return new Response(JSON.stringify({ suggestions: fallback, ai_powered: false }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const aiData = await aiResponse.json();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      
+      if (!toolCall) {
+        throw new Error("No tool call in AI response");
+      }
+
+      const aiResult = JSON.parse(toolCall.function.arguments);
+      const aiMatches = aiResult.matches || [];
+
+      // Map AI results back to candidates
+      const suggestions = aiMatches.map((m: { candidate_index: number; confidence: string; reasons: string[]; summary: string }) => {
+        const idx = m.candidate_index - 1;
+        if (idx < 0 || idx >= topCandidates.length) return null;
+        const c = topCandidates[idx];
+        return {
+          id: c.id,
+          first_name: c.first_name,
+          last_name: c.last_name,
+          username: c.username,
+          distance_miles: c.distance_miles,
+          grade_matches: c.grade_matches,
+          schedule_overlap_days: c.schedule_overlap_days,
+          ride_count: c.ride_count,
+          score: c.score,
+          confidence: m.confidence,
+          reasons: m.reasons,
+          ai_summary: m.summary,
+        };
+      }).filter(Boolean).slice(0, 5);
+
+      return new Response(JSON.stringify({ suggestions, ai_powered: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } catch (aiError) {
+      console.error("AI processing error:", aiError);
+      // Fallback to rule-based
+      const fallback = topCandidates.slice(0, 5).map(c => ({
+        ...c,
+        ai_summary: null,
+        reasons: buildFallbackReasons(c),
+        confidence: c.score >= 60 ? "great" : c.score >= 35 ? "good" : "potential",
+      }));
+      return new Response(JSON.stringify({ suggestions: fallback, ai_powered: false }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
   } catch (error) {
     console.error("Error in suggest-carpool-partners:", error);
     return new Response(
@@ -214,3 +362,17 @@ serve(async (req) => {
     );
   }
 });
+
+function buildFallbackReasons(c: { distance_miles: number; grade_matches: string[]; schedule_overlap_days: string[]; ride_count: number }): string[] {
+  const reasons: string[] = [];
+  if (c.distance_miles < 1) reasons.push(`Only ${c.distance_miles} miles away`);
+  else if (c.distance_miles < 3) reasons.push(`${c.distance_miles} miles away`);
+  if (c.grade_matches.length > 0) reasons.push(`Kids in ${c.grade_matches.join(", ")}`);
+  if (c.schedule_overlap_days.length > 0) {
+    if (c.schedule_overlap_days.length >= 4) reasons.push("Same weekday schedule");
+    else reasons.push(`Shares ${c.schedule_overlap_days.slice(0, 2).join("/")} schedule`);
+  }
+  if (c.ride_count >= 5) reasons.push("Active carpooler");
+  if (reasons.length === 0) reasons.push("Nearby Chadwick family");
+  return reasons;
+}
