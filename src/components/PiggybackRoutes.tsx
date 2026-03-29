@@ -36,6 +36,7 @@ const PiggybackRoutes = () => {
   const [loading, setLoading] = useState(true);
   const [noRides, setNoRides] = useState(false);
   const [aiPowered, setAiPowered] = useState(false);
+  const [matchMode, setMatchMode] = useState<"route" | "proximity">("route");
 
   useEffect(() => {
     if (!user) return;
@@ -44,12 +45,13 @@ const PiggybackRoutes = () => {
       try {
         const { data, error } = await supabase.functions.invoke("suggest-piggyback-routes");
         if (error) throw error;
-        if (data?.reason === "no_rides") {
+        if (data?.reason === "no_matches") {
           setNoRides(true);
           setSuggestions([]);
         } else {
           setSuggestions(data?.suggestions || []);
           setAiPowered(data?.ai_powered || false);
+          setMatchMode(data?.match_mode || "route");
         }
       } catch {
         setSuggestions([]);
