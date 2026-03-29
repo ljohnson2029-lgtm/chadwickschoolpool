@@ -12,6 +12,7 @@ import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
 import HowToUseGuide from "@/components/HowToUseGuide";
 import SuggestedPartners from "@/components/SuggestedPartners";
+import PiggybackRoutes from "@/components/PiggybackRoutes";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -129,6 +130,11 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Browse rides and parents near you</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* ── PIGGYBACK ROUTES ── */}
+        <div className="mt-6 sm:mt-8">
+          <PiggybackRoutes />
         </div>
 
         {/* ── SUGGESTED PARTNERS ── */}
