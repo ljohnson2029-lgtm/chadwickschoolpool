@@ -6,7 +6,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { Car, History, Info, LinkIcon, RefreshCw } from "lucide-react";
+import { Car, History, Info, LinkIcon, RefreshCw, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
@@ -15,6 +15,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchUnifiedRides, isRidePast } from "@/lib/fetchUnifiedRides";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AcceptDirectRideDialog } from "@/components/AcceptDirectRideDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, startOfToday } from "date-fns";
 
@@ -34,6 +45,8 @@ const MyRides = () => {
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
+  const [clearingPast, setClearingPast] = useState(false);
 
   // Parent rides via React Query with caching
   const { data: parentRideData, isLoading: loadingParentRides } = useQuery({
@@ -901,6 +914,43 @@ const MyRides = () => {
     }
   }, [user, profile]);
 
+  const handleClearPastRides = useCallback(async () => {
+    if (!user) return;
+    setClearingPast(true);
+    try {
+      const pastPublicIds = pastRides
+        .filter(r => r.source === 'posted' && r.originalData?.user_id === user.id)
+        .map(r => r.id);
+
+      if (pastPublicIds.length > 0) {
+        for (const rideId of pastPublicIds) {
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
+          await supabase.from('ride_conversations').delete().eq('ride_id', rideId);
+        }
+        await supabase.from('rides').delete().in('id', pastPublicIds);
+      }
+
+      const pastDirectIds = pastRides
+        .filter(r => r.source === 'private' && (r.originalData?.sender_id === user.id || r.originalData?.recipient_id === user.id))
+        .filter(r => ['cancelled', 'completed', 'declined'].includes(r.originalData?.status))
+        .map(r => r.id);
+
+      if (pastDirectIds.length > 0) {
+        for (const rideId of pastDirectIds) {
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'private');
+        }
+        await supabase.from('private_ride_requests').delete().in('id', pastDirectIds);
+      }
+
+      toast.success('Past rides cleared');
+      invalidateRides();
+    } catch (err: any) {
+      toast.error('Failed to clear past rides: ' + err.message);
+    }
+    setClearingPast(false);
+  }, [user, pastRides, invalidateRides]);
+
+
   if (loading || !user || !profile) {
     return (
       <DashboardLayout>
@@ -1039,6 +1089,32 @@ const MyRides = () => {
           </TabsContent>
 
           <TabsContent value="past">
+            {!isStudent && pastRides.length > 0 && (
+              <div className="flex justify-end mb-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" disabled={clearingPast}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Clear Past Rides
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all past rides?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all your past rides and their associated messages. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearPastRides} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
             {renderRideList(pastRides, true)}
           </TabsContent>
         </Tabs>
