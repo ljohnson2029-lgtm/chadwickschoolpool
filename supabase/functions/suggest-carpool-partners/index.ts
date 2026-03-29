@@ -336,6 +336,7 @@ Return the top 5 only.`;
           confidence: m.confidence,
           reasons: verifiedReasons,
           ai_summary: m.summary,
+          neighborhood: c.neighborhood,
         };
       }).filter(Boolean).slice(0, 5);
 
