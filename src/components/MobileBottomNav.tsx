@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Car, Calendar, User, Menu, MessageSquarePlus, Info, Shield, HelpCircle, Settings, Repeat } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { usePrefetchRoutes } from "@/hooks/usePrefetchRoutes";
 import {
   Sheet,
   SheetContent,
@@ -17,6 +18,7 @@ const MobileBottomNav = () => {
   const location = useLocation();
   const { user, profile } = useAuth();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const prefetch = usePrefetchRoutes();
 
   const isActive = (path: string) => location.pathname === path;
   const isStudent = profile?.account_type === "student";
@@ -51,6 +53,8 @@ const MobileBottomNav = () => {
             <button
               key={tab.path}
               onClick={() => navigate(tab.path)}
+              onTouchStart={() => prefetch(tab.path)}
+              onMouseEnter={() => prefetch(tab.path)}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full min-w-[56px] min-h-[44px] transition-colors touch-manipulation",
                 active

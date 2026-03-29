@@ -40,8 +40,8 @@ const MyRides = () => {
     queryKey: ['my-rides', user?.id],
     queryFn: () => fetchUnifiedRides(user!.id),
     enabled: !!user && !!profile && !isStudent,
-    staleTime: 2 * 60 * 1000, // 2 minutes before considered stale
-    gcTime: 5 * 60 * 1000, // keep in cache 5 minutes
+    staleTime: 3 * 60 * 1000, // 3 minutes before considered stale
+    gcTime: 10 * 60 * 1000, // keep in cache 10 minutes
   });
 
   const [refreshing, setRefreshing] = useState(false);
