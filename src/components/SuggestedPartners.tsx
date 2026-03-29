@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, Calendar, GraduationCap, Sparkles,
-  MessageCircle, Users, ChevronRight, Zap, TrendingUp,
+  MessageCircle, Users, ChevronRight, Zap, TrendingUp, Bot,
 } from "lucide-react";
 
 interface Suggestion {
@@ -22,19 +22,22 @@ interface Suggestion {
   schedule_overlap_days: string[];
   ride_count: number;
   score: number;
+  confidence: string;
   reasons: string[];
+  ai_summary: string | null;
 }
 
 const SuggestedPartners = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [noAddress, setNoAddress] = useState(false);
+  const [aiPowered, setAiPowered] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
+    const fetchSuggestions = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase.functions.invoke("suggest-carpool-partners");
@@ -44,6 +47,7 @@ const SuggestedPartners = () => {
           setSuggestions([]);
         } else {
           setSuggestions(data?.suggestions || []);
+          setAiPowered(data?.ai_powered || false);
         }
       } catch {
         setSuggestions([]);
@@ -51,7 +55,7 @@ const SuggestedPartners = () => {
         setLoading(false);
       }
     };
-    fetch();
+    fetchSuggestions();
   }, [user]);
 
   const getInitials = (first: string, last: string, username: string) => {
@@ -63,17 +67,24 @@ const SuggestedPartners = () => {
     [s.first_name, s.last_name].filter(Boolean).join(" ") || s.username;
 
   const getReasonIcon = (reason: string) => {
-    if (reason.includes("mile") || reason.includes("Lives")) return <MapPin className="h-3 w-3" />;
-    if (reason.includes("schedule") || reason.includes("days")) return <Calendar className="h-3 w-3" />;
-    if (reason.includes("Grade") || reason.includes("Kids in")) return <GraduationCap className="h-3 w-3" />;
-    if (reason.includes("Active")) return <TrendingUp className="h-3 w-3" />;
+    const r = reason.toLowerCase();
+    if (r.includes("mile") || r.includes("away") || r.includes("nearby") || r.includes("close")) return <MapPin className="h-3 w-3" />;
+    if (r.includes("schedule") || r.includes("day") || r.includes("mon") || r.includes("tue") || r.includes("wed") || r.includes("thu") || r.includes("fri")) return <Calendar className="h-3 w-3" />;
+    if (r.includes("grade") || r.includes("kid") || r.includes("child") || r.includes("th ") || r.includes("nd ") || r.includes("rd ") || r.includes("st ")) return <GraduationCap className="h-3 w-3" />;
+    if (r.includes("active") || r.includes("reliable") || r.includes("carpool")) return <TrendingUp className="h-3 w-3" />;
     return <Sparkles className="h-3 w-3" />;
   };
 
-  const getConfidenceLabel = (score: number) => {
-    if (score >= 60) return { label: "Great Match", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" };
-    if (score >= 35) return { label: "Good Match", color: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" };
-    return { label: "Potential Match", color: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" };
+  const getConfidenceStyle = (confidence: string) => {
+    if (confidence === "great") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400";
+    if (confidence === "good") return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
+    return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400";
+  };
+
+  const getConfidenceLabel = (confidence: string) => {
+    if (confidence === "great") return "Great Match";
+    if (confidence === "good") return "Good Match";
+    return "Potential Match";
   };
 
   if (loading) {
@@ -85,7 +96,7 @@ const SuggestedPartners = () => {
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[1, 2, 3].map(i => (
-            <Skeleton key={i} className="min-w-[260px] h-[180px] rounded-xl flex-shrink-0" />
+            <Skeleton key={i} className="min-w-[280px] h-[200px] rounded-xl flex-shrink-0" />
           ))}
         </div>
       </div>
@@ -121,70 +132,75 @@ const SuggestedPartners = () => {
           <h2 className="text-lg font-semibold text-foreground">Suggested for You</h2>
         </div>
         <Badge variant="secondary" className="text-xs gap-1">
-          <Zap className="h-3 w-3" />
-          AI-Powered
+          {aiPowered ? <Bot className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+          {aiPowered ? "AI-Ranked" : "Smart Match"}
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground -mt-1">
-        Families matched by proximity, schedule, and grade level
+        {aiPowered
+          ? "AI-curated matches based on proximity, schedule, and grade level"
+          : "Families matched by proximity, schedule, and grade level"}
       </p>
 
-      {/* Horizontal scroll on mobile, grid on desktop */}
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
-        {suggestions.map(s => {
-          const confidence = getConfidenceLabel(s.score);
-          return (
-            <Card
-              key={s.id}
-              className="min-w-[260px] sm:min-w-0 flex-shrink-0 snap-start rounded-xl border hover:shadow-md transition-all"
-            >
-              <CardContent className="p-4 space-y-3">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar className="h-10 w-10 border border-primary/20">
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
-                        {getInitials(s.first_name, s.last_name, s.username)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-sm text-foreground leading-tight">{getName(s)}</h3>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Parent</span>
-                      </div>
+        {suggestions.map(s => (
+          <Card
+            key={s.id}
+            className="min-w-[280px] sm:min-w-0 flex-shrink-0 snap-start rounded-xl border hover:shadow-md transition-all"
+          >
+            <CardContent className="p-4 space-y-3">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Avatar className="h-10 w-10 border border-primary/20">
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+                      {getInitials(s.first_name, s.last_name, s.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-sm text-foreground leading-tight">{getName(s)}</h3>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Parent</span>
                     </div>
                   </div>
-                  <Badge className={`text-[10px] px-1.5 py-0.5 ${confidence.color} border-0`}>
-                    {confidence.label}
-                  </Badge>
                 </div>
+                <Badge className={`text-[10px] px-1.5 py-0.5 ${getConfidenceStyle(s.confidence)} border-0`}>
+                  {getConfidenceLabel(s.confidence)}
+                </Badge>
+              </div>
 
-                {/* Reasons */}
-                <div className="space-y-1">
-                  {s.reasons.slice(0, 3).map((reason, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="text-primary/70">{getReasonIcon(reason)}</span>
-                      <span>{reason}</span>
-                    </div>
-                  ))}
-                </div>
+              {/* AI Summary */}
+              {s.ai_summary && (
+                <p className="text-xs text-foreground/80 italic bg-muted/50 rounded-md px-2.5 py-1.5 leading-relaxed">
+                  "{s.ai_summary}"
+                </p>
+              )}
 
-                {/* Action */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full text-xs h-8 gap-1.5"
-                  onClick={() => navigate(`/series?startWith=${s.id}`)}
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Start Series
-                  <ChevronRight className="h-3 w-3 ml-auto" />
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
+              {/* Reasons */}
+              <div className="space-y-1">
+                {s.reasons.slice(0, 3).map((reason, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="text-primary/70">{getReasonIcon(reason)}</span>
+                    <span>{reason}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full text-xs h-8 gap-1.5"
+                onClick={() => navigate(`/series?startWith=${s.id}`)}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Start Series
+                <ChevronRight className="h-3 w-3 ml-auto" />
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
