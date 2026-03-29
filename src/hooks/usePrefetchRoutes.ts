@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchUnifiedRides } from "@/lib/fetchUnifiedRides";
+import { preloadRoute } from "@/lib/routePreload";
 
 /**
  * Prefetches data for key routes on hover so navigation feels instant.
@@ -16,13 +17,41 @@ export function usePrefetchRoutes() {
     (path: string) => {
       if (!user) return;
 
+      preloadRoute(path);
+
       switch (path) {
         case "/my-rides":
           if (!isStudent) {
             queryClient.prefetchQuery({
               queryKey: ["my-rides", user.id],
               queryFn: () => fetchUnifiedRides(user.id),
-              staleTime: 2 * 60 * 1000,
+              staleTime: 5 * 60 * 1000,
+            });
+          } else {
+            queryClient.prefetchQuery({
+              queryKey: ["student-rides", user.id],
+              queryFn: async () => {
+                const { data: links } = await supabase
+                  .from("account_links")
+                  .select("parent_id")
+                  .eq("student_id", user.id)
+                  .eq("status", "approved");
+
+                if (!links || links.length === 0) {
+                  return { active: [], past: [], hasLinked: false };
+                }
+
+                const { data: scheduleData } = await supabase.rpc("get_family_schedule", {
+                  student_user_id: user.id,
+                });
+
+                return {
+                  active: scheduleData ?? [],
+                  past: [],
+                  hasLinked: true,
+                };
+              },
+              staleTime: 5 * 60 * 1000,
             });
           }
           break;
@@ -45,7 +74,7 @@ export function usePrefetchRoutes() {
                 .limit(50);
               return data;
             },
-            staleTime: 2 * 60 * 1000,
+            staleTime: 5 * 60 * 1000,
           });
           break;
 
