@@ -914,7 +914,43 @@ const MyRides = () => {
     }
   }, [user, profile]);
 
-  if (loading || !user || !profile) {
+  const handleClearPastRides = useCallback(async () => {
+    if (!user) return;
+    setClearingPast(true);
+    try {
+      const pastPublicIds = pastRides
+        .filter(r => r.source === 'posted' && r.originalData?.user_id === user.id)
+        .map(r => r.id);
+
+      if (pastPublicIds.length > 0) {
+        for (const rideId of pastPublicIds) {
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
+          await supabase.from('ride_conversations').delete().eq('ride_id', rideId);
+        }
+        await supabase.from('rides').delete().in('id', pastPublicIds);
+      }
+
+      const pastDirectIds = pastRides
+        .filter(r => r.source === 'direct' && (r.originalData?.sender_id === user.id || r.originalData?.recipient_id === user.id))
+        .filter(r => ['cancelled', 'completed', 'declined'].includes(r.originalData?.status))
+        .map(r => r.id);
+
+      if (pastDirectIds.length > 0) {
+        for (const rideId of pastDirectIds) {
+          await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'private');
+        }
+        await supabase.from('private_ride_requests').delete().in('id', pastDirectIds);
+      }
+
+      toast.success('Past rides cleared');
+      invalidateRides();
+    } catch (err: any) {
+      toast.error('Failed to clear past rides: ' + err.message);
+    }
+    setClearingPast(false);
+  }, [user, pastRides, invalidateRides]);
+
+
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4">
