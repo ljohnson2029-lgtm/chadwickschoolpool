@@ -124,6 +124,11 @@ const SuggestedPartners = () => {
   const getName = (s: UnifiedSuggestion) =>
     [s.first_name, s.last_name].filter(Boolean).join(" ") || s.username;
 
+  const shortenAddress = (addr: string) => {
+    const parts = addr.split(",");
+    return parts[0]?.trim() || addr;
+  };
+
   const getReasonIcon = (reason: string) => {
     const r = reason.toLowerCase();
     if (r.includes("route") || r.includes("commute")) return <Navigation className="h-3 w-3" />;
