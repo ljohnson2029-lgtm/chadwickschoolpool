@@ -223,7 +223,7 @@ serve(async (req) => {
       `base score: ${c.score}`
     ).join("\n");
 
-    const prompt = `You are a carpool matching assistant for Chadwick School families. Analyze these candidates and return your results.
+    const prompt = `You are a carpool matching assistant for Chadwick School families. Analyze these pre-scored candidates and re-rank them.
 
 ABOUT THE USER:
 - Name: ${myName}
@@ -234,11 +234,12 @@ ABOUT THE USER:
 CANDIDATES (pre-scored by proximity, schedule, grade, activity):
 ${candidateSummaries}
 
-TASK: Re-rank these candidates and for each, produce:
-1. A final rank (best match first) — consider real-world carpool practicality
+TASK: Re-rank these candidates by real-world carpool practicality and for each produce:
+1. A final rank (best match first)
 2. A confidence tier: "great", "good", or "potential"
-3. Exactly 2-3 short, specific, human-friendly reasons (max 8 words each) explaining WHY this is a match. Be specific — mention names, grades, distances, days. Examples: "Both have 3rd graders", "Only 0.4 miles apart", "Carpools Mon/Wed/Fri too"
-4. A one-sentence personalized summary (max 20 words) that makes this feel like a curated recommendation, not a database query.
+3. A single personalized summary sentence (max 25 words) that explains why this family is a great carpool partner. Write it warmly and conversationally, like a friend's recommendation. Do NOT include specific distances, grade levels, or child names — those facts will be displayed separately from verified data.
+
+IMPORTANT: The summary must NOT contain any specific numbers, distances, grade levels, or names. Only provide a qualitative, warm description of why the match works well. Example good summaries: "A reliable nearby family with a similar school schedule — a natural carpool fit." or "You're practically neighbors with overlapping routines — this could work great."
 
 Return the top 5 only.`;
 
