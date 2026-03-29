@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ThemeToggle } from "./ThemeToggle";
+import { usePrefetchRoutes } from "@/hooks/usePrefetchRoutes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ const TabNavigation = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const prefetch = usePrefetchRoutes();
 
   const isActive = (path: string) => location.pathname === path;
   const isStudent = profile?.account_type === 'student';
@@ -78,6 +80,7 @@ const TabNavigation = () => {
                   key={tab.path}
                   variant={isActive(tab.path) ? "default" : "ghost"}
                   onClick={() => navigate(tab.path)}
+                  onMouseEnter={() => prefetch(tab.path)}
                   className={`gap-2 relative ${
                     isActive(tab.path)
                       ? "bg-primary text-primary-foreground"
