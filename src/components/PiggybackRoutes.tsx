@@ -36,6 +36,7 @@ const PiggybackRoutes = () => {
   const [loading, setLoading] = useState(true);
   const [noRides, setNoRides] = useState(false);
   const [aiPowered, setAiPowered] = useState(false);
+  const [matchMode, setMatchMode] = useState<"route" | "proximity">("route");
 
   useEffect(() => {
     if (!user) return;
@@ -44,12 +45,13 @@ const PiggybackRoutes = () => {
       try {
         const { data, error } = await supabase.functions.invoke("suggest-piggyback-routes");
         if (error) throw error;
-        if (data?.reason === "no_rides") {
+        if (data?.reason === "no_matches") {
           setNoRides(true);
           setSuggestions([]);
         } else {
           setSuggestions(data?.suggestions || []);
           setAiPowered(data?.ai_powered || false);
+          setMatchMode(data?.match_mode || "route");
         }
       } catch {
         setSuggestions([]);
@@ -104,15 +106,19 @@ const PiggybackRoutes = () => {
           <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
             <Route className="h-4 w-4 text-violet-600 dark:text-violet-400" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">On Your Route</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {matchMode === "route" ? "On Your Route" : "Nearby Families"}
+          </h2>
         </div>
         <Badge variant="secondary" className="text-xs gap-1">
           {aiPowered ? <Bot className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-          {aiPowered ? "AI-Powered" : "Route Match"}
+          {aiPowered ? "AI-Powered" : matchMode === "route" ? "Route Match" : "Proximity"}
         </Badge>
       </div>
       <p className="text-xs text-muted-foreground -mt-1">
-        Families who live along your existing commute — easy piggyback carpools
+        {matchMode === "route"
+          ? "Families who live along your existing commute — easy piggyback carpools"
+          : "Families who live near you — great potential carpool partners"}
       </p>
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">

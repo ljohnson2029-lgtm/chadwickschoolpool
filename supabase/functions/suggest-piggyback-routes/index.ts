@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
-// Haversine distance in miles
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -13,27 +12,37 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
-// Point-to-segment distance: how far a parent's home is from the straight line
-// between a ride's pickup and dropoff (approximation in miles)
 function pointToSegmentDistance(
   pLat: number, pLon: number,
   aLat: number, aLon: number,
   bLat: number, bLon: number,
 ): number {
-  // Convert to rough x/y using equirectangular projection
   const cosLat = Math.cos(((aLat + bLat) / 2) * Math.PI / 180);
   const ax = aLon * cosLat, ay = aLat;
   const bx = bLon * cosLat, by = bLat;
   const px = pLon * cosLat, py = pLat;
-
   const dx = bx - ax, dy = by - ay;
   const lenSq = dx * dx + dy * dy;
   let t = lenSq === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / lenSq;
   t = Math.max(0, Math.min(1, t));
-
   const closestLat = aLat + t * (bLat - aLat);
   const closestLon = aLon + t * (bLon - aLon);
   return haversine(pLat, pLon, closestLat, closestLon);
+}
+
+interface PiggybackMatch {
+  parent_id: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  distance_from_route_miles: number;
+  ride_pickup: string;
+  ride_dropoff: string;
+  ride_date: string;
+  ride_type: string;
+  their_kids: string[];
+  their_grades: string[];
+  already_connected: boolean;
 }
 
 serve(async (req) => {
@@ -61,7 +70,6 @@ serve(async (req) => {
       });
     }
 
-    // Fetch data in parallel
     const [
       { data: myProfile },
       { data: myRides },
@@ -82,12 +90,6 @@ serve(async (req) => {
         .or(`parent_a_id.eq.${user.id},parent_b_id.eq.${user.id}`),
     ]);
 
-    if (!myRides || myRides.length === 0) {
-      return new Response(JSON.stringify({ suggestions: [], reason: "no_rides" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // Build children lookup
     const childrenByParent: Record<string, { first_name: string; grade_level: string | null }[]> = {};
     for (const c of (allChildren || [])) {
@@ -101,60 +103,69 @@ serve(async (req) => {
       connectedPartners.add(sp.parent_a_id === user.id ? sp.parent_b_id : sp.parent_a_id);
     }
 
-    const MAX_DETOUR_MILES = 2.0; // homes within 2 mi of the route line
+    const MAX_DETOUR_MILES = 2.0;
+    const MAX_PROXIMITY_MILES = 5.0;
+    const matchMap = new Map<string, PiggybackMatch>();
+    let matchMode: "route" | "proximity" = "route";
 
-    interface PiggybackMatch {
-      parent_id: string;
-      first_name: string;
-      last_name: string;
-      username: string;
-      home_address: string | null;
-      distance_from_route_miles: number;
-      ride_id: string;
-      ride_pickup: string;
-      ride_dropoff: string;
-      ride_date: string;
-      ride_time: string;
-      ride_type: string;
-      their_kids: string[];
-      their_grades: string[];
-      already_connected: boolean;
+    // --- MODE 1: Route-based matching (when user has active rides) ---
+    if (myRides && myRides.length > 0) {
+      for (const ride of myRides) {
+        const pLat = ride.pickup_latitude!;
+        const pLon = ride.pickup_longitude!;
+        const dLat = ride.dropoff_latitude!;
+        const dLon = ride.dropoff_longitude!;
+
+        for (const parent of (allParents || [])) {
+          const distFromRoute = pointToSegmentDistance(
+            parent.home_latitude!, parent.home_longitude!,
+            pLat, pLon, dLat, dLon,
+          );
+          if (distFromRoute > MAX_DETOUR_MILES) continue;
+
+          const existing = matchMap.get(parent.id);
+          if (existing && existing.distance_from_route_miles <= distFromRoute) continue;
+
+          const kids = childrenByParent[parent.id] || [];
+          matchMap.set(parent.id, {
+            parent_id: parent.id,
+            first_name: parent.first_name || "",
+            last_name: parent.last_name || "",
+            username: parent.username,
+            distance_from_route_miles: Math.round(distFromRoute * 10) / 10,
+            ride_pickup: ride.pickup_location,
+            ride_dropoff: ride.dropoff_location,
+            ride_date: ride.ride_date,
+            ride_type: ride.type,
+            their_kids: kids.map(k => k.first_name).filter(Boolean),
+            their_grades: kids.map(k => k.grade_level).filter((g): g is string => !!g),
+            already_connected: connectedPartners.has(parent.id),
+          });
+        }
+      }
     }
 
-    const matchMap = new Map<string, PiggybackMatch>(); // keyed by parent_id, keep closest
-
-    for (const ride of myRides) {
-      const pLat = ride.pickup_latitude!;
-      const pLon = ride.pickup_longitude!;
-      const dLat = ride.dropoff_latitude!;
-      const dLon = ride.dropoff_longitude!;
-
+    // --- MODE 2: Home proximity fallback (when no rides or no route matches) ---
+    if (matchMap.size === 0 && myProfile?.home_latitude && myProfile?.home_longitude) {
+      matchMode = "proximity";
       for (const parent of (allParents || [])) {
-        const distFromRoute = pointToSegmentDistance(
+        const dist = haversine(
+          myProfile.home_latitude, myProfile.home_longitude,
           parent.home_latitude!, parent.home_longitude!,
-          pLat, pLon, dLat, dLon,
         );
-
-        if (distFromRoute > MAX_DETOUR_MILES) continue;
-
-        const existing = matchMap.get(parent.id);
-        if (existing && existing.distance_from_route_miles <= distFromRoute) continue;
+        if (dist > MAX_PROXIMITY_MILES) continue;
 
         const kids = childrenByParent[parent.id] || [];
-
         matchMap.set(parent.id, {
           parent_id: parent.id,
           first_name: parent.first_name || "",
           last_name: parent.last_name || "",
           username: parent.username,
-          home_address: parent.home_address,
-          distance_from_route_miles: Math.round(distFromRoute * 10) / 10,
-          ride_id: ride.id,
-          ride_pickup: ride.pickup_location,
-          ride_dropoff: ride.dropoff_location,
-          ride_date: ride.ride_date,
-          ride_time: ride.ride_time,
-          ride_type: ride.type,
+          distance_from_route_miles: Math.round(dist * 10) / 10,
+          ride_pickup: parent.home_address || "Near you",
+          ride_dropoff: "Chadwick School",
+          ride_date: "",
+          ride_type: "nearby",
           their_kids: kids.map(k => k.first_name).filter(Boolean),
           their_grades: kids.map(k => k.grade_level).filter((g): g is string => !!g),
           already_connected: connectedPartners.has(parent.id),
@@ -162,49 +173,62 @@ serve(async (req) => {
       }
     }
 
-    // Sort by distance from route
-    const allMatches = [...matchMap.values()]
-      .sort((a, b) => a.distance_from_route_miles - b.distance_from_route_miles)
-      .slice(0, 10);
-
-    if (allMatches.length === 0) {
-      return new Response(JSON.stringify({ suggestions: [] }), {
+    if (matchMap.size === 0) {
+      return new Response(JSON.stringify({ suggestions: [], reason: "no_matches" }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use AI for summaries
+    const allMatches = [...matchMap.values()]
+      .sort((a, b) => a.distance_from_route_miles - b.distance_from_route_miles)
+      .slice(0, 10);
+
+    // Detour labels
+    const getDetourLabel = (dist: number, mode: string) => {
+      if (mode === "proximity") {
+        if (dist < 1) return "Less than 1 mi away";
+        if (dist < 2) return "Nearby neighbor";
+        return `${dist} mi away`;
+      }
+      if (dist < 0.3) return "Right on your route";
+      if (dist < 1) return "Tiny detour";
+      return "Small detour";
+    };
+
+    // Try AI summaries
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const myName = [myProfile?.first_name, myProfile?.last_name].filter(Boolean).join(" ");
 
     if (!LOVABLE_API_KEY) {
       const suggestions = allMatches.slice(0, 5).map(m => ({
         ...m,
         ai_summary: null,
-        detour_label: m.distance_from_route_miles < 0.3 ? "Right on your route" :
-          m.distance_from_route_miles < 1 ? "Tiny detour" : "Small detour",
+        detour_label: getDetourLabel(m.distance_from_route_miles, matchMode),
       }));
-      return new Response(JSON.stringify({ suggestions, ai_powered: false }), {
+      return new Response(JSON.stringify({ suggestions, ai_powered: false, match_mode: matchMode }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const myName = [myProfile?.first_name, myProfile?.last_name].filter(Boolean).join(" ");
+    const contextDesc = matchMode === "route"
+      ? `${myName} has active rides. We found parents whose homes are near ${myName}'s existing routes.`
+      : `${myName} has no active rides yet but we found parents who live nearby and could be great carpool partners.`;
 
     const candidateLines = allMatches.map((m, i) =>
-      `${i + 1}. "${m.first_name} ${m.last_name}" — home is ${m.distance_from_route_miles} mi from ${myName}'s route (${m.ride_pickup} → ${m.ride_dropoff}), ` +
+      `${i + 1}. "${m.first_name} ${m.last_name}" — ${matchMode === "route" ? `home is ${m.distance_from_route_miles} mi from route` : `lives ${m.distance_from_route_miles} mi away`}, ` +
       `kids: ${m.their_kids.length > 0 ? m.their_kids.join(", ") : "unknown"}, ` +
       `grades: ${m.their_grades.length > 0 ? m.their_grades.join(", ") : "unknown"}, ` +
       `${m.already_connected ? "already connected" : "not yet connected"}`
     ).join("\n");
 
-    const prompt = `You are a carpool route matching assistant for Chadwick School families.
+    const prompt = `You are a carpool matching assistant for Chadwick School families.
 
-CONTEXT: ${myName} has active rides. We found parents whose homes are near ${myName}'s existing routes — meaning ${myName} would drive right past (or very close to) their home.
+CONTEXT: ${contextDesc}
 
 CANDIDATES:
 ${candidateLines}
 
-TASK: For each candidate, write a single warm sentence (max 25 words) explaining that this family lives along their route, making carpooling super convenient. Do NOT include specific distances, grade levels, or child names — those are displayed separately from verified data. Focus on the convenience of the route overlap.
+TASK: For each candidate, write a single warm sentence (max 25 words) explaining why carpooling would be convenient. Do NOT include specific distances, grade levels, or child names — those are displayed separately. Focus on proximity and convenience.
 
 Return the top 5.`;
 
@@ -235,7 +259,7 @@ Return the top 5.`;
                       type: "object",
                       properties: {
                         candidate_index: { type: "number", description: "1-based index" },
-                        summary: { type: "string", description: "Warm one-sentence about route convenience, no specific numbers or names" },
+                        summary: { type: "string", description: "Warm one-sentence, no specific numbers or names" },
                       },
                       required: ["candidate_index", "summary"],
                       additionalProperties: false,
@@ -251,10 +275,7 @@ Return the top 5.`;
         }),
       });
 
-      if (!aiResponse.ok) {
-        console.error("AI gateway error:", aiResponse.status);
-        throw new Error("AI gateway error");
-      }
+      if (!aiResponse.ok) throw new Error("AI gateway error");
 
       const aiData = await aiResponse.json();
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
@@ -270,12 +291,11 @@ Return the top 5.`;
         return {
           ...m,
           ai_summary: am.summary,
-          detour_label: m.distance_from_route_miles < 0.3 ? "Right on your route" :
-            m.distance_from_route_miles < 1 ? "Tiny detour" : "Small detour",
+          detour_label: getDetourLabel(m.distance_from_route_miles, matchMode),
         };
       }).filter(Boolean).slice(0, 5);
 
-      return new Response(JSON.stringify({ suggestions, ai_powered: true }), {
+      return new Response(JSON.stringify({ suggestions, ai_powered: true, match_mode: matchMode }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
@@ -284,10 +304,9 @@ Return the top 5.`;
       const suggestions = allMatches.slice(0, 5).map(m => ({
         ...m,
         ai_summary: null,
-        detour_label: m.distance_from_route_miles < 0.3 ? "Right on your route" :
-          m.distance_from_route_miles < 1 ? "Tiny detour" : "Small detour",
+        detour_label: getDetourLabel(m.distance_from_route_miles, matchMode),
       }));
-      return new Response(JSON.stringify({ suggestions, ai_powered: false }), {
+      return new Response(JSON.stringify({ suggestions, ai_powered: false, match_mode: matchMode }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
