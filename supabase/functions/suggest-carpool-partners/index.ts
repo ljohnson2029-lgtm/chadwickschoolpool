@@ -396,3 +396,14 @@ function buildVerifiedReasons(c: { distance_miles: number; grade_matches: string
 
 // Alias for fallback paths
 const buildFallbackReasons = buildVerifiedReasons;
+
+// Extract neighborhood/city from a full address (privacy-safe, no street number)
+function extractNeighborhood(address: string): string {
+  if (!address) return "";
+  const parts = address.split(",").map(p => p.trim());
+  // Typical format: "123 Main St, Rancho Palos Verdes, CA 90275, USA"
+  // Return the city part (2nd element typically)
+  if (parts.length >= 3) return parts[1]; // city
+  if (parts.length === 2) return parts[0]; // just area
+  return "";
+}
