@@ -24,6 +24,7 @@ interface UnifiedSuggestion {
   ai_summary: string | null;
   source: "route" | "proximity" | "smart";
   already_connected?: boolean;
+  neighborhood?: string;
 }
 
 const SuggestedPartners = () => {
@@ -76,6 +77,7 @@ const SuggestedPartners = () => {
             ai_summary: s.ai_summary,
             source: pbData.match_mode === "route" ? "route" : "proximity",
             already_connected: s.already_connected,
+            neighborhood: s.ride_pickup ? shortenAddress(s.ride_pickup) : "",
           });
         }
         if (pbData.ai_powered) setAiPowered(true);
@@ -101,6 +103,7 @@ const SuggestedPartners = () => {
             reasons: s.reasons?.slice(0, 3) || [],
             ai_summary: s.ai_summary,
             source: "smart",
+            neighborhood: s.neighborhood || "",
           });
         }
         if (spData.ai_powered) setAiPowered(true);
@@ -120,6 +123,11 @@ const SuggestedPartners = () => {
 
   const getName = (s: UnifiedSuggestion) =>
     [s.first_name, s.last_name].filter(Boolean).join(" ") || s.username;
+
+  const shortenAddress = (addr: string) => {
+    const parts = addr.split(",");
+    return parts[0]?.trim() || addr;
+  };
 
   const getReasonIcon = (reason: string) => {
     const r = reason.toLowerCase();
@@ -205,6 +213,11 @@ const SuggestedPartners = () => {
                         <>
                           <Route className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">On your route</span>
+                        </>
+                      ) : s.neighborhood ? (
+                        <>
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground truncate max-w-[140px]">{s.neighborhood}</span>
                         </>
                       ) : (
                         <>

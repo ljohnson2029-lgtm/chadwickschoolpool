@@ -135,6 +135,7 @@ serve(async (req) => {
       their_active_days: string[];
       ride_count: number;
       score: number;
+      neighborhood: string;
     }
 
     const candidates: Candidate[] = [];
@@ -167,6 +168,9 @@ serve(async (req) => {
       const totalScore = distScore + scheduleScore + gradeScore + activityScore;
       if (totalScore < 5) continue;
 
+      // Extract neighborhood from address (city/area only, not full address for privacy)
+      const neighborhood = extractNeighborhood(p.home_address || "");
+
       candidates.push({
         id: p.id,
         first_name: p.first_name || "",
@@ -179,6 +183,7 @@ serve(async (req) => {
         their_active_days: [...theirDays],
         ride_count: rideCount,
         score: Math.round(totalScore * 10) / 10,
+        neighborhood,
       });
     }
 
@@ -331,6 +336,7 @@ Return the top 5 only.`;
           confidence: m.confidence,
           reasons: verifiedReasons,
           ai_summary: m.summary,
+          neighborhood: c.neighborhood,
         };
       }).filter(Boolean).slice(0, 5);
 
@@ -390,3 +396,14 @@ function buildVerifiedReasons(c: { distance_miles: number; grade_matches: string
 
 // Alias for fallback paths
 const buildFallbackReasons = buildVerifiedReasons;
+
+// Extract neighborhood/city from a full address (privacy-safe, no street number)
+function extractNeighborhood(address: string): string {
+  if (!address) return "";
+  const parts = address.split(",").map(p => p.trim());
+  // Typical format: "123 Main St, Rancho Palos Verdes, CA 90275, USA"
+  // Return the city part (2nd element typically)
+  if (parts.length >= 3) return parts[1]; // city
+  if (parts.length === 2) return parts[0]; // just area
+  return "";
+}
