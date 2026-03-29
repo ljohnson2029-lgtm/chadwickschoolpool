@@ -77,6 +77,7 @@ const SuggestedPartners = () => {
             ai_summary: s.ai_summary,
             source: pbData.match_mode === "route" ? "route" : "proximity",
             already_connected: s.already_connected,
+            neighborhood: s.ride_pickup ? shortenAddress(s.ride_pickup) : "",
           });
         }
         if (pbData.ai_powered) setAiPowered(true);
@@ -102,6 +103,7 @@ const SuggestedPartners = () => {
             reasons: s.reasons?.slice(0, 3) || [],
             ai_summary: s.ai_summary,
             source: "smart",
+            neighborhood: s.neighborhood || "",
           });
         }
         if (spData.ai_powered) setAiPowered(true);
