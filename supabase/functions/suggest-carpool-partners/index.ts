@@ -168,6 +168,9 @@ serve(async (req) => {
       const totalScore = distScore + scheduleScore + gradeScore + activityScore;
       if (totalScore < 5) continue;
 
+      // Extract neighborhood from address (city/area only, not full address for privacy)
+      const neighborhood = extractNeighborhood(p.home_address || "");
+
       candidates.push({
         id: p.id,
         first_name: p.first_name || "",
@@ -180,6 +183,7 @@ serve(async (req) => {
         their_active_days: [...theirDays],
         ride_count: rideCount,
         score: Math.round(totalScore * 10) / 10,
+        neighborhood,
       });
     }
 
