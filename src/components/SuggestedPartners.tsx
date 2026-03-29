@@ -24,6 +24,7 @@ interface UnifiedSuggestion {
   ai_summary: string | null;
   source: "route" | "proximity" | "smart";
   already_connected?: boolean;
+  neighborhood?: string;
 }
 
 const SuggestedPartners = () => {
