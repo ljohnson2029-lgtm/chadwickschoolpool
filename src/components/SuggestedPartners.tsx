@@ -214,6 +214,11 @@ const SuggestedPartners = () => {
                           <Route className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">On your route</span>
                         </>
+                      ) : s.neighborhood ? (
+                        <>
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground truncate max-w-[140px]">{s.neighborhood}</span>
+                        </>
                       ) : (
                         <>
                           <Users className="h-3 w-3 text-muted-foreground" />
