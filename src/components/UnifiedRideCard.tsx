@@ -513,6 +513,19 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
               })()}
             </div>
 
+            {/* Other Parent / Coordinating With section */}
+            {ride.otherParent && (
+              <div className="bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-indigo-600" />
+                  <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase">
+                    {ride._studentView ? 'Other Parent' : 'Coordinating With'}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-foreground">{getParentName(ride.otherParent)}</span>
+              </div>
+            )}
+
             {allPassengerChildren.length > 0 ? (
               <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-3 space-y-1.5">
                 <div className="flex items-center gap-2">
