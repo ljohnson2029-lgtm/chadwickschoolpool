@@ -1089,6 +1089,32 @@ const MyRides = () => {
           </TabsContent>
 
           <TabsContent value="past">
+            {!isStudent && pastRides.length > 0 && (
+              <div className="flex justify-end mb-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" disabled={clearingPast}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Clear Past Rides
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Clear all past rides?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove all your past rides and their associated messages. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearPastRides} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Clear All
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
             {renderRideList(pastRides, true)}
           </TabsContent>
         </Tabs>
