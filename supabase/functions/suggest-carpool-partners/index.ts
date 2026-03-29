@@ -260,7 +260,7 @@ Return the top 5 only.`;
             type: "function",
             function: {
               name: "rank_matches",
-              description: "Return the AI-ranked carpool partner suggestions",
+              description: "Return the AI-ranked carpool partner suggestions with confidence and a warm summary",
               parameters: {
                 type: "object",
                 properties: {
@@ -271,14 +271,9 @@ Return the top 5 only.`;
                       properties: {
                         candidate_index: { type: "number", description: "1-based index from the candidate list" },
                         confidence: { type: "string", enum: ["great", "good", "potential"] },
-                        reasons: {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "2-3 short specific reasons"
-                        },
-                        summary: { type: "string", description: "One-sentence personalized recommendation" }
+                        summary: { type: "string", description: "Warm one-sentence recommendation without specific numbers, grades, or names" }
                       },
-                      required: ["candidate_index", "confidence", "reasons", "summary"],
+                      required: ["candidate_index", "confidence", "summary"],
                       additionalProperties: false,
                     }
                   }
