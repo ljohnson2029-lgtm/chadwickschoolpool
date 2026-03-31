@@ -100,7 +100,7 @@ const ForgotPassword = () => {
       const { data, error: resetError } = await supabase.functions.invoke('auth-reset-password', {
         body: {
           email: email.toLowerCase().trim(),
-          code: code.trim(),
+          code: verifiedCode,
           newPassword,
         }
       });
