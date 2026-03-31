@@ -192,20 +192,6 @@ const ForgotPassword = () => {
             {step === 'newPassword' && (
               <>
                 <div>
-                  <Label htmlFor="newCode" className="text-foreground text-sm sm:text-base">New Verification Code</Label>
-                  <Input
-                    id="newCode"
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="Enter new 6-digit code"
-                    required
-                    maxLength={6}
-                    className="mt-1 text-center text-xl sm:text-2xl tracking-widest h-12 sm:h-auto"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">A new code was sent to your email</p>
-                </div>
-                <div>
                   <Label htmlFor="newPassword" className="text-foreground text-sm sm:text-base">New Password</Label>
                   <Input
                     id="newPassword"
