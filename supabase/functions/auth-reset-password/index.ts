@@ -31,13 +31,13 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Verify the code is valid
+    // Verify the code was recently used (already verified during the forgot password flow)
     const { data: verification, error: fetchError } = await supabase
       .from('verification_codes')
       .select('*')
       .eq('email', normalizedEmail)
       .eq('code', String(code).trim())
-      .eq('is_used', false)
+      .eq('is_used', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -49,23 +49,19 @@ serve(async (req) => {
 
     if (!verification) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid or expired verification code' }),
+        JSON.stringify({ success: false, error: 'Invalid reset request. Please start over.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (new Date(verification.expires_at) < new Date()) {
+    // Ensure the code was used recently (within 10 minutes)
+    const codeAge = Date.now() - new Date(verification.created_at).getTime();
+    if (codeAge > 10 * 60 * 1000) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Verification code has expired. Please request a new one.' }),
+        JSON.stringify({ success: false, error: 'Reset session expired. Please start over.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Mark code as used
-    await supabase
-      .from('verification_codes')
-      .update({ is_used: true })
-      .eq('id', verification.id);
 
     // Hash the new password using Web Crypto API (same as auth-create-account)
     const encoder = new TextEncoder();

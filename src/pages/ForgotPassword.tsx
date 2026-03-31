@@ -14,6 +14,7 @@ const ForgotPassword = () => {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [verifiedCode, setVerifiedCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -69,19 +70,9 @@ const ForgotPassword = () => {
         throw new Error(data?.error || 'Invalid verification code');
       }
 
-      // Code verified — but we need a fresh code for the actual reset
-      // Send a new code that will be used with the password reset
-      const { data: newCodeData, error: newCodeError } = await supabase.functions.invoke('auth-send-2fa', {
-        body: { email: email.toLowerCase().trim() }
-      });
-
-      if (newCodeError || !newCodeData?.success) {
-        throw new Error('Failed to prepare password reset. Please try again.');
-      }
-
+      setVerifiedCode(code.trim());
       setStep('newPassword');
-      setCode(''); // Clear old code, user will enter the new one
-      setSuccess('Identity verified! Enter your new password and the new code sent to your email.');
+      setSuccess('Identity verified! Enter your new password.');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
     } finally {
@@ -111,7 +102,7 @@ const ForgotPassword = () => {
       const { data, error: resetError } = await supabase.functions.invoke('auth-reset-password', {
         body: {
           email: email.toLowerCase().trim(),
-          code: code.trim(),
+          code: verifiedCode,
           newPassword,
         }
       });
@@ -200,20 +191,6 @@ const ForgotPassword = () => {
 
             {step === 'newPassword' && (
               <>
-                <div>
-                  <Label htmlFor="newCode" className="text-foreground text-sm sm:text-base">New Verification Code</Label>
-                  <Input
-                    id="newCode"
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="Enter new 6-digit code"
-                    required
-                    maxLength={6}
-                    className="mt-1 text-center text-xl sm:text-2xl tracking-widest h-12 sm:h-auto"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">A new code was sent to your email</p>
-                </div>
                 <div>
                   <Label htmlFor="newPassword" className="text-foreground text-sm sm:text-base">New Password</Label>
                   <Input
