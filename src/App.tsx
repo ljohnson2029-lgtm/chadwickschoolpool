@@ -41,6 +41,7 @@ const Help = lazy(() => import("./pages/Help"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const RequestAccess = lazy(() => import("./pages/RequestAccess"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AdminApprovals = lazy(() => import("./pages/AdminApprovals"));
 const Series = lazy(() => import("./pages/Series"));
 
@@ -84,6 +85,7 @@ const AppRoutes = () => {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/carpools" element={<FamilyCarpools />} />
           <Route path="/carpools/create" element={<FamilyCarpools />} />
