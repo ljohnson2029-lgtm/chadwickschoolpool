@@ -69,19 +69,8 @@ const ForgotPassword = () => {
         throw new Error(data?.error || 'Invalid verification code');
       }
 
-      // Code verified — but we need a fresh code for the actual reset
-      // Send a new code that will be used with the password reset
-      const { data: newCodeData, error: newCodeError } = await supabase.functions.invoke('auth-send-2fa', {
-        body: { email: email.toLowerCase().trim() }
-      });
-
-      if (newCodeError || !newCodeData?.success) {
-        throw new Error('Failed to prepare password reset. Please try again.');
-      }
-
       setStep('newPassword');
-      setCode(''); // Clear old code, user will enter the new one
-      setSuccess('Identity verified! Enter your new password and the new code sent to your email.');
+      setSuccess('Identity verified! Enter your new password.');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
     } finally {
