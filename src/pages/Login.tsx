@@ -201,7 +201,7 @@ const Login = () => {
             </LoadingButton>
 
             <div className="text-center space-y-2">
-              <Button variant="ghost" className="text-sm text-foreground/70 hover:text-foreground h-10">
+              <Button variant="ghost" onClick={() => navigate('/forgot-password')} className="p-0 h-auto text-sm font-semibold text-primary hover:text-primary/80">
                 Forgot Password?
               </Button>
               <p className="text-sm text-foreground/70">

@@ -85,6 +85,7 @@ const AppRoutes = () => {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/carpools" element={<FamilyCarpools />} />
           <Route path="/carpools/create" element={<FamilyCarpools />} />
