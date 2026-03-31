@@ -70,6 +70,7 @@ const ForgotPassword = () => {
         throw new Error(data?.error || 'Invalid verification code');
       }
 
+      setVerifiedCode(code.trim());
       setStep('newPassword');
       setSuccess('Identity verified! Enter your new password.');
     } catch (err: any) {
