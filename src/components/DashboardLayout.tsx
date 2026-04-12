@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import TabNavigation from "./TabNavigation";
 import MobileBottomNav from "./MobileBottomNav";
 import FloatingFeedbackButton from "./FloatingFeedbackButton";
+import CreatorFooter from "./CreatorFooter";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────────────── */
@@ -99,14 +100,17 @@ export const DashboardLayout = ({
         </div>
       </main>
 
-      {/* 5. Mobile Bottom Navigation */}
+      {/* 5. Creator Footer */}
+      <CreatorFooter />
+
+      {/* 6. Mobile Bottom Navigation */}
       {!hideBottomNav && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t pb-safe">
           <MobileBottomNav />
         </div>
       )}
 
-      {/* 6. Feedback Button (Z-Index high to float over everything) */}
+      {/* 7. Feedback Button (Z-Index high to float over everything) */}
       <div className="z-50">
         <FloatingFeedbackButton />
       </div>

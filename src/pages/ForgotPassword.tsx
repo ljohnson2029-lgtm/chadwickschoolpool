@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
+import CreatorFooter from '@/components/CreatorFooter';
 
 type Step = 'email' | 'code' | 'newPassword';
 
@@ -260,6 +261,7 @@ const ForgotPassword = () => {
           </form>
         </div>
       </div>
+      <CreatorFooter />
     </>
   );
 };

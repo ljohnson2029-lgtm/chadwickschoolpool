@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Navigation from "@/components/Navigation";
+import CreatorFooter from "@/components/CreatorFooter";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
@@ -24,6 +25,7 @@ const NotFound = () => {
           </Button>
         </div>
       </div>
+      <CreatorFooter />
     </>
   );
 };
