@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import Navigation from "@/components/Navigation";
+import CreatorFooter from "@/components/CreatorFooter";
 import SignupWaiverCheckboxes from "@/components/SignupWaiverCheckboxes";
 
 const Register = () => {
@@ -779,6 +780,7 @@ const Register = () => {
         </CardContent>
       </Card>
     </div>
+    <CreatorFooter />
     </>
   );
 };

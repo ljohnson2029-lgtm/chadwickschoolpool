@@ -7,6 +7,7 @@ import LandingHowItWorks from "@/components/LandingHowItWorks";
 import LandingFeatures from "@/components/LandingFeatures";
 import LandingTrust from "@/components/LandingTrust";
 import Footer from "@/components/Footer";
+import CreatorFooter from "@/components/CreatorFooter";
 import PageTransition from "@/components/PageTransition";
 
 const Index = () => {
@@ -40,6 +41,7 @@ const Index = () => {
         <LandingFeatures />
         <LandingTrust />
         <Footer />
+        <CreatorFooter />
       </div>
     </PageTransition>
   );

@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
-
+import CreatorFooter from '@/components/CreatorFooter';
 import AddressRequiredModal from '@/components/AddressRequiredModal';
 
 const Login = () => {
@@ -277,6 +277,7 @@ const Login = () => {
         )}
       </div>
     </div>
+    <CreatorFooter />
     </>
   );
 };
