@@ -12,7 +12,7 @@ const CreatorFooter = () => {
 
   return (
     <>
-      <div className="w-full bg-muted/60 border-t border-border/50 py-1.5 px-4 flex items-center justify-center gap-3 text-[11px] text-muted-foreground select-none">
+      <div className="fixed bottom-0 left-0 right-0 z-[9999] w-full bg-muted/95 backdrop-blur-sm border-t border-border/50 py-1.5 px-4 flex items-center justify-center gap-3 text-[11px] text-muted-foreground select-none md:bottom-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))]">
         <span>Created by Ethan Fang &amp; Luke Johnson</span>
         <button
           onClick={() => setOpen(true)}

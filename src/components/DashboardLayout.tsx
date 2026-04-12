@@ -81,7 +81,7 @@ export const DashboardLayout = ({
           // Padding for top nav + safe breathing room
           "pt-4 md:pt-8",
           // Padding for bottom nav (mobile) or footer (desktop)
-          hideBottomNav ? "pb-8" : "pb-24 md:pb-12",
+          hideBottomNav ? "pb-12" : "pb-32 md:pb-16",
           // iOS Safe Area support
           "pb-safe",
           className,
