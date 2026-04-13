@@ -124,7 +124,7 @@ serve(async (req) => {
     if (data) {
       console.log(`Approved email from database: ${normalizedEmail}`);
       return new Response(
-        JSON.stringify({ approved: true, reason: 'Email in approved list' }),
+        JSON.stringify({ approved: true, reason: 'Email in approved list', isStudent: false }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
