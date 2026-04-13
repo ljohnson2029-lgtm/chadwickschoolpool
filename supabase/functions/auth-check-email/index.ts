@@ -90,11 +90,21 @@ serve(async (req) => {
       );
     }
 
+    // Check if email is in parent whitelist (overrides student detection)
+    const { data: whitelistData } = await supabase
+      .from('parent_email_whitelist')
+      .select('email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    const isWhitelistedParent = !!whitelistData;
+
     // Check if it's a Chadwick School email
     if (normalizedEmail.endsWith('@chadwickschool.org')) {
-      console.log(`Approved Chadwick email: ${normalizedEmail}`);
+      const isStudent = !isWhitelistedParent;
+      console.log(`Approved Chadwick email: ${normalizedEmail}, isStudent: ${isStudent}`);
       return new Response(
-        JSON.stringify({ approved: true, reason: 'Chadwick School email' }),
+        JSON.stringify({ approved: true, reason: 'Chadwick School email', isStudent }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
