@@ -252,11 +252,11 @@ const Privacy = () => {
                   If you have any questions about this privacy policy or our data practices, please contact us:
                 </p>
                 <a 
-                  href="mailto:privacy@chadwickschoolpool.org"
+                  href="mailto:chadwickschoolpool@gmail.com"
                   className="inline-flex items-center gap-2 text-primary hover:underline"
                 >
                   <Mail className="w-4 h-4" />
-                  privacy@chadwickschoolpool.org
+                  chadwickschoolpool@gmail.com
                 </a>
               </CardContent>
             </Card>
