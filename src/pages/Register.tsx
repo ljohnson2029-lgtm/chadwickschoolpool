@@ -53,13 +53,15 @@ const Register = () => {
 
     try {
       const normalizedEmail = email.toLowerCase().trim();
-      const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
-      setIsStudentEmail(isChadwickEmail);
 
       // Check if email is approved BEFORE sending verification code
       const { data: checkData, error: checkError } = await supabase.functions.invoke("auth-check-email", {
         body: { email: normalizedEmail },
       });
+
+      // Use server-side isStudent flag (accounts for whitelist overrides)
+      const isStudent = checkData?.isStudent ?? normalizedEmail.endsWith('@chadwickschool.org');
+      setIsStudentEmail(isStudent);
 
       if (checkError) {
         console.error('Email check error:', checkError);
