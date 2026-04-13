@@ -265,65 +265,6 @@ const Navigation = () => {
                 </Button>
               </>
             )}
-
-
-            {/* More Menu (Hamburger) */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`transition-all duration-200 ${textColorClass} hover:bg-primary/10`}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background border-border z-[100]">
-                {moreNavItems.map((item) => {
-                  if (item.parentOnly && !isParent) return null;
-                  return (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span>{item.label}</span>
-                        {item.path === '/family-links' && pendingRequestsCount > 0 && (
-                          <Badge variant="destructive" className="ml-2">
-                            {pendingRequestsCount}
-                          </Badge>
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })}
-                {user && userRole === 'student' && studentNavItems.map((item) => (
-                  <DropdownMenuItem
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className="cursor-pointer"
-                  >
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-                {isAdmin && (
-                  <DropdownMenuItem
-                    onClick={() => navigate("/admin/approvals")}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span>Admin</span>
-                      {pendingAccessRequests > 0 && (
-                        <Badge variant="destructive" className="ml-2">
-                          {pendingAccessRequests}
-                        </Badge>
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           {/* Mobile: Notification Bell + Menu Button */}
