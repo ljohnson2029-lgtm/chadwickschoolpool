@@ -6,7 +6,7 @@ import { Menu, X, Car, Home, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationDropdown } from "./NotificationDropdown";
-import { ThemeToggle } from "./ThemeToggle";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -266,8 +266,6 @@ const Navigation = () => {
               </>
             )}
 
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* More Menu (Hamburger) */}
             <DropdownMenu>
@@ -328,9 +326,8 @@ const Navigation = () => {
             </DropdownMenu>
           </div>
 
-          {/* Mobile: Theme Toggle + Notification Bell + Menu Button */}
+          {/* Mobile: Notification Bell + Menu Button */}
           <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
             {user && <NotificationDropdown />}
             <button
               className="p-2 transition-transform duration-200 hover:scale-110"

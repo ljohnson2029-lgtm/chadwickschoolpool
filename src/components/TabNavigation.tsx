@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationDropdown } from "./NotificationDropdown";
-import { ThemeToggle } from "./ThemeToggle";
+
 import { usePrefetchRoutes } from "@/hooks/usePrefetchRoutes";
 import {
   DropdownMenu,
@@ -120,7 +120,6 @@ const TabNavigation = () => {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             {user && accountType && (
               <Badge
                 variant={accountType === "student" ? "secondary" : "default"}
