@@ -123,7 +123,7 @@ const faqs = [
   },
   {
     question: "How do I report a problem?",
-    answer: "You can use the contact form below or email us directly at support@chadwickschoolpool.org. Please include as much detail as possible about the issue you're experiencing."
+    answer: "You can use the contact form below or email us directly at chadwickschoolpool@gmail.com. Please include as much detail as possible about the issue you're experiencing."
   },
   {
     question: "Can I use SchoolPool if I don't want to appear on the map?",
@@ -266,10 +266,10 @@ export default function Help() {
                 You can also reach us directly at:
               </p>
               <a 
-                href="mailto:support@chadwickschoolpool.org"
+                href="mailto:chadwickschoolpool@gmail.com"
                 className="text-primary hover:underline font-medium"
               >
-                support@chadwickschoolpool.org
+                chadwickschoolpool@gmail.com
               </a>
             </div>
 

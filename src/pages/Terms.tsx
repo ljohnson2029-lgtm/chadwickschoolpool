@@ -225,8 +225,8 @@ const Terms = () => {
                 <CardContent className="prose prose-sm dark:prose-invert max-w-none">
                   <p>
                     If you have any questions about these Terms of Service, please contact us at{" "}
-                    <a href="mailto:support@chadwickschoolpool.org" className="text-primary hover:underline">
-                      support@chadwickschoolpool.org
+                    <a href="mailto:chadwickschoolpool@gmail.com" className="text-primary hover:underline">
+                      chadwickschoolpool@gmail.com
                     </a>
                   </p>
                 </CardContent>
