@@ -3,17 +3,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
-// Simple in-memory rate limiting (per IP, resets on function restart)
+// Simple in-memory rate limiting (per user, resets on function restart)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 3600000; // 1 hour
-const RATE_LIMIT_MAX = 10; // 10 emails per hour per IP
+const RATE_LIMIT_MAX = 10; // 10 emails per hour per user
 
-function isRateLimited(ip: string): boolean {
+function isRateLimited(userId: string): boolean {
   const now = Date.now();
-  const record = rateLimitMap.get(ip);
+  const record = rateLimitMap.get(userId);
   
   if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return false;
   }
   
@@ -32,38 +32,43 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    // Get client IP for rate limiting
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-    
-    // Check rate limit
-    if (isRateLimited(clientIP)) {
-      console.log('Rate limited IP:', clientIP);
+    // Require authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check per-user rate limit
+    if (isRateLimited(user.id)) {
+      console.log('Rate limited user:', user.id);
       return new Response(
         JSON.stringify({ success: false, error: 'Too many email requests. Please try again later.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Optionally verify authentication (email sending should ideally require auth)
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const supabase = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        {
-          global: {
-            headers: { Authorization: authHeader },
-          },
-        }
-      );
-      
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (user) {
-        console.log('Authenticated email request from user:', user.id);
-      }
-    }
+    console.log('Authenticated email request from user:', user.id);
 
     const { email, subject, message } = await req.json();
 
@@ -136,7 +141,7 @@ serve(async (req) => {
     }
 
     const data = await emailResponse.json();
-    console.log(`Email sent to ${email}`);
+    console.log(`Email sent to ${email} by user ${user.id}`);
 
     return new Response(
       JSON.stringify({ success: true, data }),
