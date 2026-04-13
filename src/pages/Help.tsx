@@ -129,6 +129,17 @@ export default function Help() {
     setIsSubmitting(true);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        toast({
+          title: "Please log in first",
+          description: "You need to be signed in to send a message. Please log in and try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.functions.invoke("send-email", {
         body: { subject, message, senderName: name },
       });
