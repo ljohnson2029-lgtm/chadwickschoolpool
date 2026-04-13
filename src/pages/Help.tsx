@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
+import { supabase } from "@/integrations/supabase/client";
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -118,7 +118,7 @@ const faqs = [
 export default function Help() {
   const { toast } = useToast();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,18 +127,30 @@ export default function Help() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: { subject, message, senderName: name },
+      });
 
-    toast({
-      title: "Message Sent",
-      description: "We'll get back to you within 24-48 hours.",
-    });
+      if (error) throw new Error(error.message || "Failed to send");
 
-    setName("");
-    setEmail("");
-    setMessage("");
-    setIsSubmitting(false);
+      toast({
+        title: "Message Sent",
+        description: "We'll get back to you within 24-48 hours.",
+      });
+
+      setName("");
+      setSubject("");
+      setMessage("");
+    } catch (error: any) {
+      toast({
+        title: "Failed to send",
+        description: error.message || "Please try again later or email us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredSections = helpSections.map(section => ({
@@ -269,12 +281,12 @@ export default function Help() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Your Email</Label>
+                  <Label htmlFor="subject">Subject</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="subject"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    placeholder="What is this about?"
                     required
                   />
                 </div>
