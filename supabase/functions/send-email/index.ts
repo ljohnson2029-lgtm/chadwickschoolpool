@@ -70,21 +70,12 @@ serve(async (req) => {
 
     console.log('Authenticated email request from user:', user.id);
 
-    const { email, subject, message } = await req.json();
+    const { subject, message, senderName } = await req.json();
 
     // Validate inputs
-    if (!email || !subject || !message) {
+    if (!subject || !message) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email) || email.length > 254) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid email address' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -114,11 +105,27 @@ serve(async (req) => {
         .replace(/'/g, '&#039;');
     };
 
+    // Get sender's email from their profile
+    const adminSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    const { data: userData } = await adminSupabase
+      .from('users')
+      .select('email, first_name, last_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const senderEmail = userData?.email || 'unknown';
+    const senderFullName = senderName || (userData ? `${userData.first_name} ${userData.last_name}` : 'Unknown User');
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     
     if (!RESEND_API_KEY) {
       throw new Error('Resend API key not configured');
     }
+
+    const SUPPORT_EMAIL = 'chadwickschoolpool@gmail.com';
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -128,9 +135,15 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'Chadwick SchoolPool <noreply@chadwickschoolpool.org>',
-        to: [email],
-        subject: escapeHtml(subject),
-        html: `<p>${escapeHtml(message)}</p>`,
+        to: [SUPPORT_EMAIL],
+        subject: `[SchoolPool Support] ${escapeHtml(subject)}`,
+        html: `
+          <h2>New Support Message</h2>
+          <p><strong>From:</strong> ${escapeHtml(senderFullName)} (${escapeHtml(senderEmail)})</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+          <hr />
+          <p>${escapeHtml(message).replace(/\n/g, '<br />')}</p>
+        `,
       }),
     });
 
