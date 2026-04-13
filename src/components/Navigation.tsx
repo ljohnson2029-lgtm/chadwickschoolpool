@@ -152,7 +152,7 @@ const Navigation = () => {
 
   // Main navigation items (same for all users)
   const mainNavItems: NavItem[] = [
-    { label: "Features", path: "/features" },
+    { label: "Features", path: "/features", authRequired: true },
     { label: "Dashboard", path: "/dashboard", authRequired: true },
   ];
 
