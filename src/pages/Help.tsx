@@ -59,10 +59,6 @@ const helpSections = [
         answer: "Navigate to 'Find Parents' in your dashboard. The map will show your home location and other parents who have opted to be visible. Use the radius slider to adjust how far from your route you want to search."
       },
       {
-        question: "What does the radius filter do?",
-        answer: "The radius slider controls how far from your route to school the system searches for other parents. For example, setting it to 2 miles will show parents whose homes are within 2 miles of your driving route."
-      },
-      {
         question: "How do I send a ride request to another parent?",
         answer: "Click on a parent's marker on the map to view their profile. From there, you can send them a private ride request or offer. Include details about the date, time, and any special needs."
       }
@@ -97,10 +93,6 @@ const helpSections = [
         answer: "Go to 'Profile' to update your name, phone number, address, and vehicle information. Go to 'Settings' to manage your privacy preferences and notification settings."
       },
       {
-        question: "What privacy controls do I have?",
-        answer: "In Settings, you can control: whether you appear on the map, whether to share your email/phone with matched parents, and whether to accept ride requests from anyone or only linked families."
-      },
-      {
         question: "How do I delete my account?",
         answer: "Go to Settings and scroll to the bottom. Click 'Delete My Account' and confirm. This will permanently delete all your data, including ride history and family links."
       }
@@ -118,17 +110,9 @@ const faqs = [
     answer: "Your child (student) needs to send a link request from their account using your email address. You'll receive a notification to approve the request. Once approved, they can view your carpools and you can manage rides on their behalf."
   },
   {
-    question: "Is my address shared with everyone?",
-    answer: "No. Your exact address is never shown to other users. On the map, only an approximate location (within a small radius) is displayed. Only verified Chadwick School families can see the map, and you can opt out of appearing on the map entirely in Settings."
-  },
-  {
     question: "How do I report a problem?",
     answer: "You can use the contact form below or email us directly at chadwickschoolpool@gmail.com. Please include as much detail as possible about the issue you're experiencing."
   },
-  {
-    question: "Can I use SchoolPool if I don't want to appear on the map?",
-    answer: "Yes! You can disable 'Show me on the map' in Settings. You'll still be able to search for other parents, post and find rides, and use all other features."
-  }
 ];
 
 export default function Help() {
