@@ -93,29 +93,6 @@ const TabNavigation = () => {
               );
             })}
 
-            {/* Hamburger Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {menuItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className="cursor-pointer flex items-center gap-2"
-                    >
-                      {Icon && <Icon className="h-4 w-4" />}
-                      {item.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           {/* Right side */}
