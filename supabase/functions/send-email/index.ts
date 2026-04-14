@@ -3,17 +3,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
-// Simple in-memory rate limiting (per user, resets on function restart)
+// Simple in-memory rate limiting (per IP, resets on function restart)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 3600000; // 1 hour
-const RATE_LIMIT_MAX = 10; // 10 emails per hour per user
+const RATE_LIMIT_MAX = 10; // 10 emails per hour per key
 
-function isRateLimited(userId: string): boolean {
+function isRateLimited(key: string): boolean {
   const now = Date.now();
-  const record = rateLimitMap.get(userId);
+  const record = rateLimitMap.get(key);
   
   if (!record || now > record.resetTime) {
-    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return false;
   }
   
@@ -32,45 +32,60 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    // Require authentication
+    // Try to get authenticated user (optional)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    let userId: string | null = null;
+    let senderEmail = 'anonymous';
+    let senderFullName = 'Anonymous User';
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
+    if (authHeader) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        {
+          global: {
+            headers: { Authorization: authHeader },
+          },
+        }
+      );
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+
+        const adminSupabase = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+        const { data: userData } = await adminSupabase
+          .from('users')
+          .select('email, first_name, last_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (userData) {
+          senderEmail = userData.email || 'unknown';
+          senderFullName = `${userData.first_name} ${userData.last_name}`;
+        }
       }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid or expired token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
-    // Check per-user rate limit
-    if (isRateLimited(user.id)) {
-      console.log('Rate limited user:', user.id);
+    // Rate limit by user ID or IP
+    const rateLimitKey = userId || req.headers.get('x-forwarded-for') || 'unknown';
+    if (isRateLimited(rateLimitKey)) {
+      console.log('Rate limited:', rateLimitKey);
       return new Response(
         JSON.stringify({ success: false, error: 'Too many email requests. Please try again later.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Authenticated email request from user:', user.id);
-
     const { subject, message, senderName } = await req.json();
+
+    // Use provided senderName if available (for unauthenticated users)
+    if (senderName) {
+      senderFullName = senderName;
+    }
 
     // Validate inputs
     if (!subject || !message) {
@@ -80,7 +95,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate length limits
     if (subject.length > 200) {
       return new Response(
         JSON.stringify({ success: false, error: 'Subject too long (max 200 characters)' }),
@@ -104,20 +118,6 @@ serve(async (req) => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     };
-
-    // Get sender's email from their profile
-    const adminSupabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-    const { data: userData } = await adminSupabase
-      .from('users')
-      .select('email, first_name, last_name')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    const senderEmail = userData?.email || 'unknown';
-    const senderFullName = senderName || (userData ? `${userData.first_name} ${userData.last_name}` : 'Unknown User');
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     
@@ -154,7 +154,7 @@ serve(async (req) => {
     }
 
     const data = await emailResponse.json();
-    console.log(`Email sent to ${email} by user ${user.id}`);
+    console.log(`Email sent by ${rateLimitKey}`);
 
     return new Response(
       JSON.stringify({ success: true, data }),
