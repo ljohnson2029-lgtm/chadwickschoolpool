@@ -46,6 +46,7 @@ const TabNavigation = () => {
 
   // Hamburger menu items
   const menuItems = [
+    { label: "Help Center", path: "/help", icon: HelpCircle },
     { label: "Give Feedback", path: "/feedback", icon: MessageSquarePlus },
     { label: "About", path: "/about", icon: Info },
     { label: "Safety", path: "/safety", icon: Shield },
