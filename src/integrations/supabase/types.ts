@@ -1219,6 +1219,48 @@ export type Database = {
       }
     }
     Views: {
+      student_parent_links_safe: {
+        Row: {
+          approved_at: string | null
+          created_at: string | null
+          id: string | null
+          parent_id: string | null
+          status: string | null
+          student_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          parent_id?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string | null
+          parent_id?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_parent_links_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_parent_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users_safe: {
         Row: {
           created_at: string | null
