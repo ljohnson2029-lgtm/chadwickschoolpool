@@ -47,7 +47,7 @@ const Privacy = () => {
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
                     <div>
-                      <strong>Location Data:</strong> Home address for matching with nearby carpool partners. Your exact address is never shared with other users.
+                      <strong>Location Data:</strong> Home address for matching with nearby carpool partners.
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -125,26 +125,6 @@ const Privacy = () => {
                   </p>
                 </div>
                 
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
-                    <div>
-                      <strong>Your Name:</strong> Visible to other verified Chadwick parents on the map.
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
-                    <div>
-                      <strong>Approximate Location:</strong> Shown as a general area, not your exact address.
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
-                    <div>
-                      <strong>Email/Phone:</strong> Only shared when you explicitly allow it in your privacy settings.
-                    </div>
-                  </li>
-                </ul>
               </CardContent>
             </Card>
 
