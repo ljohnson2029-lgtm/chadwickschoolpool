@@ -29,7 +29,7 @@ const Dashboard = () => {
         return;
       }
       const { data } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('email')
         .eq('user_id', user.id)
         .single();

@@ -195,7 +195,7 @@ const PrivateRideRequestModal = ({
 
       // Fetch recipient's email for contact info
       const { data: recipientUser } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('email')
         .eq('user_id', recipientId)
         .single();

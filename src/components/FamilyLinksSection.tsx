@@ -100,7 +100,7 @@ const FamilyLinksSection = () => {
       
       if (userIds.length > 0) {
         const { data: usersData } = await supabase
-          .from('users')
+          .from('users_safe')
           .select('user_id, email, first_name, last_name')
           .in('user_id', userIds);
         

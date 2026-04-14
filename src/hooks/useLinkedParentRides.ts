@@ -58,7 +58,7 @@
      try {
        // Check if user is a student by querying their email
        const { data: userData, error: userError } = await supabase
-         .from('users')
+         .from('users_safe')
          .select('email')
          .eq('user_id', user.id)
          .single();
