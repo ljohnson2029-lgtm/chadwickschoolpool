@@ -12,7 +12,7 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
   
   const [{ data: profiles }, { data: users }] = await Promise.all([
     supabase.from('profiles').select('id, first_name, last_name, username, phone_number, share_phone, share_email, car_make, car_model, car_color, license_plate, home_address').in('id', ids),
-    supabase.from('users').select('user_id, email').in('user_id', ids),
+    supabase.from('users_safe').select('user_id, email').in('user_id', ids),
   ]);
 
   if (!profiles) return {};

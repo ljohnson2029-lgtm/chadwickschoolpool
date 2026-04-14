@@ -71,7 +71,7 @@ const PublicProfile = () => {
     const checkViewerRole = async () => {
       if (!user) return;
       const { data } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('email')
         .eq('user_id', user.id)
         .single();

@@ -136,7 +136,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         .in('id', senderIds);
       
       const { data: users } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('user_id, email')
         .in('user_id', senderIds);
       
@@ -334,7 +334,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         .single();
 
       const { data: ownerUser } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('email')
         .eq('user_id', respondingToRide.user_id)
         .single();

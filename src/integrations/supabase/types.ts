@@ -90,10 +90,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "fk_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_student"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
             referencedColumns: ["user_id"]
           },
         ]
@@ -240,6 +254,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_notification_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       parent_email_whitelist: {
@@ -351,10 +372,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "private_ride_requests_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "private_ride_requests_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "private_ride_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users_safe"
             referencedColumns: ["user_id"]
           },
         ]
@@ -1184,7 +1219,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_safe: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          is_verified: boolean | null
+          last_login: string | null
+          last_name: string | null
+          phone_number: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          is_verified?: boolean | null
+          last_login?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          is_verified?: boolean | null
+          last_login?: string | null
+          last_name?: string | null
+          phone_number?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_duplicate_private_request: {

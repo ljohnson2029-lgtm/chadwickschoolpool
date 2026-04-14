@@ -85,7 +85,7 @@ const FindRides = () => {
     const fetchUserInfo = async () => {
       if (!user) return;
       const { data } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('email')
         .eq('user_id', user.id)
         .single();
@@ -147,7 +147,7 @@ const FindRides = () => {
       }
 
       const { data: usersData } = await supabase
-        .from('users')
+        .from('users_safe')
         .select('user_id, email')
         .in('user_id', userIds);
       
