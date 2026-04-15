@@ -901,7 +901,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [profile]);
+  }, [profile, mapboxToken]);
 
   /* ── Update markers and layers ──────────────────────────── */
   useEffect(() => {
