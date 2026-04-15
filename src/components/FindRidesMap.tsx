@@ -811,7 +811,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const eventHandlersRef = useRef<Array<{ type: string; layer: string; handler: any }>>([]);
 
   /* ── Custom hooks ───────────────────────────────────────── */
-  const { isUserParent, isUserStudent } = useUserInfo(user?.id);
+  const { isUserParent, isUserStudent } = useUserInfo(user?.id, profile?.account_type);
   const { fetchUserResponses, getResponseStatus } = useRideResponses(user?.id);
   const { rides, setRides, loading } = useMapRides(user?.id);
 
