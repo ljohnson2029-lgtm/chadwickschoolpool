@@ -1,82 +1,82 @@
 /**
  * Permission utilities for carpool operations
- * Validates user permissions based on account type (student vs parent)
+ * Validates user permissions based on account type (parent vs student)
+ * 
+ * IMPORTANT: These functions use profile.account_type as the source of truth,
+ * NOT the email domain. This is because some @chadwickschool.org emails are
+ * whitelisted parents (via parent_email_whitelist table).
  */
 
 /**
  * Check if user can create carpools
- * @param email User's email address
- * @returns true if user is a parent (non-@chadwickschool.org), false if student
+ * @param accountType User's account type from profile
+ * @returns true if user is a parent, false if student
  */
-export function canCreateCarpool(email: string | undefined): boolean {
-  if (!email) return false;
-  // Students (@chadwickschool.org) cannot create carpools
-  return !email.toLowerCase().endsWith('@chadwickschool.org');
+export function canCreateCarpool(accountType: string | undefined): boolean {
+  if (!accountType) return false;
+  return accountType === 'parent';
 }
 
 /**
  * Check if user can edit a carpool
- * @param email User's email address
+ * @param accountType User's account type from profile
  * @param ownerId ID of the carpool owner
  * @param currentUserId Current user's ID
  * @returns true if user is a parent AND owns the carpool
  */
 export function canEditCarpool(
-  email: string | undefined, 
+  accountType: string | undefined, 
   ownerId: string, 
   currentUserId: string
 ): boolean {
-  if (!email || !ownerId || !currentUserId) return false;
-  // Must be a parent AND own the carpool
-  return !email.toLowerCase().endsWith('@chadwickschool.org') && ownerId === currentUserId;
+  if (!accountType || !ownerId || !currentUserId) return false;
+  return accountType === 'parent' && ownerId === currentUserId;
 }
 
 /**
  * Check if user can delete a carpool
- * @param email User's email address
+ * @param accountType User's account type from profile
  * @param ownerId ID of the carpool owner
  * @param currentUserId Current user's ID
  * @returns true if user is a parent AND owns the carpool
  */
 export function canDeleteCarpool(
-  email: string | undefined,
+  accountType: string | undefined,
   ownerId: string,
   currentUserId: string
 ): boolean {
-  if (!email || !ownerId || !currentUserId) return false;
-  // Must be a parent AND own the carpool
-  return !email.toLowerCase().endsWith('@chadwickschool.org') && ownerId === currentUserId;
+  if (!accountType || !ownerId || !currentUserId) return false;
+  return accountType === 'parent' && ownerId === currentUserId;
 }
 
 /**
  * Check if user can request rides
- * @param email User's email address
+ * @param accountType User's account type from profile
  * @returns true if user is a parent, false if student
  */
-export function canRequestRide(email: string | undefined): boolean {
-  if (!email) return false;
-  // Students cannot request rides
-  return !email.toLowerCase().endsWith('@chadwickschool.org');
+export function canRequestRide(accountType: string | undefined): boolean {
+  if (!accountType) return false;
+  return accountType === 'parent';
 }
 
 /**
  * Check if user is a student
- * @param email User's email address
- * @returns true if user has @chadwickschool.org email
+ * @param accountType User's account type from profile
+ * @returns true if account_type is 'student'
  */
-export function isStudent(email: string | undefined): boolean {
-  if (!email) return false;
-  return email.toLowerCase().endsWith('@chadwickschool.org');
+export function isStudent(accountType: string | undefined): boolean {
+  if (!accountType) return false;
+  return accountType === 'student';
 }
 
 /**
  * Check if user is a parent
- * @param email User's email address
- * @returns true if user does NOT have @chadwickschool.org email
+ * @param accountType User's account type from profile
+ * @returns true if account_type is 'parent'
  */
-export function isParent(email: string | undefined): boolean {
-  if (!email) return false;
-  return !email.toLowerCase().endsWith('@chadwickschool.org');
+export function isParent(accountType: string | undefined): boolean {
+  if (!accountType) return false;
+  return accountType === 'parent';
 }
 
 /**
