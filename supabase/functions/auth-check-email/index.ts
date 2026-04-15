@@ -71,6 +71,21 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Check if email is banned
+    const { data: bannedEmail } = await supabase
+      .from('banned_emails')
+      .select('email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (bannedEmail) {
+      console.log(`Banned email check attempt: ${normalizedEmail}`);
+      return new Response(
+        JSON.stringify({ approved: false, message: 'This email is not approved for registration. Please contact an administrator.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if email already has an account (duplicate check)
     const { data: existingUser, error: existingError } = await supabase
       .from('users')
