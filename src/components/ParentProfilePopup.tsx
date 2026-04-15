@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { X, Mail, Phone, Users, GraduationCap, Hand, Car } from "lucide-react";
 import DirectRideModal from "@/components/DirectRideModal";
 import { isParent as checkIsParent } from "@/lib/permissions";
+// Note: permissions functions now accept account_type, not email
 
 interface ParentProfilePopupProps {
   parentId: string;
@@ -46,13 +47,10 @@ const ParentProfilePopup = ({
   const [isCurrentUserParent, setIsCurrentUserParent] = useState(false);
 
   useEffect(() => {
-    const checkRole = async () => {
-      if (!user) return;
-      const { data } = await supabase.from("users").select("email").eq("user_id", user.id).single();
-      if (data?.email) setIsCurrentUserParent(checkIsParent(data.email));
-    };
-    checkRole();
-  }, [user]);
+    if (myProfile) {
+      setIsCurrentUserParent(checkIsParent(myProfile.account_type));
+    }
+  }, [myProfile]);
 
   useEffect(() => {
     fetchParentProfile();

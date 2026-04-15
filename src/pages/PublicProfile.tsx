@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
+// Note: permissions functions now accept account_type, not email
 import PrivateRideRequestModal from "@/components/PrivateRideRequestModal";
 import PrivateRideOfferModal from "@/components/PrivateRideOfferModal";
 
@@ -66,23 +67,12 @@ const PublicProfile = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Check viewer's role
+  // Check viewer's role using profile account_type
   useEffect(() => {
-    const checkViewerRole = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('users_safe')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data?.email) {
-        setViewerIsStudent(checkIsStudent(data.email));
-        setViewerIsParent(checkIsParent(data.email));
-      }
-    };
-    checkViewerRole();
-  }, [user]);
+    if (!authProfile) return;
+    setViewerIsStudent(checkIsStudent(authProfile.account_type));
+    setViewerIsParent(checkIsParent(authProfile.account_type));
+  }, [authProfile]);
 
   useEffect(() => {
     if (userId) {

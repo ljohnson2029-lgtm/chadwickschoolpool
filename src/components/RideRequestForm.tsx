@@ -68,22 +68,10 @@ const RideRequestForm = ({
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [childError, setChildError] = useState<string | null>(null);
   useEffect(() => {
-    const fetchUserEmail = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('users_safe')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data?.email) {
-        setUserEmail(data.email);
-        setCanRequest(canRequestRide(data.email));
-      }
-    };
-
-    fetchUserEmail();
-  }, [user]);
+    if (profile) {
+      setCanRequest(canRequestRide(profile.account_type));
+    }
+  }, [profile]);
 
   // Pre-fill form when props are provided
   useEffect(() => {

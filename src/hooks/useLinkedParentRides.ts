@@ -1,7 +1,6 @@
  import { useState, useEffect, useCallback } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/contexts/AuthContext";
- import { isStudent as checkIsStudent } from "@/lib/permissions";
  
  export interface LinkedParent {
    parent_id: string;
@@ -56,22 +55,11 @@
      setLoading(true);
  
      try {
-       // Check if user is a student by querying their email
-       const { data: userData, error: userError } = await supabase
-         .from('users_safe')
-         .select('email')
-         .eq('user_id', user.id)
-         .single();
- 
-       if (userError) {
-         console.error('Error fetching user email:', userError);
-       }
- 
-       const userEmail = userData?.email;
-       const userIsStudent = userEmail ? checkIsStudent(userEmail) : false;
+       // Check if user is a student by their profile account_type
+       const userIsStudent = profile?.account_type === 'student';
        setIsStudent(userIsStudent);
  
-       console.log('[useLinkedParentRides] User email:', userEmail, 'isStudent:', userIsStudent);
+       console.log('[useLinkedParentRides] account_type:', profile?.account_type, 'isStudent:', userIsStudent);
  
        if (!userIsStudent) {
          // Not a student, no family rides to show

@@ -75,22 +75,10 @@ const RideOfferForm = ({
   const [selectedVehicleInfo, setSelectedVehicleInfo] = useState<VehicleInfo | null>(null);
 
   useEffect(() => {
-    const fetchUserEmail = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('users_safe')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data?.email) {
-        setUserEmail(data.email);
-        setCanCreate(canCreateCarpool(data.email));
-      }
-    };
-
-    fetchUserEmail();
-  }, [user]);
+    if (profile) {
+      setCanCreate(canCreateCarpool(profile.account_type));
+    }
+  }, [profile]);
 
   // Pre-fill form when props are provided
   useEffect(() => {
