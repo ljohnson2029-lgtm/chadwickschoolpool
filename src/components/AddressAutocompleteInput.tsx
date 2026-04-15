@@ -57,6 +57,26 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   const listboxRef = useRef<HTMLUListElement>(null);
   const { toast } = useToast();
 
+  /* ── Fetch Mapbox token ─────────────────────────────────── */
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const jwt = sessionData?.session?.access_token;
+        if (!jwt) return;
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token", {
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+        if (!error && data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (err) {
+        console.error("Error fetching Mapbox token:", err);
+      }
+    };
+    fetchToken();
+  }, []);
+
   /* ── Sync prop → state ──────────────────────────────────── */
 
   useEffect(() => {
@@ -107,7 +127,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
       const encoded = encodeURIComponent(query);
       const url =
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json` +
-        `?access_token=${MAPBOX_TOKEN}` +
+        `?access_token=${mapboxToken}` +
         `&limit=${MAX_RESULTS}` +
         `&proximity=${PROXIMITY_LNG},${PROXIMITY_LAT}` +
         `&country=us` +
