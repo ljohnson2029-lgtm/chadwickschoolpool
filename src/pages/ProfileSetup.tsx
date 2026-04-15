@@ -209,6 +209,10 @@ const ProfileSetup = () => {
     if (!isRequired && isChildEmpty(child)) return { show: false, message: "" };
     const val = child[field];
     if (!val || !val.toString().trim()) return { show, message: "This field is required" };
+    if (field === 'age') {
+      const ageNum = parseInt(val);
+      if (isNaN(ageNum) || ageNum < 1 || ageNum > 100) return { show, message: "Please enter a valid age (1-100)" };
+    }
     return { show: false, message: "" };
   };
 

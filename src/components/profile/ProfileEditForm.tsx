@@ -320,9 +320,13 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
                       <div>
                         <Label>Age <RequiredStar /></Label>
                         <Input
-                          type="number" min="1" max="18"
+                          type="number" min="1" max="100"
                           value={child.age}
-                          onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }}
+                          onChange={e => { 
+                            const val = e.target.value;
+                            if (val && (parseInt(val) < 0 || parseInt(val) > 100)) return;
+                            const u = [...children]; u[i] = { ...u[i], age: val }; setChildren(u); 
+                          }}
                           placeholder="Age"
                           className={incomplete && !child.age.trim() ? errorBorder : ""}
                         />
