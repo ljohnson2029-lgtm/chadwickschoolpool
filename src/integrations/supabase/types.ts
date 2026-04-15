@@ -133,6 +133,30 @@ export type Database = {
         }
         Relationships: []
       }
+      banned_emails: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          email: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       children: {
         Row: {
           age: number
