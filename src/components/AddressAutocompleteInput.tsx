@@ -114,7 +114,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   /* ── Fetch suggestions from Mapbox Geocoding API ────────── */
 
   const fetchSuggestions = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < MIN_QUERY_LENGTH) {
+    if (!query.trim() || query.length < MIN_QUERY_LENGTH || !mapboxToken) {
       setSuggestions([]);
       setFetchError(null);
       return;
