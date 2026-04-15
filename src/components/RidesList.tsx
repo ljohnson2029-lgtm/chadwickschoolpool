@@ -101,6 +101,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const [actionLoading, setActionLoading] = useState(false);
   const [rideOwnerContact, setRideOwnerContact] = useState<OwnerContact | null>(null);
   const [showSuccessInfo, setShowSuccessInfo] = useState(false);
+  const [cancelPendingRide, setCancelPendingRide] = useState<Ride | null>(null);
+  const [showCancelPendingDialog, setShowCancelPendingDialog] = useState(false);
+  const [cancellingPending, setCancellingPending] = useState(false);
 
   // Fetch user's existing responses
   const fetchUserResponses = useCallback(async () => {
@@ -478,10 +481,23 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (hasPendingResponse) {
         return (
-          <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600" disabled size="sm">
-            <Clock className="h-4 w-4" />
-            Request Pending
-          </Button>
+          <div className="space-y-2">
+            <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600" disabled size="sm">
+              <Clock className="h-4 w-4" />
+              {ride.type === 'request' ? 'Offer Pending' : 'Request Pending'}
+            </Button>
+            <Button 
+              className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white" 
+              size="sm"
+              onClick={() => {
+                setCancelPendingRide(ride);
+                setShowCancelPendingDialog(true);
+              }}
+            >
+              <X className="h-4 w-4" />
+              Cancel {ride.type === 'request' ? 'Offer' : 'Request'}
+            </Button>
+          </div>
         );
       }
 
@@ -840,6 +856,65 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
           setRespondingToRide(null);
         }}
       />
+
+      {/* Cancel Pending Request Dialog */}
+      <AlertDialog open={showCancelPendingDialog} onOpenChange={setShowCancelPendingDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Pending {cancelPendingRide?.type === 'request' ? 'Offer' : 'Request'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your pending {cancelPendingRide?.type === 'request' ? 'offer' : 'request'}? This will remove it entirely.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancellingPending}>No, go back</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={cancellingPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!cancelPendingRide || !user) return;
+                setCancellingPending(true);
+                try {
+                  // Delete the pending conversation
+                  const { error } = await supabase
+                    .from('ride_conversations')
+                    .delete()
+                    .eq('ride_id', cancelPendingRide.id)
+                    .eq('sender_id', user.id)
+                    .eq('status', 'pending');
+                  if (error) throw error;
+
+                  // Notify ride owner
+                  const senderName = profile?.first_name
+                    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+                    : 'A parent';
+                  try {
+                    await supabase.functions.invoke('create-notification', {
+                      body: {
+                        userId: cancelPendingRide.user_id,
+                        type: 'ride_request_cancelled',
+                        message: `🔄 ${senderName} has cancelled their ${cancelPendingRide.type === 'request' ? 'offer to help with' : 'request to join'} your ride`,
+                      }
+                    });
+                  } catch {}
+
+                  toast({ title: "Request cancelled", description: "Your pending request has been removed." });
+                  await fetchUserResponses();
+                } catch (err) {
+                  toast({ title: "Error", description: "Failed to cancel request.", variant: "destructive" });
+                } finally {
+                  setCancellingPending(false);
+                  setShowCancelPendingDialog(false);
+                  setCancelPendingRide(null);
+                }
+              }}
+            >
+              {cancellingPending ? "Cancelling..." : "Yes, cancel"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

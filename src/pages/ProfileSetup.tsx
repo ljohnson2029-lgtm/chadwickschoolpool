@@ -209,6 +209,10 @@ const ProfileSetup = () => {
     if (!isRequired && isChildEmpty(child)) return { show: false, message: "" };
     const val = child[field];
     if (!val || !val.toString().trim()) return { show, message: "This field is required" };
+    if (field === 'age') {
+      const ageNum = parseInt(val);
+      if (isNaN(ageNum) || ageNum < 1 || ageNum > 100) return { show, message: "Please enter a valid age (1-100)" };
+    }
     return { show: false, message: "" };
   };
 
@@ -676,9 +680,13 @@ const ProfileSetup = () => {
                           <div>
                             <Label className="flex items-center gap-1">Age <span className="text-destructive">*</span></Label>
                             <Input 
-                              type="number" min="1" max="18" 
+                              type="number" min="1" max="100" 
                               value={child.age} 
-                              onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} 
+                              onChange={e => { 
+                                const val = e.target.value;
+                                if (val && (parseInt(val) < 0 || parseInt(val) > 100)) return;
+                                const u = [...children]; u[i] = { ...u[i], age: val }; setChildren(u); 
+                              }} 
                               onBlur={() => markChildTouched(i, "age")}
                               className={childErrorInputClass(i, "age")}
                               placeholder="Age"

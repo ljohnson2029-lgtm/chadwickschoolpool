@@ -626,6 +626,27 @@ const MyRides = () => {
           toast.success('You have left the ride');
           break;
         }
+        case 'cancel-pending': {
+          // Cancel a pending join request / offer to help
+          const conv = ride.originalData?.conversation;
+          if (!conv) break;
+          const { error } = await supabase
+            .from('ride_conversations')
+            .delete()
+            .eq('id', conv.id);
+          if (error) throw error;
+          // Notify ride owner
+          const ownerId = conv.recipient_id;
+          if (ownerId) {
+            await sendNotification(
+              ownerId,
+              'ride_request_cancelled',
+              `🔄 ${getMyName()} has cancelled their pending request to join your ride`
+            );
+          }
+          toast.success('Pending request cancelled');
+          break;
+        }
         case 'cancel-direct': {
           await handleCancelDirect(ride);
           return;
