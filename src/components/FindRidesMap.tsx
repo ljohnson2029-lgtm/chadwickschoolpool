@@ -974,7 +974,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       const clusterId = feats[0].properties?.cluster_id;
       const source = map.current!.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource;
       source.getClusterExpansionZoom(clusterId, (err: any, zoom: number | null | undefined) => {
-        if (err) return;
+        if (err || zoom == null) return;
         const coords = (feats[0].geometry as GeoJSON.Point).coordinates as [number, number];
         map.current!.easeTo({ center: coords, zoom });
       });
