@@ -80,24 +80,13 @@ const FindRides = () => {
   
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Fetch user email and determine role
+  // Determine role from profile account_type
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('users_safe')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (data?.email) {
-        setUserEmail(data.email);
-        setIsUserParent(checkIsParent(data.email));
-        setIsUserStudent(checkIsStudent(data.email));
-      }
-    };
-    fetchUserInfo();
-  }, [user]);
+    if (profile) {
+      setIsUserParent(checkIsParent(profile.account_type));
+      setIsUserStudent(checkIsStudent(profile.account_type));
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!loading && !user) {

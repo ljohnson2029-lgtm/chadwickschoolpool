@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Car, Hand, Map as MapIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { isStudent as checkIsStudent } from "@/lib/permissions";
 import StudentDashboard from "@/components/StudentDashboard";
 import HowToUseGuide from "@/components/HowToUseGuide";
 import SuggestedPartners from "@/components/SuggestedPartners";
@@ -17,28 +16,8 @@ const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   
-  const [isUserStudent, setIsUserStudent] = useState(false);
+  const shouldUseStudentDashboard = profile?.account_type === 'student';
 
-  const shouldUseStudentDashboard = profile?.account_type === 'student' || isUserStudent;
-
-  useEffect(() => {
-    const fetchUserEmail = async () => {
-      if (!user) return;
-      if (profile?.account_type === 'student') {
-        setIsUserStudent(true);
-        return;
-      }
-      const { data } = await supabase
-        .from('users_safe')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-      if (data?.email) {
-        setIsUserStudent(checkIsStudent(data.email));
-      }
-    };
-    fetchUserEmail();
-  }, [user, profile?.account_type]);
 
   const getInitials = (firstName: string | null, lastName: string | null, username: string) => {
     if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();

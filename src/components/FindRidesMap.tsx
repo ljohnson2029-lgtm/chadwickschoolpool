@@ -194,25 +194,22 @@ const createMarkerPopup = (title: string, titleColor: string, address: string): 
    HOOK: useUserInfo
    ═══════════════════════════════════════════════════════════════════ */
 
-const useUserInfo = (userId: string | undefined) => {
+const useUserInfo = (userId: string | undefined, accountType?: string) => {
   const [userEmail, setUserEmail] = useState("");
-  const [isUserParent, setIsUserParent] = useState(false);
-  const [isUserStudent, setIsUserStudent] = useState(false);
+  const isUserParent = checkIsParent(accountType);
+  const isUserStudent = checkIsStudent(accountType);
 
   useEffect(() => {
     if (!userId) return;
 
-    const fetchUserInfo = async () => {
-      const { data } = await supabase.from("users").select("email").eq("user_id", userId).single();
-
+    const fetchUserEmail = async () => {
+      const { data } = await supabase.from("users_safe").select("email").eq("user_id", userId).single();
       if (data?.email) {
         setUserEmail(data.email);
-        setIsUserParent(checkIsParent(data.email));
-        setIsUserStudent(checkIsStudent(data.email));
       }
     };
 
-    fetchUserInfo();
+    fetchUserEmail();
   }, [userId]);
 
   return { userEmail, isUserParent, isUserStudent };
@@ -814,7 +811,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const eventHandlersRef = useRef<Array<{ type: string; layer: string; handler: any }>>([]);
 
   /* ── Custom hooks ───────────────────────────────────────── */
-  const { isUserParent, isUserStudent } = useUserInfo(user?.id);
+  const { isUserParent, isUserStudent } = useUserInfo(user?.id, profile?.account_type);
   const { fetchUserResponses, getResponseStatus } = useRideResponses(user?.id);
   const { rides, setRides, loading } = useMapRides(user?.id);
 
