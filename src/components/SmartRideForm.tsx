@@ -1,14 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, CheckCircle, AlertCircle, Clock, Calendar, Car, ArrowRight, Mic } from 'lucide-react';
+import { Sparkles, CheckCircle, AlertCircle, Clock, Car, ArrowRight } from 'lucide-react';
 import { parseRideRequest, type ParsedRideRequest, QUICK_REPLIES } from '@/lib/naturalLanguageParser';
-import { calculatePickupTime, autoCompleteRideDetails, type GradeLevel } from '@/lib/smartSchedule';
+import { autoCompleteRideDetails, type GradeLevel } from '@/lib/smartSchedule';
 import { useAuth } from '@/contexts/AuthContext';
-import { logger } from '@/lib/logger';
 
 interface SmartRideFormProps {
   userChildren: Array<{
@@ -28,7 +27,7 @@ interface SmartRideFormProps {
 }
 
 export function SmartRideForm({ userChildren, userLocation, onSubmit, onCancel }: SmartRideFormProps) {
-  const { profile } = useAuth();
+  const { } = useAuth();
   const [naturalInput, setNaturalInput] = useState('');
   const [parsedResult, setParsedResult] = useState<ParsedRideRequest | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);

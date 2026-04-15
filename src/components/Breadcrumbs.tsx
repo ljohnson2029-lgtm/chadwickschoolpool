@@ -1,5 +1,5 @@
 import { ChevronRight, Home } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import React from "react";
 
 interface BreadcrumbItem {

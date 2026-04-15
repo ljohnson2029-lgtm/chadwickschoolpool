@@ -4,7 +4,7 @@ import {
   Bell, 
   Check, 
   X, 
-  MapPin, 
+   
   MessageSquare, 
   Link2, 
   CheckCircle2, 

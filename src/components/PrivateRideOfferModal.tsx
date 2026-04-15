@@ -202,7 +202,7 @@ const PrivateRideOfferModal = ({
         .single();
 
       // Insert private ride offer with ACCEPTED status (instant connection)
-      const { data: offerData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('private_ride_requests')
         .insert({
           request_type: 'offer',

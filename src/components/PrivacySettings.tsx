@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Eye, Mail, Phone, Users, MapPin, Loader2 } from "lucide-react";
+import { Shield, Mail, Phone, Users, MapPin, Loader2 } from "lucide-react";
 
 interface PrivacySettingsData {
   show_on_map: boolean;
