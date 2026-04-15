@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type { GeoJSON } from "geojson";
+import type * as GeoJSON from "geojson";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader } from "./ui/card";
@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
@@ -677,7 +677,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
                   e.preventDefault();
                   setDeleting(true);
                   try {
-                    await onDeleteRide(ride.id);
+                    await onDeleteRide?.(ride.id);
                     setShowDeleteDialog(false);
                   } catch {
                     // handled by parent
@@ -973,7 +973,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       if (!feats.length) return;
       const clusterId = feats[0].properties?.cluster_id;
       const source = map.current!.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource;
-      source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
+      source.getClusterExpansionZoom(clusterId, (err: any, zoom: number | null | undefined) => {
         if (err) return;
         const coords = (feats[0].geometry as GeoJSON.Point).coordinates as [number, number];
         map.current!.easeTo({ center: coords, zoom });
