@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
   X,
   Car,
   HandHelping,
-  Hand,
+  
   CheckCircle,
   Star,
   GraduationCap,
@@ -31,7 +31,7 @@ import {
   UserCheck,
   UserX,
   LogOut,
-  AlertTriangle,
+  
   MessageCircle,
   Contact,
   Repeat,
@@ -320,7 +320,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const chatRideRefId = rideSource === 'public'
     ? (ride.originalData?.ride?.id || ride.originalData?.conversation?.ride_id || ride.id)
     : ride.id;
-  const currentUserId = ride.isDriver
+  const _currentUserId = ride.isDriver
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
 

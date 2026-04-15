@@ -19,7 +19,7 @@ const Navigation = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const _isHomePage = location.pathname === "/";
+  const _isHomePage = location.pathname === "/"; // used for conditional styling
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,7 +112,7 @@ const Navigation = () => {
     };
   }, [user, isParent]);
 
-  const scrollToSection = (id: string) => {
+  const _scrollToSection = (id: string) => {
     if (location.pathname !== "/") {
       navigate("/");
       setTimeout(() => {

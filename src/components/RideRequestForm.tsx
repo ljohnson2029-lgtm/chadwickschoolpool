@@ -32,7 +32,7 @@ const CHADWICK_SCHOOL = {
   lng: -118.36111
 };
 
-const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+const _DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
 const RideRequestForm = ({ 
   onSuccess, 
@@ -46,7 +46,7 @@ const RideRequestForm = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>("");
+  const [, setUserEmail] = useState<string>("");
   const [canRequest, setCanRequest] = useState(true);
 
   // Get home address from profile
@@ -91,7 +91,7 @@ const RideRequestForm = ({
     }
   }, [prefillPickup, prefillDropoff]);
 
-  const toggleDay = (day: string) => {
+  const _toggleDay = (day: string) => {
     setRecurringDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );

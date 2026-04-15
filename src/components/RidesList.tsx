@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Calendar, Clock, Users, Map, Radio, Car, Hand, CheckCircle, Loader2, X, GraduationCap, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, Map, Car, Hand, CheckCircle, X, GraduationCap, Trash2 } from "lucide-react";
 import { InstantJoinRideDialog, InstantOfferRideDialog } from "./ConfirmDialogs";
 import ParentProfilePopup from "./ParentProfilePopup";
 import {
@@ -86,7 +86,7 @@ interface RidesListProps {
 const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const userRole = profile?.account_type ?? null;
@@ -327,13 +327,13 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
     try {
       // First, fetch the owner's contact info
-      const { data: ownerProfile, error: profileError } = await supabase
+      const { } = await supabase
         .from('profiles')
         .select('first_name, last_name, phone_number, share_email, share_phone')
         .eq('id', respondingToRide.user_id)
         .single();
 
-      const { data: ownerUser } = await supabase
+      const { } = await supabase
         .from('users_safe')
         .select('email')
         .eq('user_id', respondingToRide.user_id)

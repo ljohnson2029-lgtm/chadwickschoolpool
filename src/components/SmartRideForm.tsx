@@ -75,7 +75,7 @@ export function SmartRideForm({ userChildren, userLocation, onSubmit, onCancel }
               result.action === 'dropoff' ? 'dropoff' : 'pickup',
               userLocation
             );
-            setSmartSuggestion(suggestion);
+            setSmartSuggestion({ time: suggestion.suggestedTime, explanation: suggestion.explanation });
           }
         }
       }
