@@ -111,8 +111,11 @@ const CLUSTER_MAX_ZOOM = 14;
 const CLUSTER_RADIUS = 50;
 const FIT_BOUNDS_PADDING = { top: 80, bottom: 80, left: 100, right: 100 };
 
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
+if (!MAPBOX_TOKEN) {
+  console.error("Mapbox token is missing. Please set VITE_MAPBOX_TOKEN in your .env file");
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPERS
