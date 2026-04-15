@@ -61,12 +61,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const jwt = sessionData?.session?.access_token;
-        if (!jwt) return;
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token", {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
         if (!error && data?.token) {
           setMapboxToken(data.token);
         }
