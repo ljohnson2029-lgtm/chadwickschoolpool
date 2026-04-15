@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
@@ -53,39 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const authSyncIdRef = useRef(0);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -94,10 +64,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (error) {
       logger.error('Error fetching profile:', error);
-    } else {
-      setProfile(data as unknown as Profile);
+      return null;
     }
+
+    return (data as unknown as Profile | null) ?? null;
   };
+
+  const syncAuthState = async (nextSession: Session | null) => {
+    const syncId = ++authSyncIdRef.current;
+    const nextUser = nextSession?.user ?? null;
+
+    setSession(nextSession);
+    setUser(nextUser);
+
+    if (!nextUser) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const nextProfile = await fetchProfile(nextUser.id);
+
+    if (authSyncIdRef.current !== syncId) {
+      return;
+    }
+
+    setProfile(nextProfile);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        void syncAuthState(nextSession);
+      }
+    );
+
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      void syncAuthState(initialSession);
+    });
+
+    return () => {
+      authSyncIdRef.current += 1;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const logout = async () => {
     // IMPORTANT: In some cases the backend may respond with `session_not_found`
