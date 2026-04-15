@@ -40,7 +40,7 @@
  }
  
  export function useLinkedParentRides(): UseLinkedParentRidesResult {
-   const { user } = useAuth();
+   const { user, profile } = useAuth();
    const [linkedParents, setLinkedParents] = useState<LinkedParent[]>([]);
    const [familyRides, setFamilyRides] = useState<FamilyRide[]>([]);
    const [isStudent, setIsStudent] = useState(false);

@@ -51,7 +51,7 @@ interface PublicProfileData {
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, profile: authProfile } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<PublicProfileData | null>(null);
   const [loading, setLoading] = useState(true);
