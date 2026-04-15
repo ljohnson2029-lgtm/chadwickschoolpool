@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
   X,
   Car,
   HandHelping,
-  
+  Hand,
   CheckCircle,
   Star,
   GraduationCap,
@@ -31,7 +31,7 @@ import {
   UserCheck,
   UserX,
   LogOut,
-  
+  AlertTriangle,
   MessageCircle,
   Contact,
   Repeat,
@@ -159,10 +159,7 @@ const formatGrade = (grade: string) => {
 };
 
 function isWithin9Hours(rideDate: string, rideTime: string): boolean {
-  // Parse ride date/time consistently in local timezone
   const rideDateTime = new Date(`${rideDate}T${rideTime}`);
-  if (isNaN(rideDateTime.getTime())) return false;
-  
   const now = new Date();
   const diffMs = rideDateTime.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
@@ -320,7 +317,6 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const chatRideRefId = rideSource === 'public'
     ? (ride.originalData?.ride?.id || ride.originalData?.conversation?.ride_id || ride.id)
     : ride.id;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const currentUserId = ride.isDriver
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);

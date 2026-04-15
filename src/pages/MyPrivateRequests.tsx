@@ -208,7 +208,7 @@ const MyPrivateRequests = () => {
       .from('private_ride_requests')
       .delete()
       .eq('id', requestId)
-      .eq('sender_id', user?.id ?? '');
+      .eq('sender_id', user?.id);
 
     if (error) {
       console.error('Delete error:', error);

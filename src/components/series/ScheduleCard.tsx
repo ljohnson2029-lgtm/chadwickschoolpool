@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { MapPin, Clock, Car, Loader2, Check, X } from "lucide-react";
+import { MapPin, Clock, Car, Users, Loader2, Calendar as CalendarIcon, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInHours, startOfToday } from "date-fns";
 
@@ -22,6 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const CHADWICK_ADDRESS = "26800 S Academy Dr, Palos Verdes Peninsula, CA 90274";
 const DAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };

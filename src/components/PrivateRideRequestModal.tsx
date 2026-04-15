@@ -4,11 +4,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, MapPin, Home as HomeIcon, School, Lock, Send, CheckCircle, Mail, Phone, Copy } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, Users, Home as HomeIcon, School, Lock, Send, X, CheckCircle, Mail, Phone, Copy } from "lucide-react";
 import { HelpTooltip } from "./HelpTooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -201,7 +201,7 @@ const PrivateRideRequestModal = ({
         .single();
 
       // Insert private ride request with ACCEPTED status (instant connection)
-      const { error: insertError } = await supabase
+      const { data: requestData, error: insertError } = await supabase
         .from('private_ride_requests')
         .insert({
           request_type: 'request',

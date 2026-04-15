@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus, RefreshCw, Loader2 } from "lucide-react";
+import { AlertCircle, Map as MapIcon, List, Hand, Car, Plus, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -13,20 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
 import RidesList, { type Ride } from "@/components/RidesList";
+import FindRidesMap from "@/components/FindRidesMap";
 import ParentSearchBar from "@/components/ParentSearchBar";
-
-// Lazy load the heavy map component (1.6MB!)
-const FindRidesMap = lazy(() => import("@/components/FindRidesMap"));
-
-// Loading placeholder for map
-const MapLoadingPlaceholder = () => (
-  <div className="w-full h-[500px] bg-muted/30 rounded-lg flex items-center justify-center">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-muted-foreground text-sm">Loading map...</p>
-    </div>
-  </div>
-);
 
 const FamilyCarpools = () => {
   const { user, profile, loading } = useAuth();
@@ -224,21 +212,19 @@ const FamilyCarpools = () => {
 
           {/* Map View */}
           {viewMode === 'map' && (
-            <Suspense fallback={<MapLoadingPlaceholder />}>
-              <FindRidesMap 
-                height="500px"
-                showRequests={showRequests}
-                showOffers={showOffers}
-                onToggleRequests={setShowRequests}
-                onToggleOffers={setShowOffers}
-                showHome={showHome}
-                showSchool={showSchool}
-                onToggleHome={setShowHome}
-                onToggleSchool={setShowSchool}
-                focusRide={focusRide}
-                onFocusRideHandled={() => setFocusRide(null)}
-              />
-            </Suspense>
+            <FindRidesMap 
+              height="500px"
+              showRequests={showRequests}
+              showOffers={showOffers}
+              onToggleRequests={setShowRequests}
+              onToggleOffers={setShowOffers}
+              showHome={showHome}
+              showSchool={showSchool}
+              onToggleHome={setShowHome}
+              onToggleSchool={setShowSchool}
+              focusRide={focusRide}
+              onFocusRideHandled={() => setFocusRide(null)}
+            />
           )}
 
           {/* List View */}

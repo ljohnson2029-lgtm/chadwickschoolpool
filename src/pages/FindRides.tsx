@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,8 +27,7 @@ import {
   AlertCircle,
   Phone,
   Mail,
-  CheckCircle,
-  Loader2
+  CheckCircle
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
@@ -37,20 +36,8 @@ import { useInfiniteScroll } from "@/hooks/usePagination";
 import { format } from "date-fns";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
+import FindRidesMap from "@/components/FindRidesMap";
 import RideUserBadge from "@/components/RideUserBadge";
-
-// Lazy load the heavy map component (1.6MB!)
-const FindRidesMap = lazy(() => import("@/components/FindRidesMap"));
-
-// Loading placeholder for map
-const MapLoadingPlaceholder = () => (
-  <div className="w-full h-[calc(100vh-300px)] min-h-[500px] bg-muted/30 rounded-lg flex items-center justify-center">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-muted-foreground text-sm">Loading map...</p>
-    </div>
-  </div>
-);
 import { isParent as checkIsParent, isStudent as checkIsStudent, getStudentPermissionError } from "@/lib/permissions";
 
 interface BroadcastRide {
@@ -155,7 +142,7 @@ const FindRides = () => {
       
       if (usersData) {
         emailsMap = usersData.reduce((acc, u) => {
-          if (u.user_id) acc[u.user_id] = u.email ?? '';
+          acc[u.user_id] = u.email;
           return acc;
         }, {} as Record<string, string>);
       }
@@ -190,15 +177,15 @@ const FindRides = () => {
     try {
       const { error } = await supabase
         .from('ride_conversations')
-        .insert([{
+        .insert({
           ride_id: ride.id,
-          sender_id: user?.id ?? '',
+          sender_id: user?.id,
           recipient_id: ride.user_id,
           status: 'pending',
           message: ride.type === 'request' 
             ? `I can help with your ride request!`
             : `I'd like to join your offered ride!`
-        }]);
+        });
 
       if (error) {
         console.error('Error creating conversation:', error);
@@ -490,15 +477,13 @@ const FindRides = () => {
 
           <TabsContent value="browse" className="space-y-6">
             {viewMode === 'map' ? (
-              <Suspense fallback={<MapLoadingPlaceholder />}>
-                <FindRidesMap 
-                  height="500px"
-                  showRequests={showRequests}
-                  showOffers={showOffers}
-                  onToggleRequests={setShowRequests}
-                  onToggleOffers={setShowOffers}
-                />
-              </Suspense>
+              <FindRidesMap 
+                height="500px"
+                showRequests={showRequests}
+                showOffers={showOffers}
+                onToggleRequests={setShowRequests}
+                onToggleOffers={setShowOffers}
+              />
             ) : (
               <>
                 {loadingRides ? (

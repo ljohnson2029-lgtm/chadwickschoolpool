@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Car, Plus, Trash2, Star } from "lucide-react";
-import { useVehicles } from "@/hooks/useVehicles";
+import { type Vehicle, useVehicles } from "@/hooks/useVehicles";
 import { useToast } from "@/hooks/use-toast";
 
 interface NewVehicle {

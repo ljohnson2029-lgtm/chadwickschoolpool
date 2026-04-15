@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type * as GeoJSON from "geojson";
+import type { GeoJSON } from "geojson";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader } from "./ui/card";
@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import RideUserBadge from "@/components/RideUserBadge";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap, Trash2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Car, Hand, X, Loader2, CheckCircle, GraduationCap, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { isParent as checkIsParent, isStudent as checkIsStudent } from "@/lib/permissions";
@@ -111,7 +111,8 @@ const CLUSTER_MAX_ZOOM = 14;
 const CLUSTER_RADIUS = 50;
 const FIT_BOUNDS_PADDING = { top: 80, bottom: 80, left: 100, right: 100 };
 
-/* Token is fetched dynamically from the edge function */
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPERS
@@ -673,7 +674,7 @@ const SelectedRidePanel: React.FC<SelectedRidePanelProps> = ({
                   e.preventDefault();
                   setDeleting(true);
                   try {
-                    await onDeleteRide?.(ride.id);
+                    await onDeleteRide(ride.id);
                     setShowDeleteDialog(false);
                   } catch {
                     // handled by parent
@@ -815,32 +816,11 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const { rides, setRides, loading } = useMapRides(user?.id);
 
   /* ── Local state ────────────────────────────────────────── */
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const [tokenError, setTokenError] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
-  /* ── Fetch Mapbox token from edge function ──────────────── */
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-        if (error || !data?.token) {
-          console.error("Failed to fetch Mapbox token:", error);
-          setTokenError(true);
-          return;
-        }
-        setMapboxToken(data.token);
-      } catch (err) {
-        console.error("Error fetching Mapbox token:", err);
-        setTokenError(true);
-      }
-    };
-    fetchToken();
-  }, []);
 
   /* ── Derived data ───────────────────────────────────────── */
   const filteredRides = useMemo(
@@ -858,9 +838,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
   /* ── Initialize map ─────────────────────────────────────── */
   useEffect(() => {
-    if (!mapContainer.current || !profile || !mapboxToken) return;
+    if (!mapContainer.current || !profile) return;
 
-    mapboxgl.accessToken = mapboxToken;
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
     const userLat = (profile as any)?.home_latitude;
     const userLng = (profile as any)?.home_longitude;
@@ -893,7 +873,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [profile, mapboxToken]);
+  }, [profile]);
 
   /* ── Update markers and layers ──────────────────────────── */
   useEffect(() => {
@@ -990,8 +970,8 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       if (!feats.length) return;
       const clusterId = feats[0].properties?.cluster_id;
       const source = map.current!.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource;
-      source.getClusterExpansionZoom(clusterId, (err: any, zoom: number | null | undefined) => {
-        if (err || zoom == null) return;
+      source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
+        if (err) return;
         const coords = (feats[0].geometry as GeoJSON.Point).coordinates as [number, number];
         map.current!.easeTo({ center: coords, zoom });
       });
@@ -1146,14 +1126,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   }, [user, respondingToRide, profile, toast, fetchUserResponses]);
 
   /* ── Render ─────────────────────────────────────────────── */
-  if (!mapboxToken) {
-    if (tokenError) {
-      return (
-        <div className="w-full bg-muted rounded-lg flex flex-col items-center justify-center border border-border gap-3" style={{ height }}>
-          <p className="text-muted-foreground text-sm">Unable to load map. Please try refreshing.</p>
-        </div>
-      );
-    }
+  if (!MAPBOX_TOKEN) {
     return <MapLoadingState height={height} />;
   }
 

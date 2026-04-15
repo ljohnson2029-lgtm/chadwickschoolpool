@@ -63,7 +63,7 @@ const TestDataGenerator = () => {
         setProgress(((i + 1) / total) * 100);
 
         // Call the generate-test-parent edge function
-        const { error } = await supabase.functions.invoke('generate-test-parent', {
+        const { data, error } = await supabase.functions.invoke('generate-test-parent', {
           body: {
             email,
             firstName,

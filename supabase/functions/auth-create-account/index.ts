@@ -313,17 +313,7 @@ serve(async (req) => {
     if (profileError) {
       console.error('Profile creation error:', profileError);
       console.error('Profile error details:', JSON.stringify(profileError));
-      await supabase
-        .from('users')
-        .delete()
-        .eq('user_id', authData.user.id);
-
-      await supabase.auth.admin.deleteUser(authData.user.id);
-
-      return new Response(
-        JSON.stringify({ error: `Failed to create profile record: ${profileError.message || 'Unknown error'}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Continue anyway - profile can be created later
     } else {
       console.log('Profile record created successfully');
     }

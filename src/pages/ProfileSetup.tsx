@@ -54,30 +54,11 @@ const OptionalLabel = ({ children, icon, htmlFor }: { children: React.ReactNode;
   </Label>
 );
 
-const getFallbackUsername = (user: { email?: string | null; id: string; user_metadata?: Record<string, unknown> }) => {
-  const metadataUsername = user.user_metadata?.username;
-  if (typeof metadataUsername === "string" && metadataUsername.trim()) {
-    return metadataUsername.trim();
-  }
-
-  const emailName = user.email?.split("@")[0]?.trim();
-  if (emailName) {
-    return emailName;
-  }
-
-  return `user-${user.id.slice(0, 8)}`;
-};
-
-const inferFallbackAccountType = (email?: string | null) =>
-  email?.toLowerCase().endsWith("@chadwickschool.org") ? "student" : "parent";
-
 const ProfileSetup = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
-  const fallbackUsername = user ? getFallbackUsername(user) : "";
-  const accountType = profile?.account_type ?? inferFallbackAccountType(user?.email);
 
   const isEditMode = !!profile?.profile_complete;
   const [step, setStep] = useState(1);
@@ -118,7 +99,7 @@ const ProfileSetup = () => {
 
   const [saving, setSaving] = useState(false);
 
-  const isParent = accountType === "parent";
+  const isParent = profile?.account_type === "parent";
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -301,7 +282,7 @@ const ProfileSetup = () => {
       return;
     }
 
-    if (!user) return;
+    if (!user || !profile) return;
     setSaving(true);
 
     try {
@@ -324,13 +305,8 @@ const ProfileSetup = () => {
 
       const { error: profileError } = await supabase
         .from("profiles")
-        .upsert({
-          id: user.id,
-          username: profile?.username || fallbackUsername,
-          account_type: accountType,
-          profile_complete: profile?.profile_complete ?? false,
-          ...updateData,
-        }, { onConflict: "id" });
+        .update(updateData)
+        .eq("id", user.id);
 
       if (profileError) throw profileError;
 
@@ -456,13 +432,8 @@ const ProfileSetup = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .upsert({
-          id: user.id,
-          username: profile?.username || fallbackUsername,
-          account_type: accountType,
-          profile_complete: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
+        .update({ profile_complete: true, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
 
       if (error) throw error;
 
@@ -475,7 +446,7 @@ const ProfileSetup = () => {
     }
   };
 
-  if (loading || !user) {
+  if (loading || !user || !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -511,7 +482,7 @@ const ProfileSetup = () => {
               <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                 {isParent ? <User className="h-8 w-8 text-primary" /> : <GraduationCap className="h-8 w-8 text-primary" />}
               </div>
-              <CardTitle className="text-2xl">Welcome, {profile?.username || fallbackUsername}!</CardTitle>
+              <CardTitle className="text-2xl">Welcome, {profile.username}!</CardTitle>
               <CardDescription className="text-base">
                 Your {isParent ? "parent" : "student"} account has been created. Let's set up your profile so you can start using the app.
               </CardDescription>

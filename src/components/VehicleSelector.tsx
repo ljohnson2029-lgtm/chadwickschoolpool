@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Car, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type VehicleInfo, useVehicles } from "@/hooks/useVehicles";
+import { type Vehicle, type VehicleInfo, useVehicles } from "@/hooks/useVehicles";
 
 interface VehicleSelectorProps {
   selectedVehicleId: string | null;

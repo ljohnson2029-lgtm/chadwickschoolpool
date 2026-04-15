@@ -2,23 +2,30 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, Car, Home } from "lucide-react";
+import { Menu, X, Car, Home, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationDropdown } from "./NotificationDropdown";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isParent, setIsParent] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [, setPendingRequestsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingAccessRequests, setPendingAccessRequests] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,21 +84,13 @@ const Navigation = () => {
   const fetchPendingRequests = async () => {
     if (!user) return;
     
-    // Count student link requests
-    const { count: linkCount } = await supabase
+    const { count } = await supabase
       .from('account_links')
       .select('*', { count: 'exact', head: true })
       .eq('parent_id', user.id)
       .eq('status', 'pending');
     
-    // Count ride join requests (where user is ride owner)
-    const { count: rideCount } = await supabase
-      .from('ride_conversations')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', user.id)
-      .eq('status', 'pending');
-    
-    setPendingRequestsCount((linkCount || 0) + (rideCount || 0));
+    setPendingRequestsCount(count || 0);
   };
 
   // Real-time subscription for pending requests
@@ -112,18 +111,6 @@ const Navigation = () => {
           fetchPendingRequests();
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'ride_conversations',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        () => {
-          fetchPendingRequests();
-        }
-      )
       .subscribe();
 
     return () => {
@@ -131,7 +118,6 @@ const Navigation = () => {
     };
   }, [user, isParent]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const scrollToSection = (id: string) => {
     if (location.pathname !== "/") {
       navigate("/");

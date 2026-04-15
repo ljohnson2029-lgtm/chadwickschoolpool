@@ -1,4 +1,5 @@
-import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
@@ -11,6 +12,13 @@ import PageTransition from "@/components/PageTransition";
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard");
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
@@ -21,7 +29,7 @@ const Index = () => {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return null;
   }
 
   return (

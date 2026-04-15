@@ -71,55 +71,6 @@ const MyRides = () => {
     toast.success('Rides updated', { duration: 2000 });
   }, [queryClient, isStudent]);
 
-  // 🔴 REAL-TIME SUBSCRIPTION: Listen for new join requests
-  useEffect(() => {
-    if (!user || isStudent) return;
-
-    // Subscribe to new ride conversations where user is the recipient (ride owner)
-    const channel = supabase
-      .channel('ride-conversations-owner')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'ride_conversations',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        (payload) => {
-          // New conversation created - someone wants to join!
-          toast.info('📬 New ride join request received!', {
-            description: 'Someone wants to join your ride. Refresh to see details.',
-            action: {
-              label: 'View',
-              onClick: () => handleRefresh(),
-            },
-            duration: 10000, // Show for 10 seconds
-          });
-          // Auto-refresh after short delay
-          setTimeout(() => handleRefresh(), 2000);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'ride_conversations',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        (payload) => {
-          // Conversation status changed (someone cancelled, etc.)
-          handleRefresh();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, isStudent, handleRefresh]);
-
   // Student rides fetcher for React Query
   const fetchStudentRides = useCallback(async (): Promise<{ active: UnifiedRide[]; past: UnifiedRide[]; hasLinked: boolean }> => {
     if (!user || !profile) return { active: [], past: [], hasLinked: false };

@@ -4,7 +4,7 @@ import {
   Bell, 
   Check, 
   X, 
-   
+  MapPin, 
   MessageSquare, 
   Link2, 
   CheckCircle2, 
@@ -24,7 +24,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,7 +110,7 @@ export const NotificationDropdown = () => {
       .limit(10);
 
     if (error) {
-      logger.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications:', error);
       return;
     }
 
@@ -125,7 +124,7 @@ export const NotificationDropdown = () => {
       .eq('id', notificationId);
 
     if (error) {
-      logger.error('Error marking notification as read:', error);
+      console.error('Error marking notification as read:', error);
       return;
     }
 
@@ -144,7 +143,7 @@ export const NotificationDropdown = () => {
       .eq('is_read', false);
 
     if (error) {
-      logger.error('Error marking all as read:', error);
+      console.error('Error marking all as read:', error);
       toast.error('Failed to mark all as read');
       return;
     }
@@ -162,7 +161,7 @@ export const NotificationDropdown = () => {
       .eq('user_id', user.id);
 
     if (error) {
-      logger.error('Error clearing notifications:', error);
+      console.error('Error clearing notifications:', error);
       toast.error('Failed to clear notifications');
       return;
     }
@@ -179,7 +178,7 @@ export const NotificationDropdown = () => {
       .eq('id', notificationId);
 
     if (error) {
-      logger.error('Error deleting notification:', error);
+      console.error('Error deleting notification:', error);
     }
     
     // Also remove from local state immediately
@@ -193,7 +192,7 @@ export const NotificationDropdown = () => {
       .eq('id', linkId);
 
     if (error) {
-      logger.error('Error approving link:', error);
+      console.error('Error approving link:', error);
       toast.error('Failed to approve link request');
       return;
     }
@@ -210,7 +209,7 @@ export const NotificationDropdown = () => {
       .eq('id', linkId);
 
     if (error) {
-      logger.error('Error denying link:', error);
+      console.error('Error denying link:', error);
       toast.error('Failed to deny link request');
       return;
     }
