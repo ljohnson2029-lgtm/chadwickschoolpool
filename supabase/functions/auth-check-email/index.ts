@@ -105,7 +105,7 @@ serve(async (req) => {
       );
     }
 
-    // Check if email is in parent whitelist (overrides student detection)
+    // Check if email is in parent whitelist
     const { data: whitelistData } = await supabase
       .from('parent_email_whitelist')
       .select('email')
@@ -113,9 +113,15 @@ serve(async (req) => {
       .maybeSingle();
 
     const isWhitelistedParent = !!whitelistData;
+    const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
 
-    // Check if it's a Chadwick School email
-    if (normalizedEmail.endsWith('@chadwickschool.org')) {
+    // LOGIC:
+    // @chadwickschool.org + in whitelist = Parent
+    // @chadwickschool.org + NOT in whitelist = Student
+    // Non-chadwick + in whitelist = Parent
+    // Non-chadwick + NOT in whitelist = DENIED
+
+    if (isChadwickEmail) {
       const isStudent = !isWhitelistedParent;
       console.log(`Approved Chadwick email: ${normalizedEmail}, isStudent: ${isStudent}`);
       return new Response(
@@ -124,31 +130,21 @@ serve(async (req) => {
       );
     }
 
-    // Check approved_emails table
-    const { data, error } = await supabase
-      .from('approved_emails')
-      .select('email')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Database error:', error);
-      throw new Error('Failed to check email approval');
-    }
-
-    if (data) {
-      console.log(`Approved email from database: ${normalizedEmail}`);
+    // Non-chadwick email: must be in parent whitelist
+    if (isWhitelistedParent) {
+      console.log(`Approved via parent whitelist: ${normalizedEmail}`);
       return new Response(
-        JSON.stringify({ approved: true, reason: 'Email in approved list', isStudent: false }),
+        JSON.stringify({ approved: true, reason: 'Email in parent whitelist', isStudent: false }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Non-chadwick, not in whitelist → DENIED
     console.log(`Email not approved: ${normalizedEmail}`);
     return new Response(
       JSON.stringify({ 
         approved: false, 
-        message: 'This email is not approved for registration. Please contact an administrator.' 
+        message: 'This email is not recognized. Please use your Chadwick School email or contact your school administrator.' 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
