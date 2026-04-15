@@ -75,32 +75,48 @@ serve(async (req) => {
       );
     }
 
-    // Check if email is approved (must be in approved_emails OR be a @chadwickschool.org email)
     const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
-    
-    if (!isChadwickEmail) {
-      // Check approved_emails table
-      const { data: approvedEmail, error: approvedCheckError } = await supabase
-        .from('approved_emails')
-        .select('email')
-        .ilike('email', normalizedEmail)
-        .maybeSingle();
 
-      if (approvedCheckError) {
-        console.error('Error checking approved emails:', approvedCheckError);
-      }
+    // Check parent whitelist
+    const { data: whitelistEntry, error: whitelistError } = await supabase
+      .from('parent_email_whitelist')
+      .select('email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
 
-      if (!approvedEmail) {
-        console.log(`Email not approved for registration: ${normalizedEmail}`);
-        return new Response(
-          JSON.stringify({ error: 'This email is not approved for registration. Please contact an administrator.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log(`Email approved via approved_emails table: ${normalizedEmail}`);
+    if (whitelistError) {
+      console.error('Error checking whitelist:', whitelistError);
+    }
+
+    const isWhitelistedParent = !!whitelistEntry;
+
+    // ACCESS GATE:
+    // @chadwickschool.org + in whitelist = Parent (allowed)
+    // @chadwickschool.org + NOT in whitelist = Student (allowed)
+    // Non-chadwick + in whitelist = Parent (allowed)
+    // Non-chadwick + NOT in whitelist = DENIED
+    if (!isChadwickEmail && !isWhitelistedParent) {
+      console.log(`Non-chadwick email not in parent whitelist, denying: ${normalizedEmail}`);
+      return new Response(
+        JSON.stringify({ error: 'This email is not recognized. Please use your Chadwick School email or contact your school administrator.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Determine account type
+    let role: string;
+    let accountType: string;
+
+    if (isWhitelistedParent) {
+      // In whitelist = ALWAYS parent (regardless of email domain)
+      console.log(`Email ${normalizedEmail} found in parent whitelist - assigning parent role`);
+      role = 'parent';
+      accountType = 'parent';
     } else {
-      console.log(`Email approved via @chadwickschool.org domain: ${normalizedEmail}`);
+      // @chadwickschool.org + NOT in whitelist = student
+      console.log(`Email ${normalizedEmail} is @chadwickschool.org and not in whitelist - assigning student role`);
+      role = 'student';
+      accountType = 'student';
     }
 
     // Check if username already exists (case-insensitive)
@@ -217,40 +233,6 @@ serve(async (req) => {
           console.log(`Successfully cleaned up orphaned auth user for ${email}`);
         }
       }
-    }
-
-    // Determine account type using whitelist priority logic
-    // Priority: whitelist → parent, @chadwickschool.org → student, else → parent
-    console.log(`Checking whitelist for email: ${normalizedEmail}`);
-    
-    const { data: whitelistEntry, error: whitelistError } = await supabase
-      .from('parent_email_whitelist')
-      .select('email')
-      .ilike('email', normalizedEmail)
-      .maybeSingle();
-
-    if (whitelistError) {
-      console.error('Error checking whitelist:', whitelistError);
-    }
-
-    let role = 'parent';
-    let accountType = 'parent';
-
-    if (whitelistEntry) {
-      // Email is in whitelist - ALWAYS parent (highest priority)
-      console.log(`Email ${normalizedEmail} found in parent whitelist - assigning parent role`);
-      role = 'parent';
-      accountType = 'parent';
-    } else if (normalizedEmail.endsWith('@chadwickschool.org')) {
-      // Email ends with @chadwickschool.org and NOT in whitelist - student
-      console.log(`Email ${normalizedEmail} is @chadwickschool.org and not in whitelist - assigning student role`);
-      role = 'student';
-      accountType = 'student';
-    } else {
-      // All other emails - parent (default)
-      console.log(`Email ${normalizedEmail} is not in whitelist and not @chadwickschool.org - assigning parent role (default)`);
-      role = 'parent';
-      accountType = 'parent';
     }
 
     // Hash password (using hashSync to avoid Worker issues in Edge Functions)
