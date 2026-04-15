@@ -111,11 +111,7 @@ const CLUSTER_MAX_ZOOM = 14;
 const CLUSTER_RADIUS = 50;
 const FIT_BOUNDS_PADDING = { top: 80, bottom: 80, left: 100, right: 100 };
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
-if (!MAPBOX_TOKEN) {
-  console.error("Mapbox token is missing. Please set VITE_MAPBOX_TOKEN in your .env file");
-}
+/* Token is fetched dynamically from the edge function */
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPERS
@@ -819,11 +815,40 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   const { rides, setRides, loading } = useMapRides(user?.id);
 
   /* ── Local state ────────────────────────────────────────── */
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState(false);
   const [selectedRide, setSelectedRide] = useState<Ride | null>(null);
   const [respondingToRide, setRespondingToRide] = useState<Ride | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  /* ── Fetch Mapbox token from edge function ──────────────── */
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const jwt = sessionData?.session?.access_token;
+        if (!jwt) {
+          setTokenError(true);
+          return;
+        }
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token", {
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+        if (error || !data?.token) {
+          console.error("Failed to fetch Mapbox token:", error);
+          setTokenError(true);
+          return;
+        }
+        setMapboxToken(data.token);
+      } catch (err) {
+        console.error("Error fetching Mapbox token:", err);
+        setTokenError(true);
+      }
+    };
+    fetchToken();
+  }, []);
 
   /* ── Derived data ───────────────────────────────────────── */
   const filteredRides = useMemo(
@@ -841,9 +866,9 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
   /* ── Initialize map ─────────────────────────────────────── */
   useEffect(() => {
-    if (!mapContainer.current || !profile) return;
+    if (!mapContainer.current || !profile || !mapboxToken) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = mapboxToken;
 
     const userLat = (profile as any)?.home_latitude;
     const userLng = (profile as any)?.home_longitude;
@@ -876,7 +901,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       map.current?.remove();
       map.current = null;
     };
-  }, [profile]);
+  }, [profile, mapboxToken]);
 
   /* ── Update markers and layers ──────────────────────────── */
   useEffect(() => {
@@ -1129,7 +1154,14 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   }, [user, respondingToRide, profile, toast, fetchUserResponses]);
 
   /* ── Render ─────────────────────────────────────────────── */
-  if (!MAPBOX_TOKEN) {
+  if (!mapboxToken) {
+    if (tokenError) {
+      return (
+        <div className="w-full bg-muted rounded-lg flex flex-col items-center justify-center border border-border gap-3" style={{ height }}>
+          <p className="text-muted-foreground text-sm">Unable to load map. Please try refreshing.</p>
+        </div>
+      );
+    }
     return <MapLoadingState height={height} />;
   }
 

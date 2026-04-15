@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Loader2, X, CheckCircle2 } from "lucide-react";
@@ -24,12 +25,7 @@ const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_MS = 300;
 const MAX_RESULTS = 5;
 
-// Mapbox token from environment variables
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
-if (!MAPBOX_TOKEN) {
-  console.error("Mapbox token is missing. Please set VITE_MAPBOX_TOKEN in your .env file");
-}
+/* Token fetched dynamically from edge function */
 
 // Bias toward Palos Verdes / LA area (Chadwick School vicinity)
 const PROXIMITY_LNG = -118.3965;
@@ -54,11 +50,32 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const { toast } = useToast();
+
+  /* ── Fetch Mapbox token ─────────────────────────────────── */
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const jwt = sessionData?.session?.access_token;
+        if (!jwt) return;
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token", {
+          headers: { Authorization: `Bearer ${jwt}` },
+        });
+        if (!error && data?.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (err) {
+        console.error("Error fetching Mapbox token:", err);
+      }
+    };
+    fetchToken();
+  }, []);
 
   /* ── Sync prop → state ──────────────────────────────────── */
 
@@ -97,7 +114,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   /* ── Fetch suggestions from Mapbox Geocoding API ────────── */
 
   const fetchSuggestions = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < MIN_QUERY_LENGTH) {
+    if (!query.trim() || query.length < MIN_QUERY_LENGTH || !mapboxToken) {
       setSuggestions([]);
       setFetchError(null);
       return;
@@ -110,7 +127,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
       const encoded = encodeURIComponent(query);
       const url =
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json` +
-        `?access_token=${MAPBOX_TOKEN}` +
+        `?access_token=${mapboxToken}` +
         `&limit=${MAX_RESULTS}` +
         `&proximity=${PROXIMITY_LNG},${PROXIMITY_LAT}` +
         `&country=us` +
@@ -145,7 +162,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [mapboxToken]);
 
   /* ── Select a suggestion ────────────────────────────────── */
 
