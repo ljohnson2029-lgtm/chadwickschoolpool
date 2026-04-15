@@ -35,6 +35,7 @@ const CHADWICK_SCHOOL = {
   lng: -118.36111
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
 const RideOfferForm = ({ 
@@ -98,6 +99,7 @@ const RideOfferForm = ({
     }
   }, [prefillPickup, prefillDropoff]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleDay = (day: string) => {
     setRecurringDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]

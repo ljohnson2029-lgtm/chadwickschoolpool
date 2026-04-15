@@ -14,7 +14,7 @@ import {
   Link2,
   Map,
   Eye,
-  X,
+  
 } from "lucide-react";
 
 interface GuidePage {

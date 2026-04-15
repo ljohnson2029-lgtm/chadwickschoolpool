@@ -142,7 +142,7 @@ const FindRides = () => {
       
       if (usersData) {
         emailsMap = usersData.reduce((acc, u) => {
-          acc[u.user_id] = u.email;
+          if (u.user_id) acc[u.user_id] = u.email ?? '';
           return acc;
         }, {} as Record<string, string>);
       }
@@ -177,15 +177,15 @@ const FindRides = () => {
     try {
       const { error } = await supabase
         .from('ride_conversations')
-        .insert({
+        .insert([{
           ride_id: ride.id,
-          sender_id: user?.id,
+          sender_id: user?.id ?? '',
           recipient_id: ride.user_id,
           status: 'pending',
           message: ride.type === 'request' 
             ? `I can help with your ride request!`
             : `I'd like to join your offered ride!`
-        });
+        }]);
 
       if (error) {
         console.error('Error creating conversation:', error);
