@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 interface Profile {
   id: string;
@@ -92,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching profile:', error);
+      logger.error('Error fetching profile:', error);
     } else {
       setProfile(data as unknown as Profile);
     }
@@ -105,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
-      console.warn('Local sign out failed; attempting manual cleanup:', error);
+      logger.warn('Local sign out failed; attempting manual cleanup:', error);
     }
 
     // Best-effort cleanup of any persisted auth tokens.
@@ -119,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch (error) {
-      console.warn('Manual auth storage cleanup failed:', error);
+      logger.warn('Manual auth storage cleanup failed:', error);
     }
 
     setUser(null);

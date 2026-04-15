@@ -44,20 +44,20 @@ export function RideChatThread({
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
-      .from("ride_messages" as any)
+      .from("ride_messages")
       .select("*")
       .eq("ride_ref_id", rideRefId)
       .eq("ride_source", rideSource)
       .order("created_at", { ascending: false })
       .limit(50);
-    if (data) setMessages((data as any).reverse());
+    if (data) setMessages((data as unknown as RideMessage[]).reverse());
     setLoading(false);
   }, [rideRefId, rideSource]);
 
   const markAsRead = useCallback(async () => {
     await supabase
-      .from("ride_messages" as any)
-      .update({ is_read: true } as any)
+      .from("ride_messages")
+      .update({ is_read: true })
       .eq("ride_ref_id", rideRefId)
       .eq("ride_source", rideSource)
       .neq("sender_id", currentUserId)
@@ -74,8 +74,10 @@ export function RideChatThread({
     }
   }, [messages, markAsRead]);
 
-  // Realtime subscription - set up immediately
+  // Realtime subscription - only set up after initial fetch completes
   useEffect(() => {
+    if (loading) return; // Wait for initial fetch
+    
     const channel = supabase
       .channel(`ride-chat-${rideRefId}`)
       .on(
@@ -89,6 +91,7 @@ export function RideChatThread({
         (payload) => {
           const newMsg = payload.new as RideMessage;
           setMessages((prev) => {
+            // Prevent duplicate messages
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
@@ -99,7 +102,7 @@ export function RideChatThread({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [rideRefId]);
+  }, [rideRefId, loading]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -115,7 +118,7 @@ export function RideChatThread({
     setNewMessage("");
 
     const { error } = await supabase
-      .from("ride_messages" as any)
+      .from("ride_messages")
       .insert({
         ride_ref_id: rideRefId,
         ride_source: rideSource,
