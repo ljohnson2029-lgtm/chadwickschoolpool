@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +27,8 @@ import {
   AlertCircle,
   Phone,
   Mail,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
@@ -36,8 +37,20 @@ import { useInfiniteScroll } from "@/hooks/usePagination";
 import { format } from "date-fns";
 import RideRequestForm from "@/components/RideRequestForm";
 import RideOfferForm from "@/components/RideOfferForm";
-import FindRidesMap from "@/components/FindRidesMap";
 import RideUserBadge from "@/components/RideUserBadge";
+
+// Lazy load the heavy map component (1.6MB!)
+const FindRidesMap = lazy(() => import("@/components/FindRidesMap"));
+
+// Loading placeholder for map
+const MapLoadingPlaceholder = () => (
+  <div className="w-full h-[calc(100vh-300px)] min-h-[500px] bg-muted/30 rounded-lg flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-muted-foreground text-sm">Loading map...</p>
+    </div>
+  </div>
+);
 import { isParent as checkIsParent, isStudent as checkIsStudent, getStudentPermissionError } from "@/lib/permissions";
 
 interface BroadcastRide {
@@ -477,13 +490,15 @@ const FindRides = () => {
 
           <TabsContent value="browse" className="space-y-6">
             {viewMode === 'map' ? (
-              <FindRidesMap 
-                height="500px"
-                showRequests={showRequests}
-                showOffers={showOffers}
-                onToggleRequests={setShowRequests}
-                onToggleOffers={setShowOffers}
-              />
+              <Suspense fallback={<MapLoadingPlaceholder />}>
+                <FindRidesMap 
+                  height="500px"
+                  showRequests={showRequests}
+                  showOffers={showOffers}
+                  onToggleRequests={setShowRequests}
+                  onToggleOffers={setShowOffers}
+                />
+              </Suspense>
             ) : (
               <>
                 {loadingRides ? (
