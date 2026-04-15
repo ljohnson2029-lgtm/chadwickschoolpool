@@ -511,7 +511,7 @@ const ProfileSetup = () => {
               <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                 {isParent ? <User className="h-8 w-8 text-primary" /> : <GraduationCap className="h-8 w-8 text-primary" />}
               </div>
-              <CardTitle className="text-2xl">Welcome, {profile.username}!</CardTitle>
+              <CardTitle className="text-2xl">Welcome, {profile?.username || fallbackUsername}!</CardTitle>
               <CardDescription className="text-base">
                 Your {isParent ? "parent" : "student"} account has been created. Let's set up your profile so you can start using the app.
               </CardDescription>
