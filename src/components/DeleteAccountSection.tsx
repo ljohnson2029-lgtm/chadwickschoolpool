@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, AlertTriangle, Loader2, Download, ShieldAlert, FileText } from "lucide-react";
+import { logger } from "@/lib/logger";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +57,7 @@ const DeleteAccountSection = () => {
     try {
       // 1. Log the reason for leaving (optional, silent fail)
       if (deleteReason) {
-        console.log("Account deletion reason:", deleteReason);
+        logger.info("Account deletion reason:", deleteReason);
       }
 
       // 2. Delete profile data (Cascading deletes handled by DB FKs usually, but explicit is safer)
@@ -70,7 +71,7 @@ const DeleteAccountSection = () => {
 
       const { error: userError } = await supabase.from("users").delete().eq("user_id", user.id);
 
-      if (userError) console.warn("Could not delete from public.users, likely restricted.", userError);
+      if (userError) logger.warn("Could not delete from public.users, likely restricted.", userError);
 
       // 4. Sign out and Redirect
       await logout();
@@ -82,7 +83,7 @@ const DeleteAccountSection = () => {
 
       navigate("/");
     } catch (error: any) {
-      console.error("Error deleting account:", error);
+      logger.error("Error deleting account:", error);
       toast({
         title: "Deletion Failed",
         description: error.message || "Something went wrong. Please contact support.",

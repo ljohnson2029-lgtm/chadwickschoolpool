@@ -368,10 +368,8 @@ const HowItWorksSection = ({
   const handleVideoClick = () => {
     if (onVideoClick) {
       onVideoClick();
-    } else {
-      // Default behavior - could open a modal or external link
-      console.log("Video tutorial clicked - implement your video player here");
     }
+    // TODO: Implement video tutorial modal or external link
   };
 
   return (

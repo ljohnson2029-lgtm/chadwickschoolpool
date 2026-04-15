@@ -121,8 +121,13 @@ function getNextOccurrences(
 
 /** Returns true if the ride's scheduled time + 20 minutes has passed */
 export function isRidePast(rideDate: string, rideTime: string): boolean {
+  // Parse the scheduled date/time in local timezone
   const scheduled = new Date(`${rideDate}T${rideTime}`);
-  if (isNaN(scheduled.getTime())) return rideDate < new Date().toISOString().split('T')[0];
+  if (isNaN(scheduled.getTime())) {
+    // Fallback: compare dates only (both in local timezone)
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    return rideDate < today;
+  }
   const cutoff = new Date(scheduled.getTime() + 20 * 60 * 1000); // +20 minutes
   return new Date() > cutoff;
 }

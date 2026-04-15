@@ -159,7 +159,10 @@ const formatGrade = (grade: string) => {
 };
 
 function isWithin9Hours(rideDate: string, rideTime: string): boolean {
+  // Parse ride date/time consistently in local timezone
   const rideDateTime = new Date(`${rideDate}T${rideTime}`);
+  if (isNaN(rideDateTime.getTime())) return false;
+  
   const now = new Date();
   const diffMs = rideDateTime.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
