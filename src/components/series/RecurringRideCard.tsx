@@ -4,9 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Calendar, Loader2, AlertTriangle, Car, Users } from "lucide-react";
+import { MapPin, Clock, Calendar, Loader2, Car, Users } from "lucide-react";
 import { toast } from "sonner";
-import { format, addDays, startOfToday, differenceInHours } from "date-fns";
+import { format, startOfToday, differenceInHours } from "date-fns";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 import {
   AlertDialog,
@@ -18,11 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 

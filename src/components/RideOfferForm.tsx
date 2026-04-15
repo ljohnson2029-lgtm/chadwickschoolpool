@@ -35,7 +35,8 @@ const CHADWICK_SCHOOL = {
   lng: -118.36111
 };
 
-const _DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday"];
 
 const RideOfferForm = ({ 
   onSuccess, 
@@ -49,7 +50,7 @@ const RideOfferForm = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [, setUserEmail] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
   const [canCreate, setCanCreate] = useState(true);
 
   // Get home address from profile
@@ -98,7 +99,8 @@ const RideOfferForm = ({
     }
   }, [prefillPickup, prefillDropoff]);
 
-  const _toggleDay = (day: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const toggleDay = (day: string) => {
     setRecurringDays(prev =>
       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
     );

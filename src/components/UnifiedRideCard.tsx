@@ -320,7 +320,8 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
   const chatRideRefId = rideSource === 'public'
     ? (ride.originalData?.ride?.id || ride.originalData?.conversation?.ride_id || ride.id)
     : ride.id;
-  const _currentUserId = ride.isDriver
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const currentUserId = ride.isDriver
     ? (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id)
     : (ride.source === 'posted' ? ride.originalData?.user_id : ride.originalData?.conversation?.sender_id);
 

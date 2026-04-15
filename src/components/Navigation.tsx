@@ -19,7 +19,8 @@ const Navigation = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const _isHomePage = location.pathname === "/"; // used for conditional styling
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,7 +113,8 @@ const Navigation = () => {
     };
   }, [user, isParent]);
 
-  const _scrollToSection = (id: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const scrollToSection = (id: string) => {
     if (location.pathname !== "/") {
       navigate("/");
       setTimeout(() => {

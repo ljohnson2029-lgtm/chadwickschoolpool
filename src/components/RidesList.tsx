@@ -86,7 +86,8 @@ interface RidesListProps {
 const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const _navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const navigate = useNavigate();
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const userRole = profile?.account_type ?? null;
