@@ -60,6 +60,21 @@ serve(async (req) => {
 
     const normalizedEmail = email.toLowerCase();
 
+    // Check if email is banned
+    const { data: bannedEmail } = await supabase
+      .from('banned_emails')
+      .select('email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
+
+    if (bannedEmail) {
+      console.log(`Banned email attempted registration: ${normalizedEmail}`);
+      return new Response(
+        JSON.stringify({ error: 'This email is not approved for registration. Please contact an administrator.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if email is approved (must be in approved_emails OR be a @chadwickschool.org email)
     const isChadwickEmail = normalizedEmail.endsWith('@chadwickschool.org');
     
