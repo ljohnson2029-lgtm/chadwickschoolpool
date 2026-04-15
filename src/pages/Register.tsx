@@ -338,20 +338,25 @@ const Register = () => {
       
       console.log('Account created successfully');
 
-      toast({
-        title: "Account created!",
-        description: isStudentEmail 
-          ? "Please link your account to your parent for approval." 
-          : "You can now log in with your credentials.",
+      // Auto-login after successful registration
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password: password,
       });
 
-      if (isStudentEmail) {
-        // For student accounts, redirect to linking page after a short delay
-        setTimeout(() => {
-          navigate("/login");
-        }, 1500);
-      } else {
+      if (signInError) {
+        console.error('Auto-login failed:', signInError);
+        toast({
+          title: "Account created!",
+          description: "Please log in with your credentials.",
+        });
         navigate("/login");
+      } else {
+        toast({
+          title: "Welcome to SchoolPool!",
+          description: "Your account has been created. Let's set up your profile.",
+        });
+        // AuthContext will pick up the session and RequireProfileComplete will redirect to /profile/setup
       }
     } catch (error: any) {
       // Handle unexpected errors (network issues, etc.)
