@@ -94,7 +94,7 @@ export interface UnifiedRide {
   };
 }
 
-export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct' | 'cancel-series' | 'leave-series';
+export type CancelAction = 'cancel-offer' | 'leave-offer' | 'cancel-request' | 'leave-request' | 'cancel-direct' | 'cancel-series' | 'leave-series' | 'cancel-pending';
 
 interface UnifiedRideCardProps {
   ride: UnifiedRide;
@@ -221,6 +221,18 @@ function getCancelActionConfig(ride: UnifiedRide): {
       confirmDescription: 'Are you sure you want to stop helping with this ride request? The request will become open again for others.',
       hasTimeRestriction: true,
       timeRestrictedMessage: 'You cannot leave a ride within 9 hours of departure',
+    };
+  }
+  // Pending approval (user requested to join or offered to help) → Cancel pending request
+  if (ride.source === 'conversation' && ride.status === 'pending-approval') {
+    return {
+      action: 'cancel-pending' as CancelAction,
+      label: 'Cancel Request',
+      icon: X,
+      confirmTitle: 'Cancel Pending Request',
+      confirmDescription: 'Are you sure you want to cancel your pending request? This will remove your request entirely.',
+      hasTimeRestriction: false,
+      timeRestrictedMessage: '',
     };
   }
   // Pending direct ride sent by user → Cancel (no time restriction for pending)

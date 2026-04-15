@@ -676,9 +676,13 @@ const ProfileSetup = () => {
                           <div>
                             <Label className="flex items-center gap-1">Age <span className="text-destructive">*</span></Label>
                             <Input 
-                              type="number" min="1" max="18" 
+                              type="number" min="1" max="100" 
                               value={child.age} 
-                              onChange={e => { const u = [...children]; u[i] = { ...u[i], age: e.target.value }; setChildren(u); }} 
+                              onChange={e => { 
+                                const val = e.target.value;
+                                if (val && (parseInt(val) < 0 || parseInt(val) > 100)) return;
+                                const u = [...children]; u[i] = { ...u[i], age: val }; setChildren(u); 
+                              }} 
                               onBlur={() => markChildTouched(i, "age")}
                               className={childErrorInputClass(i, "age")}
                               placeholder="Age"

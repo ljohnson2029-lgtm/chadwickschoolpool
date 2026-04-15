@@ -478,10 +478,23 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (hasPendingResponse) {
         return (
-          <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600" disabled size="sm">
-            <Clock className="h-4 w-4" />
-            Request Pending
-          </Button>
+          <div className="space-y-2">
+            <Button className="w-full gap-2 bg-amber-500 hover:bg-amber-600" disabled size="sm">
+              <Clock className="h-4 w-4" />
+              {ride.type === 'request' ? 'Offer Pending' : 'Request Pending'}
+            </Button>
+            <Button 
+              className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white" 
+              size="sm"
+              onClick={() => {
+                setCancelPendingRide(ride);
+                setShowCancelPendingDialog(true);
+              }}
+            >
+              <X className="h-4 w-4" />
+              Cancel {ride.type === 'request' ? 'Offer' : 'Request'}
+            </Button>
+          </div>
         );
       }
 
