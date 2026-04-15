@@ -19,8 +19,6 @@ const Navigation = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
