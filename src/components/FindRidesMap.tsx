@@ -827,15 +827,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const jwt = sessionData?.session?.access_token;
-        if (!jwt) {
-          setTokenError(true);
-          return;
-        }
-        const { data, error } = await supabase.functions.invoke("get-mapbox-token", {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
         if (error || !data?.token) {
           console.error("Failed to fetch Mapbox token:", error);
           setTokenError(true);
