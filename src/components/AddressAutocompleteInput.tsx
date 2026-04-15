@@ -162,7 +162,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [mapboxToken]);
 
   /* ── Select a suggestion ────────────────────────────────── */
 
