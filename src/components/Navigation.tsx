@@ -77,13 +77,21 @@ const Navigation = () => {
   const fetchPendingRequests = async () => {
     if (!user) return;
     
-    const { count } = await supabase
+    // Count student link requests
+    const { count: linkCount } = await supabase
       .from('account_links')
       .select('*', { count: 'exact', head: true })
       .eq('parent_id', user.id)
       .eq('status', 'pending');
     
-    setPendingRequestsCount(count || 0);
+    // Count ride join requests (where user is ride owner)
+    const { count: rideCount } = await supabase
+      .from('ride_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', user.id)
+      .eq('status', 'pending');
+    
+    setPendingRequestsCount((linkCount || 0) + (rideCount || 0));
   };
 
   // Real-time subscription for pending requests
@@ -99,6 +107,18 @@ const Navigation = () => {
           schema: 'public',
           table: 'account_links',
           filter: `parent_id=eq.${user.id}`,
+        },
+        () => {
+          fetchPendingRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ride_conversations',
+          filter: `recipient_id=eq.${user.id}`,
         },
         () => {
           fetchPendingRequests();
