@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Loader2, X, CheckCircle2 } from "lucide-react";
@@ -24,12 +25,7 @@ const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_MS = 300;
 const MAX_RESULTS = 5;
 
-// Mapbox token from environment variables
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-
-if (!MAPBOX_TOKEN) {
-  console.error("Mapbox token is missing. Please set VITE_MAPBOX_TOKEN in your .env file");
-}
+/* Token fetched dynamically from edge function */
 
 // Bias toward Palos Verdes / LA area (Chadwick School vicinity)
 const PROXIMITY_LNG = -118.3965;
