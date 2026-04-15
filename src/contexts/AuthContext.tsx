@@ -70,6 +70,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (data as unknown as Profile | null) ?? null;
   };
 
+  const getFallbackUsername = (nextUser: User) => {
+    const metadataUsername = nextUser.user_metadata?.username;
+    if (typeof metadataUsername === 'string' && metadataUsername.trim()) {
+      return metadataUsername.trim();
+    }
+
+    const emailName = nextUser.email?.split('@')[0]?.trim();
+    if (emailName) {
+      return emailName;
+    }
+
+    return `user-${nextUser.id.slice(0, 8)}`;
+  };
+
+  const buildFallbackProfile = (nextUser: User): Profile => ({
+    id: nextUser.id,
+    username: getFallbackUsername(nextUser),
+    first_name: typeof nextUser.user_metadata?.first_name === 'string' ? nextUser.user_metadata.first_name : null,
+    last_name: typeof nextUser.user_metadata?.last_name === 'string' ? nextUser.user_metadata.last_name : null,
+    phone_number: null,
+    home_address: null,
+    home_latitude: null,
+    home_longitude: null,
+    car_make: null,
+    car_model: null,
+    car_color: null,
+    license_plate: null,
+    car_seats: null,
+    account_type: nextUser.email?.toLowerCase().endsWith('@chadwickschool.org') ? 'student' : 'parent',
+    grade_level: null,
+    avatar_url: null,
+    emergency_contact_name: null,
+    emergency_contact_phone: null,
+    parent_guardian_name: null,
+    parent_guardian_phone: null,
+    parent_guardian_email: null,
+    profile_complete: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  const repairMissingProfile = async (nextUser: User): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('repair-profile', {
+        body: {},
+      });
+
+      if (error) {
+        logger.error('Error repairing missing profile:', error);
+        return buildFallbackProfile(nextUser);
+      }
+
+      const repairedProfile = (data?.profile ?? data) as Profile | null | undefined;
+      return repairedProfile ?? buildFallbackProfile(nextUser);
+    } catch (error) {
+      logger.error('Unexpected error repairing missing profile:', error);
+      return buildFallbackProfile(nextUser);
+    }
+  };
+
   const syncAuthState = async (nextSession: Session | null) => {
     const syncId = ++authSyncIdRef.current;
     const nextUser = nextSession?.user ?? null;
@@ -84,7 +144,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setLoading(true);
-    const nextProfile = await fetchProfile(nextUser.id);
+    const fetchedProfile = await fetchProfile(nextUser.id);
+
+    if (authSyncIdRef.current !== syncId) {
+      return;
+    }
+
+    const nextProfile = fetchedProfile ?? await repairMissingProfile(nextUser);
 
     if (authSyncIdRef.current !== syncId) {
       return;

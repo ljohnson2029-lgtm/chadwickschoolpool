@@ -54,11 +54,30 @@ const OptionalLabel = ({ children, icon, htmlFor }: { children: React.ReactNode;
   </Label>
 );
 
+const getFallbackUsername = (user: { email?: string | null; id: string; user_metadata?: Record<string, unknown> }) => {
+  const metadataUsername = user.user_metadata?.username;
+  if (typeof metadataUsername === "string" && metadataUsername.trim()) {
+    return metadataUsername.trim();
+  }
+
+  const emailName = user.email?.split("@")[0]?.trim();
+  if (emailName) {
+    return emailName;
+  }
+
+  return `user-${user.id.slice(0, 8)}`;
+};
+
+const inferFallbackAccountType = (email?: string | null) =>
+  email?.toLowerCase().endsWith("@chadwickschool.org") ? "student" : "parent";
+
 const ProfileSetup = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
+  const fallbackUsername = user ? getFallbackUsername(user) : "";
+  const accountType = profile?.account_type ?? inferFallbackAccountType(user?.email);
 
   const isEditMode = !!profile?.profile_complete;
   const [step, setStep] = useState(1);
@@ -99,7 +118,7 @@ const ProfileSetup = () => {
 
   const [saving, setSaving] = useState(false);
 
-  const isParent = profile?.account_type === "parent";
+  const isParent = accountType === "parent";
 
   useEffect(() => {
     if (!loading && !user) navigate("/login");
@@ -282,7 +301,7 @@ const ProfileSetup = () => {
       return;
     }
 
-    if (!user || !profile) return;
+    if (!user) return;
     setSaving(true);
 
     try {
@@ -305,8 +324,13 @@ const ProfileSetup = () => {
 
       const { error: profileError } = await supabase
         .from("profiles")
-        .update(updateData)
-        .eq("id", user.id);
+        .upsert({
+          id: user.id,
+          username: profile?.username || fallbackUsername,
+          account_type: accountType,
+          profile_complete: profile?.profile_complete ?? false,
+          ...updateData,
+        }, { onConflict: "id" });
 
       if (profileError) throw profileError;
 
@@ -432,8 +456,13 @@ const ProfileSetup = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ profile_complete: true, updated_at: new Date().toISOString() })
-        .eq("id", user.id);
+        .upsert({
+          id: user.id,
+          username: profile?.username || fallbackUsername,
+          account_type: accountType,
+          profile_complete: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
 
       if (error) throw error;
 
@@ -446,7 +475,7 @@ const ProfileSetup = () => {
     }
   };
 
-  if (loading || !user || !profile) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
