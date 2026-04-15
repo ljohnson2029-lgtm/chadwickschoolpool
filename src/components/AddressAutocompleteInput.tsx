@@ -50,6 +50,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
   } | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const wrapperRef = useRef<HTMLDivElement>(null);
