@@ -42,7 +42,30 @@ const Register = () => {
   const [insuranceAgreed, setInsuranceAgreed] = useState(false);
   const [safetyAgreed, setSafetyAgreed] = useState(false);
   const [liabilityAgreed, setLiabilityAgreed] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
+
+  // Field-level errors for inline red highlighting
+  const [fieldErrors, setFieldErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
+    phone?: string;
+    insurance?: string;
+    safety?: string;
+    liability?: string;
+  }>({});
+  const phoneError = fieldErrors.phone || "";
+  const setPhoneError = (msg: string) =>
+    setFieldErrors((prev) => ({ ...prev, phone: msg || undefined }));
+
+  const clearFieldError = (key: keyof typeof fieldErrors) =>
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
 
   useEffect(() => {
     if (user) {
@@ -187,57 +210,66 @@ const Register = () => {
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate phone for parent accounts
+    // Build per-field error map and log state for debugging
+    const errors: typeof fieldErrors = {};
+    logger.log('[Register] Submit attempt — field state:', {
+      firstName, lastName, username, password, confirmPassword,
+      phoneNumber, isStudentEmail, insuranceAgreed, safetyAgreed, liabilityAgreed,
+    });
+
+    if (!firstName.trim()) errors.firstName = "This field is required";
+    if (!lastName.trim()) errors.lastName = "This field is required";
+    if (!username.trim()) errors.username = "This field is required";
+    if (!password) errors.password = "This field is required";
+    if (!confirmPassword) errors.confirmPassword = "This field is required";
+
     if (!isStudentEmail) {
       if (!phoneNumber.trim()) {
-        setPhoneError("This field is required");
-        toast({
-          title: "Phone number required",
-          description: "Please enter your phone number to create a parent account.",
-          variant: "destructive",
-        });
-        return;
+        errors.phone = "This field is required";
+      } else if (!isValidPhoneNumber(phoneNumber)) {
+        errors.phone = "Please enter a complete phone number";
       }
-      if (!isValidPhoneNumber(phoneNumber)) {
-        setPhoneError("Please enter a complete phone number");
-        toast({
-          title: "Invalid phone number",
-          description: "Please enter a valid, complete phone number.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!insuranceAgreed) errors.insurance = "Required";
+      if (!safetyAgreed) errors.safety = "Required";
+      if (!liabilityAgreed) errors.liability = "Required";
     }
 
-    // Validate waivers are agreed (only for parent accounts)
-    if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
-      toast({
-        title: "Agreement Required",
-        description: "Please read and agree to all the required waivers before creating your account.",
-        variant: "destructive",
-      });
-      return;
+    // Password match + strength only if both filled
+    if (password && confirmPassword && password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
     }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate password requirements
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (password && !passwordRegex.test(password)) {
+      errors.password = "Must be 8+ chars with uppercase, lowercase, and number";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       toast({
-        title: "Password requirements not met",
-        description: "Password must be at least 8 characters with uppercase, lowercase, and number.",
+        title: "Please complete all required fields",
+        description: "Highlighted fields need your attention.",
         variant: "destructive",
       });
+      // Scroll to first invalid field
+      const order: (keyof typeof errors)[] = [
+        "firstName", "lastName", "username", "phone",
+        "password", "confirmPassword", "insurance", "safety", "liability",
+      ];
+      const firstKey = order.find((k) => errors[k]);
+      const idMap: Record<string, string> = {
+        firstName: "firstName", lastName: "lastName", username: "username",
+        phone: "phone", password: "password", confirmPassword: "confirmPassword",
+        insurance: "insurance-waiver", safety: "safety-waiver", liability: "liability-waiver",
+      };
+      if (firstKey) {
+        const el = document.getElementById(idMap[firstKey]);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el as HTMLElement | null)?.focus?.();
+      }
       return;
     }
+
+    setFieldErrors({});
 
     // Ensure username availability before creating account
     const cleanUsername = username.trim();
@@ -705,20 +737,30 @@ const Register = () => {
                   <Input
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => { setFirstName(e.target.value); if (e.target.value.trim()) clearFieldError("firstName"); }}
                     required
                     disabled={loading}
+                    aria-invalid={!!fieldErrors.firstName}
+                    className={fieldErrors.firstName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-sm text-destructive">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="lastName"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => { setLastName(e.target.value); if (e.target.value.trim()) clearFieldError("lastName"); }}
                     required
                     disabled={loading}
+                    aria-invalid={!!fieldErrors.lastName}
+                    className={fieldErrors.lastName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-sm text-destructive">{fieldErrors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -731,11 +773,17 @@ const Register = () => {
                     setUsername(e.target.value);
                     setUsernameStatus('idle');
                     setUsernameHint('');
+                    if (e.target.value.trim()) clearFieldError("username");
                   }}
                   onBlur={checkUsernameAvailability}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.username}
+                  className={fieldErrors.username ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.username && (
+                  <p className="text-sm text-destructive">{fieldErrors.username}</p>
+                )}
                 {usernameHint && (
                   <p className="text-xs text-muted-foreground">{usernameHint}</p>
                 )}
@@ -748,9 +796,9 @@ const Register = () => {
                 <PhoneNumberInput
                   id="phone"
                   value={phoneNumber}
-                  onChange={(val) => { setPhoneNumber(val); setPhoneError(""); }}
+                  onChange={(val) => { setPhoneNumber(val); if (val.trim() && isValidPhoneNumber(val)) setPhoneError(""); }}
                   disabled={loading}
-                  className={phoneError ? "[&_input]:border-destructive" : ""}
+                  className={phoneError ? "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive" : ""}
                 />
                 {phoneError && (
                   <p className="text-sm text-destructive">{phoneError}</p>
@@ -775,13 +823,19 @@ const Register = () => {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (e.target.value) clearFieldError("password"); }}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.password}
+                  className={fieldErrors.password ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Must be 8+ characters with uppercase, lowercase, and number
-                </p>
+                {fieldErrors.password ? (
+                  <p className="text-sm text-destructive">{fieldErrors.password}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Must be 8+ characters with uppercase, lowercase, and number
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -790,10 +844,15 @@ const Register = () => {
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); if (e.target.value && (!password || e.target.value === password)) clearFieldError("confirmPassword"); }}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.confirmPassword}
+                  className={fieldErrors.confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.confirmPassword && (
+                  <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
 
               {/* Waiver Checkboxes - Only for parent accounts */}
@@ -802,10 +861,13 @@ const Register = () => {
                   insuranceAgreed={insuranceAgreed}
                   safetyAgreed={safetyAgreed}
                   liabilityAgreed={liabilityAgreed}
-                  onInsuranceChange={setInsuranceAgreed}
-                  onSafetyChange={setSafetyAgreed}
-                  onLiabilityChange={setLiabilityAgreed}
+                  onInsuranceChange={(v) => { setInsuranceAgreed(v); if (v) clearFieldError("insurance"); }}
+                  onSafetyChange={(v) => { setSafetyAgreed(v); if (v) clearFieldError("safety"); }}
+                  onLiabilityChange={(v) => { setLiabilityAgreed(v); if (v) clearFieldError("liability"); }}
                   disabled={loading}
+                  insuranceError={!!fieldErrors.insurance}
+                  safetyError={!!fieldErrors.safety}
+                  liabilityError={!!fieldErrors.liability}
                 />
               )}
 
@@ -814,7 +876,7 @@ const Register = () => {
                 className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 loading={loading}
                 loadingText="Creating Account..."
-                disabled={loading || !firstName.trim() || !lastName.trim() || !username.trim() || !password || !confirmPassword || (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) || (!isStudentEmail && (!phoneNumber.trim() || !isValidPhoneNumber(phoneNumber)))}
+                disabled={loading}
               >
                 Create Account
                 <UserPlus className="ml-2 h-4 w-4" />

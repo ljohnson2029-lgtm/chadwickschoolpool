@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Shield, Scale } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface SignupWaiverCheckboxesProps {
   insuranceAgreed: boolean;
@@ -11,6 +12,9 @@ interface SignupWaiverCheckboxesProps {
   onSafetyChange: (checked: boolean) => void;
   onLiabilityChange: (checked: boolean) => void;
   disabled?: boolean;
+  insuranceError?: boolean;
+  safetyError?: boolean;
+  liabilityError?: boolean;
 }
 
 const SignupWaiverCheckboxes = ({
@@ -21,7 +25,11 @@ const SignupWaiverCheckboxes = ({
   onSafetyChange,
   onLiabilityChange,
   disabled = false,
+  insuranceError = false,
+  safetyError = false,
+  liabilityError = false,
 }: SignupWaiverCheckboxesProps) => {
+  const errorOutline = "border-destructive ring-2 ring-destructive/40";
   return (
     <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
       <div className="flex items-start gap-2 mb-3">
@@ -38,13 +46,13 @@ const SignupWaiverCheckboxes = ({
       </div>
 
       {/* Insurance Waiver */}
-      <div className="flex items-start gap-3 p-3 bg-background rounded-lg border">
+      <div className={cn("flex items-start gap-3 p-3 bg-background rounded-lg border", insuranceError && errorOutline)}>
         <Checkbox
           id="insurance-waiver"
           checked={insuranceAgreed}
           onCheckedChange={(checked) => onInsuranceChange(checked as boolean)}
           disabled={disabled}
-          className="mt-1"
+          className={cn("mt-1", insuranceError && "border-destructive")}
         />
         <div className="flex-1">
           <Label
@@ -57,17 +65,20 @@ const SignupWaiverCheckboxes = ({
                for ensuring my personal auto insurance covers carpooling activities. <span className="text-destructive">*</span>
             </span>
           </Label>
+          {insuranceError && (
+            <p className="text-xs text-destructive mt-1">This agreement is required</p>
+          )}
         </div>
       </div>
 
       {/* Safety Guidelines Agreement */}
-      <div className="flex items-start gap-3 p-3 bg-background rounded-lg border">
+      <div className={cn("flex items-start gap-3 p-3 bg-background rounded-lg border", safetyError && errorOutline)}>
         <Checkbox
           id="safety-waiver"
           checked={safetyAgreed}
           onCheckedChange={(checked) => onSafetyChange(checked as boolean)}
           disabled={disabled}
-          className="mt-1"
+          className={cn("mt-1", safetyError && "border-destructive")}
         />
         <div className="flex-1">
           <Label
@@ -83,17 +94,20 @@ const SignupWaiverCheckboxes = ({
                when participating in carpools. <span className="text-destructive">*</span>
             </span>
           </Label>
+          {safetyError && (
+            <p className="text-xs text-destructive mt-1">This agreement is required</p>
+          )}
         </div>
       </div>
 
       {/* Liability Release */}
-      <div className="flex items-start gap-3 p-3 bg-background rounded-lg border">
+      <div className={cn("flex items-start gap-3 p-3 bg-background rounded-lg border", liabilityError && errorOutline)}>
         <Checkbox
           id="liability-waiver"
           checked={liabilityAgreed}
           onCheckedChange={(checked) => onLiabilityChange(checked as boolean)}
           disabled={disabled}
-          className="mt-1"
+          className={cn("mt-1", liabilityError && "border-destructive")}
         />
         <div className="flex-1">
           <Label
@@ -106,6 +120,9 @@ const SignupWaiverCheckboxes = ({
                understand that I assume all risks associated with carpooling. <span className="text-destructive">*</span>
             </span>
           </Label>
+          {liabilityError && (
+            <p className="text-xs text-destructive mt-1">This agreement is required</p>
+          )}
         </div>
       </div>
     </div>
