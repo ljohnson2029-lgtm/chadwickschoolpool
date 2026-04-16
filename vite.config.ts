@@ -87,13 +87,7 @@ export default defineConfig(({ mode }) => ({
     },
     
     // Minification options
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild',
     
     // Build performance
     target: 'es2020',
