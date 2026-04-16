@@ -101,12 +101,10 @@ const CompletenessBar = (props: CompletenessBarProps) => {
 interface ChildCardProps {
   child: Child;
   index: number;
-  canRemove: boolean;
-  onRemove: (index: number) => void;
   onUpdate: (index: number, field: keyof Child, value: string) => void;
 }
 
-const ChildCard = ({ child, index, canRemove, onRemove, onUpdate }: ChildCardProps) => {
+const ChildCard = ({ child, index, onUpdate }: ChildCardProps) => {
   const prefix = `child-${index}`;
   const displayName = [child.first_name, child.last_name].filter(Boolean).join(" ");
 
@@ -117,17 +115,6 @@ const ChildCard = ({ child, index, canRemove, onRemove, onUpdate }: ChildCardPro
     >
       <div className="flex items-center justify-between">
         <legend className="font-medium text-sm">{displayName || `Child ${index + 1}`}</legend>
-        {canRemove && (
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => onRemove(index)}
-            aria-label={`Remove ${displayName || `child ${index + 1}`}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        )}
       </div>
 
       {/* Name row */}
@@ -224,12 +211,8 @@ const ParentProfileForm = ({
   onAddressSelect,
   children,
   onAddChild,
-  onRemoveChild,
   onUpdateChild,
 }: ParentProfileFormProps) => {
-  const canRemoveChild = children.length > 1;
-
-
   return (
     <>
       {/* ── Completeness ──────────────────────────────────────── */}
@@ -277,6 +260,9 @@ const ParentProfileForm = ({
               Add Child
             </Button>
           </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Children records cannot be deleted. Contact support if a change is needed.
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {children.length === 0 ? (
@@ -292,8 +278,6 @@ const ParentProfileForm = ({
                 key={child.id ?? index}
                 child={child}
                 index={index}
-                canRemove={canRemoveChild}
-                onRemove={onRemoveChild}
                 onUpdate={onUpdateChild}
               />
             ))
