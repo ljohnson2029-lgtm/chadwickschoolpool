@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -419,14 +420,12 @@ const Login = () => {
                         <Label className="text-sm font-medium text-gray-700 text-center block">
                           Verification Code
                         </Label>
-                        <Input
-                          type="text"
-                          placeholder="123456"
-                          value={code}
-                          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-gray-50/50 border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all"
-                          maxLength={6}
-                          autoFocus
+                        <div className="flex justify-center">
+                          <InputOTP
+                            maxLength={6}
+                            value={code}
+                            onChange={setCode}
+                            autoFocus
                           required
                         />
                       </div>
