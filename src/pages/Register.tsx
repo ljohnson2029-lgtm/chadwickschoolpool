@@ -478,6 +478,23 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  const isFormValid =
+    !!firstName.trim() &&
+    !!lastName.trim() &&
+    !!username.trim() &&
+    !!password &&
+    passwordRegex.test(password) &&
+    !!confirmPassword &&
+    password === confirmPassword &&
+    (isStudentEmail
+      ? true
+      : !!phoneNumber.trim() &&
+        isValidPhoneNumber(phoneNumber) &&
+        insuranceAgreed &&
+        safetyAgreed &&
+        liabilityAgreed);
+
   return (
     <>
       <Navigation />
