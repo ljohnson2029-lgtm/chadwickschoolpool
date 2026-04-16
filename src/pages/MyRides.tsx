@@ -1265,11 +1265,38 @@ const MyRides = () => {
               <Car className="h-4 w-4" />
               {isStudent ? 'Upcoming' : 'Active'} ({activeRides.length})
             </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Clock className="h-4 w-4" />
+              Pending ({pendingRides.length})
+            </TabsTrigger>
             <TabsTrigger value="past" className="gap-1.5 rounded-lg data-[state=active]:bg-gray-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Past ({pastRides.length})
             </TabsTrigger>
           </TabsList>
+
+          <AnimatePresence mode="wait">
+            <TabsContent value="active" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderRideList(activeRides, false)}
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="pending" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderRideList(pendingRides, false)}
+              </motion.div>
+            </TabsContent>
 
           <AnimatePresence mode="wait">
             <TabsContent value="active" className="mt-0">
