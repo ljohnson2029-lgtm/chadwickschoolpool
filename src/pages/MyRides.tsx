@@ -1298,17 +1298,6 @@ const MyRides = () => {
               </motion.div>
             </TabsContent>
 
-          <AnimatePresence mode="wait">
-            <TabsContent value="active" className="mt-0">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderRideList(activeRides, false)}
-              </motion.div>
-            </TabsContent>
 
             <TabsContent value="past" className="mt-0">
               <motion.div
