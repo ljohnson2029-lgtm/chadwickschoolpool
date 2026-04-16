@@ -17,6 +17,7 @@ import VehicleManager from "@/components/VehicleManager";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { isValidPhoneNumber } from "@/lib/phone-validation";
 import { useScrollReveal } from "@/lib/animations";
+import { useVehicles } from "@/hooks/useVehicles";
 
 interface Child {
   first_name: string;
