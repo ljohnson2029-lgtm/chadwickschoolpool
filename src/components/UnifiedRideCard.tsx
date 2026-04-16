@@ -455,8 +455,32 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
         whileTap={!isPast ? { scale: 0.99 } : {}}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
-      <Card className={`rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 bg-white/90 backdrop-blur-sm overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
+      <Card className={`rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border bg-white/90 backdrop-blur-sm overflow-hidden ${isPast ? 'opacity-70' : ''} ${
+        ride.status === 'pending-approval' || ride.status === 'pending-direct-sent' || ride.status === 'pending-direct-received'
+          ? 'border-amber-300 ring-1 ring-amber-200'
+          : 'border-gray-100'
+      }`}>
         <CardContent className="p-5 space-y-4">
+          {/* Pending status banner */}
+          {(() => {
+            const otherName = getParentName(ride.otherParent) || 'the other parent';
+            let bannerText: string | null = null;
+            if (ride.status === 'pending-approval') {
+              bannerText = `Pending ride — ${otherName} has to confirm first`;
+            } else if (ride.status === 'pending-direct-sent') {
+              bannerText = `Pending ride — waiting for ${otherName} to respond`;
+            } else if (ride.status === 'pending-direct-received') {
+              bannerText = `Pending ride — your response needed for ${otherName}`;
+            }
+            if (!bannerText) return null;
+            return (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 dark:bg-amber-950/30 dark:border-amber-800">
+                <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{bannerText}</p>
+              </div>
+            );
+          })()}
+
           {/* Frequent Partner Badge Row (Status badge removed per request) */}
           {(isFrequentPartner || rideStatusBadge) && (
             <div className="flex items-center justify-end flex-wrap gap-2">
