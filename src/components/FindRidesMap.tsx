@@ -1183,16 +1183,10 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       {/* Filter Panel */}
       <div className="absolute top-4 left-4 z-10">
         <MapFilterPanel
-          showRequests={showRequests}
-          showOffers={showOffers}
           showHome={showHome}
           showSchool={showSchool}
-          onToggleRequests={onToggleRequests}
-          onToggleOffers={onToggleOffers}
           onToggleHome={onToggleHome || (() => {})}
           onToggleSchool={onToggleSchool || (() => {})}
-          requestCount={rideCounts.requests}
-          offerCount={rideCounts.offers}
         />
       </div>
 
