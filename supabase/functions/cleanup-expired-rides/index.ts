@@ -3,6 +3,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 import { getCorsHeaders, handleCorsPreflightIfNeeded } from "../_shared/cors.ts";
 
+/**
+ * Cleanup logic:
+ *  A) CONFIRMED rides (have an accepted match) → delete 1 hour AFTER ride start time.
+ *     - Public rides: have ride_conversations row with status='accepted'
+ *     - Private rides: status IN ('accepted','completed')
+ *     No notification (ride already happened successfully).
+ *
+ *  B) UNMATCHED rides (no one accepted) → delete EXACTLY at ride start time.
+ *     - Public rides: status='active', is_fulfilled=false, no accepted conversation
+ *     - Private rides: status='pending'
+ *     Send notification to the poster.
+ *
+ *  C) Long-tail retention: delete inactive (completed/cancelled/expired) rides + private
+ *     requests older than 90 days.
+ */
 serve(async (req) => {
   const preflightResponse = handleCorsPreflightIfNeeded(req);
   if (preflightResponse) return preflightResponse;
@@ -11,114 +26,181 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().split(' ')[0].slice(0, 5);
+    const nowIso = now.toISOString();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    console.log(`Cleaning up rides before ${currentDate} ${currentTime}`);
+    let unmatchedDeleted = 0;
+    let confirmedDeleted = 0;
+    let notificationsSent = 0;
 
-    // First, mark expired rides as 'expired' (for rides where date has passed)
-    const { data: expiredByDate, error: expireError } = await supabase
-      .from('rides')
-      .update({ status: 'expired' })
-      .eq('status', 'active')
-      .lt('ride_date', currentDate)
-      .select('id');
+    /* ─────────────── A. CONFIRMED PUBLIC RIDES (>1h past) ─────────────── */
+    // Find active rides whose start time was > 1h ago AND have an accepted conversation
+    const { data: confirmedConvs } = await supabase
+      .from("ride_conversations")
+      .select("ride_id")
+      .eq("status", "accepted");
 
-    if (expireError) {
-      console.error('Error expiring rides by date:', expireError);
-    } else {
-      console.log(`Marked ${expiredByDate?.length || 0} rides as expired (past date)`);
-    }
+    const confirmedRideIds = new Set((confirmedConvs ?? []).map((c) => c.ride_id));
 
-    // Also mark rides as expired if the date is today but time has passed
-    const { data: expiredByTime, error: expireTimeError } = await supabase
-      .from('rides')
-      .update({ status: 'expired' })
-      .eq('status', 'active')
-      .eq('ride_date', currentDate)
-      .lt('ride_time', currentTime)
-      .select('id');
+    if (confirmedRideIds.size > 0) {
+      const { data: confirmedRides } = await supabase
+        .from("rides")
+        .select("id, ride_date, ride_time")
+        .in("id", Array.from(confirmedRideIds));
 
-    if (expireTimeError) {
-      console.error('Error expiring rides by time:', expireTimeError);
-    } else {
-      console.log(`Marked ${expiredByTime?.length || 0} rides as expired (past time today)`);
-    }
-
-    // Delete rides that have been expired for more than 7 days
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgoDate = sevenDaysAgo.toISOString().split('T')[0];
-
-    const { data: deletedRides, error: deleteError } = await supabase
-      .from('rides')
-      .delete()
-      .eq('status', 'expired')
-      .lt('ride_date', sevenDaysAgoDate)
-      .select('id');
-
-    if (deleteError) {
-      console.error('Error deleting old expired rides:', deleteError);
-    } else {
-      console.log(`Deleted ${deletedRides?.length || 0} old expired rides`);
-    }
-
-    // DATA RETENTION: Delete private ride requests older than 90 days
-    // This protects user location privacy by removing old GPS coordinate data
-    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    const ninetyDaysAgoDate = ninetyDaysAgo.toISOString();
-
-    const { data: deletedPrivateRequests, error: privateDeleteError } = await supabase
-      .from('private_ride_requests')
-      .delete()
-      .lt('created_at', ninetyDaysAgoDate)
-      .select('id');
-
-    if (privateDeleteError) {
-      console.error('Error deleting old private ride requests:', privateDeleteError);
-    } else {
-      console.log(`Deleted ${deletedPrivateRequests?.length || 0} old private ride requests (90+ days)`);
-    }
-
-    // Also delete old inactive rides (completed, cancelled, expired) older than 90 days
-    const { data: deletedOldRides, error: oldRidesDeleteError } = await supabase
-      .from('rides')
-      .delete()
-      .in('status', ['completed', 'cancelled', 'expired'])
-      .lt('created_at', ninetyDaysAgoDate)
-      .select('id');
-
-    if (oldRidesDeleteError) {
-      console.error('Error deleting old inactive rides:', oldRidesDeleteError);
-    } else {
-      console.log(`Deleted ${deletedOldRides?.length || 0} old inactive rides (90+ days)`);
-    }
-
-    const totalExpired = (expiredByDate?.length || 0) + (expiredByTime?.length || 0);
-    const totalDeleted = (deletedRides?.length || 0) + (deletedPrivateRequests?.length || 0) + (deletedOldRides?.length || 0);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        expired: totalExpired,
-        deleted: totalDeleted,
-        message: `Expired ${totalExpired} rides, deleted ${totalDeleted} old rides`
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      const toDelete: string[] = [];
+      for (const r of confirmedRides ?? []) {
+        const start = new Date(`${r.ride_date}T${r.ride_time}`);
+        if (start.getTime() <= oneHourAgo.getTime()) toDelete.push(r.id);
       }
-    );
 
-  } catch (error) {
-    console.error('Error in cleanup-expired-rides function:', error);
+      if (toDelete.length > 0) {
+        // Delete conversations first to avoid FK orphans on related tables
+        await supabase.from("ride_conversations").delete().in("ride_id", toDelete);
+        const { data: deletedConfirmed } = await supabase
+          .from("rides")
+          .delete()
+          .in("id", toDelete)
+          .select("id");
+        confirmedDeleted += deletedConfirmed?.length || 0;
+      }
+    }
+
+    /* ─────────────── A'. CONFIRMED PRIVATE RIDES (>1h past) ─────────────── */
+    {
+      const { data: privAccepted } = await supabase
+        .from("private_ride_requests")
+        .select("id, ride_date, pickup_time")
+        .in("status", ["accepted", "completed"]);
+
+      const toDelete: string[] = [];
+      for (const r of privAccepted ?? []) {
+        const start = new Date(`${r.ride_date}T${r.pickup_time}`);
+        if (start.getTime() <= oneHourAgo.getTime()) toDelete.push(r.id);
+      }
+      if (toDelete.length > 0) {
+        const { data: del } = await supabase
+          .from("private_ride_requests")
+          .delete()
+          .in("id", toDelete)
+          .select("id");
+        confirmedDeleted += del?.length || 0;
+      }
+    }
+
+    /* ─────────────── B. UNMATCHED PUBLIC RIDES (at start time) ─────────────── */
+    // Active rides whose start time has passed AND have NO accepted conversation
+    const { data: activePastRides } = await supabase
+      .from("rides")
+      .select("id, user_id, type, ride_date, ride_time, pickup_location, dropoff_location")
+      .eq("status", "active");
+
+    const candidates = (activePastRides ?? []).filter((r) => {
+      const start = new Date(`${r.ride_date}T${r.ride_time}`);
+      return start.getTime() <= now.getTime() && !confirmedRideIds.has(r.id);
+    });
+
+    for (const ride of candidates) {
+      // Send notification before delete
+      const message =
+        ride.type === "request"
+          ? "Sorry, no one was able to help you out this time. We hope you find a ride soon — try posting again for your next trip!"
+          : "Thanks for offering your ride! Unfortunately no one took you up on it this time, but your generosity helps make the Chadwick community stronger. Feel free to post again anytime!";
+
+      const { error: notifErr } = await supabase.from("notifications").insert({
+        user_id: ride.user_id,
+        type: ride.type === "request" ? "ride_request_expired" : "ride_offer_expired",
+        message,
+      });
+      if (!notifErr) notificationsSent++;
+
+      // Delete the unmatched ride (cascade pending conversations first)
+      await supabase
+        .from("ride_conversations")
+        .delete()
+        .eq("ride_id", ride.id);
+
+      const { data: del } = await supabase
+        .from("rides")
+        .delete()
+        .eq("id", ride.id)
+        .select("id");
+      unmatchedDeleted += del?.length || 0;
+    }
+
+    /* ─────────────── B'. UNMATCHED PRIVATE RIDES (at start time) ─────────────── */
+    {
+      const { data: pendingPriv } = await supabase
+        .from("private_ride_requests")
+        .select("id, sender_id, request_type, ride_date, pickup_time")
+        .eq("status", "pending");
+
+      const expiredPriv = (pendingPriv ?? []).filter((r) => {
+        const start = new Date(`${r.ride_date}T${r.pickup_time}`);
+        return start.getTime() <= now.getTime();
+      });
+
+      for (const r of expiredPriv) {
+        const message =
+          r.request_type === "request"
+            ? "Sorry, no one was able to help you out this time. We hope you find a ride soon — try posting again for your next trip!"
+            : "Thanks for offering your ride! Unfortunately no one took you up on it this time, but your generosity helps make the Chadwick community stronger. Feel free to post again anytime!";
+
+        const { error: notifErr } = await supabase.from("notifications").insert({
+          user_id: r.sender_id,
+          type: r.request_type === "request" ? "ride_request_expired" : "ride_offer_expired",
+          message,
+        });
+        if (!notifErr) notificationsSent++;
+
+        const { data: del } = await supabase
+          .from("private_ride_requests")
+          .delete()
+          .eq("id", r.id)
+          .select("id");
+        unmatchedDeleted += del?.length || 0;
+      }
+    }
+
+    /* ─────────────── C. 90-day retention (long tail safety net) ─────────────── */
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: oldPrivate } = await supabase
+      .from("private_ride_requests")
+      .delete()
+      .lt("created_at", ninetyDaysAgo)
+      .select("id");
+
+    const { data: oldRides } = await supabase
+      .from("rides")
+      .delete()
+      .in("status", ["completed", "cancelled", "expired"])
+      .lt("created_at", ninetyDaysAgo)
+      .select("id");
+
+    const retentionDeleted = (oldPrivate?.length || 0) + (oldRides?.length || 0);
+
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: true,
+        confirmedDeleted,
+        unmatchedDeleted,
+        notificationsSent,
+        retentionDeleted,
+        runAt: nowIso,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  } catch (error) {
+    console.error("cleanup-expired-rides error:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
