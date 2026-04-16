@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
-import { Car, History, Info, LinkIcon, RefreshCw, Trash2, Sparkles, Calendar, TrendingUp } from "lucide-react";
+import { Car, History, Info, LinkIcon, RefreshCw, Trash2, Sparkles, Calendar, TrendingUp, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
@@ -513,7 +513,11 @@ const MyRides = () => {
   const allStudentRides = studentRideData ? [...studentRideData.active, ...studentRideData.past] : [];
   const allRides = isStudent ? allStudentRides : allParentRides;
 
-  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
+  const PENDING_STATUSES = ['pending-approval', 'pending-direct-sent', 'pending-direct-received'];
+  const isPending = (r: typeof allRides[number]) => PENDING_STATUSES.includes(r.status as string);
+
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && !isPending(r));
+  const pendingRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
     .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
   
@@ -1261,6 +1265,10 @@ const MyRides = () => {
               <Car className="h-4 w-4" />
               {isStudent ? 'Upcoming' : 'Active'} ({activeRides.length})
             </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Clock className="h-4 w-4" />
+              Pending ({pendingRides.length})
+            </TabsTrigger>
             <TabsTrigger value="past" className="gap-1.5 rounded-lg data-[state=active]:bg-gray-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Past ({pastRides.length})
@@ -1278,6 +1286,18 @@ const MyRides = () => {
                 {renderRideList(activeRides, false)}
               </motion.div>
             </TabsContent>
+
+            <TabsContent value="pending" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderRideList(pendingRides, false)}
+              </motion.div>
+            </TabsContent>
+
 
             <TabsContent value="past" className="mt-0">
               <motion.div
