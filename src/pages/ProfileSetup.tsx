@@ -17,6 +17,7 @@ import VehicleManager from "@/components/VehicleManager";
 import PhoneNumberInput from "@/components/PhoneNumberInput";
 import { isValidPhoneNumber } from "@/lib/phone-validation";
 import { useScrollReveal } from "@/lib/animations";
+import { useVehicles } from "@/hooks/useVehicles";
 
 interface Child {
   first_name: string;
@@ -62,6 +63,7 @@ const ProfileSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
+  const { vehicles, loading: vehiclesLoading } = useVehicles();
 
   const isEditMode = !!profile?.profile_complete;
   const [step, setStep] = useState(1);
@@ -238,6 +240,11 @@ const ProfileSetup = () => {
 
   const errorInputClass = (field: string) => hasError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
+  const isVehicleComplete = (v: { car_make: string; car_model: string; car_color: string; license_plate: string }) =>
+    v.car_make.trim().length > 0 && v.car_model.trim().length > 0 && v.car_color.trim().length > 0 && v.license_plate.trim().length > 0;
+
+  const hasValidVehicle = vehicles.length > 0 && vehicles.some(isVehicleComplete);
+
   /* ── Step 2 validation ─────────────────────────── */
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
@@ -245,8 +252,9 @@ const ProfileSetup = () => {
     if (!isParent && phoneNumber.trim() && !isValidPhone(phoneNumber)) return false;
     if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    // Vehicle validation removed - VehicleManager handles separately
-    
+    // Parents must have at least 1 complete vehicle
+    if (isParent && !hasValidVehicle) return false;
+
     // First child must be fully complete; additional children must not be partial
     if (isParent && (!children.length || !isChildComplete(children[0]))) return false;
     if (isParent && children.slice(1).some(c => isChildPartial(c))) return false;
@@ -666,7 +674,17 @@ const ProfileSetup = () => {
             )}
 
             {/* Parent-only: Vehicle Information */}
-            {isParent && <VehicleManager />}
+            {isParent && (
+              <div className="space-y-2">
+                <VehicleManager />
+                {attemptedSubmit && !hasValidVehicle && !vehiclesLoading && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    At least one vehicle is required. Please add a vehicle with all 4 fields filled out.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Parent-only: Children */}
             {isParent && (
