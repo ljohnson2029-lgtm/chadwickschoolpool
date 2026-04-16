@@ -119,6 +119,16 @@ const RideOfferForm = ({
       return;
     }
 
+    // Validate future date/time
+    if (!isFutureDateTime(rideDate, rideTime)) {
+      toast({
+        title: "Invalid Date/Time",
+        description: PAST_DATETIME_ERROR,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate children selection
     if (selectedChildIds.length === 0) {
       setChildError("Please select at least one child for this ride");
@@ -425,9 +435,12 @@ const RideOfferForm = ({
             onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
           />
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
+          <Button type="submit" disabled={submitting || !isFutureDateTime(rideDate, rideTime)} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
           </Button>
+          {rideDate && rideTime && !isFutureDateTime(rideDate, rideTime) && (
+            <p className="text-sm text-destructive text-center">{PAST_DATETIME_ERROR}</p>
+          )}
         </form>
       </CardContent>
     </Card>
