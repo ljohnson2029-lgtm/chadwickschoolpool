@@ -513,7 +513,11 @@ const MyRides = () => {
   const allStudentRides = studentRideData ? [...studentRideData.active, ...studentRideData.past] : [];
   const allRides = isStudent ? allStudentRides : allParentRides;
 
-  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
+  const PENDING_STATUSES = ['pending-approval', 'pending-direct-sent', 'pending-direct-received'];
+  const isPending = (r: typeof allRides[number]) => PENDING_STATUSES.includes(r.status as string);
+
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && !isPending(r));
+  const pendingRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
     .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
   
