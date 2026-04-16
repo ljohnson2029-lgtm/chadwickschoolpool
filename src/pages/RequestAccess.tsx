@@ -202,24 +202,7 @@ const RequestAccess = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="reason"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Why do you need access? *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Tell us briefly why you'd like to join SchoolPool..."
-                          className="resize-none"
-                          rows={3}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <Button type="submit" className="w-full" disabled={submitting}>
                   <Send className="w-4 h-4 mr-2" />
