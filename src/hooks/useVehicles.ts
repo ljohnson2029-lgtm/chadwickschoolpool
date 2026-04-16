@@ -19,6 +19,8 @@ export interface VehicleInfo {
   vehicle_id?: string;
 }
 
+const VEHICLES_CHANGED_EVENT = "vehicles:changed";
+
 export function useVehicles() {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -40,6 +42,15 @@ export function useVehicles() {
   useEffect(() => {
     fetchVehicles();
   }, [fetchVehicles]);
+
+  // Sync across all useVehicles() consumers in the app
+  useEffect(() => {
+    const handler = () => fetchVehicles();
+    window.addEventListener(VEHICLES_CHANGED_EVENT, handler);
+    return () => window.removeEventListener(VEHICLES_CHANGED_EVENT, handler);
+  }, [fetchVehicles]);
+
+  const broadcastChange = () => window.dispatchEvent(new Event(VEHICLES_CHANGED_EVENT));
 
   const addVehicle = async (v: Omit<Vehicle, "id" | "is_primary">) => {
     if (!user) return;
