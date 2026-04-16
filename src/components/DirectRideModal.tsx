@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isFutureDateAndTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 import { cn } from "@/lib/utils";
 import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { useAuth } from "@/contexts/AuthContext";
