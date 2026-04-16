@@ -15,6 +15,7 @@ import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 import VehicleSelector from "@/components/VehicleSelector";
 import { type VehicleInfo } from "@/hooks/useVehicles";
+import { isFutureDateTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 
 
 interface RideOfferFormProps {

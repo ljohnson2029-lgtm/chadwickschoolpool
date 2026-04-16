@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canRequestRide, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import { isFutureDateTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 
 interface RideRequestFormProps {
   onSuccess: () => void;
