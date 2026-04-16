@@ -14,7 +14,8 @@ import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import { User, GraduationCap, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle, Sparkles } from "lucide-react";
 import VehicleManager from "@/components/VehicleManager";
-import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
+import PhoneNumberInput from "@/components/PhoneNumberInput";
+import { isValidPhoneNumber } from "@/lib/phone-validation";
 import { useScrollReveal } from "@/lib/animations";
 
 interface Child {
@@ -67,10 +68,9 @@ const ProfileSetup = () => {
   const totalSteps = isEditMode ? 2 : 3;
 
   // Start at step 2 for edit mode
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isEditMode && step === 1) setStep(2);
-  }, [isEditMode]);
+  }, [isEditMode, step]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 

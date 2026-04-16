@@ -269,12 +269,4 @@ const PhoneNumberInput = ({
   );
 };
 
-/** Validate that a stored phone value has the exact required digit count for its country */
-export function isValidPhoneNumber(value: string): boolean {
-  if (!value) return false;
-  const parsed = parseStoredValue(value);
-  const country = getCountryByCode(parsed.countryCode);
-  return parsed.digits.length === country.digitLength;
-}
-
 export default PhoneNumberInput;

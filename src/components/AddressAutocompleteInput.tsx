@@ -59,15 +59,19 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
 
   /* ── Sync prop → state ──────────────────────────────────── */
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setInputValue(value);
+  }, [value]);
+
+  // Separate effect for handling the selected state change
+  useEffect(() => {
     // If value is set programmatically (e.g. quick-fill button), mark as selected
     if (value && value !== inputValue) {
       setSelectedAddress({ lat: 0, lng: 0 }); // truthy marker to show green check
       setSuggestions([]);
       setShowSuggestions(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   /* ── Click outside to close ─────────────────────────────── */
