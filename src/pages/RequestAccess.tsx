@@ -20,7 +20,6 @@ const requestSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100),
   requester_type: z.enum(["parent", "student"], { required_error: "Please select your role" }),
   attends_chadwick: z.enum(["yes", "no"], { required_error: "Please answer this question" }),
-  reason: z.string().trim().min(1, "Please tell us why you need access").max(500),
 });
 
 type RequestFormValues = z.infer<typeof requestSchema>;
