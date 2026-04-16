@@ -210,57 +210,66 @@ const Register = () => {
   const handleAccountCreation = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate phone for parent accounts
+    // Build per-field error map and log state for debugging
+    const errors: typeof fieldErrors = {};
+    logger.log('[Register] Submit attempt — field state:', {
+      firstName, lastName, username, password, confirmPassword,
+      phoneNumber, isStudentEmail, insuranceAgreed, safetyAgreed, liabilityAgreed,
+    });
+
+    if (!firstName.trim()) errors.firstName = "This field is required";
+    if (!lastName.trim()) errors.lastName = "This field is required";
+    if (!username.trim()) errors.username = "This field is required";
+    if (!password) errors.password = "This field is required";
+    if (!confirmPassword) errors.confirmPassword = "This field is required";
+
     if (!isStudentEmail) {
       if (!phoneNumber.trim()) {
-        setPhoneError("This field is required");
-        toast({
-          title: "Phone number required",
-          description: "Please enter your phone number to create a parent account.",
-          variant: "destructive",
-        });
-        return;
+        errors.phone = "This field is required";
+      } else if (!isValidPhoneNumber(phoneNumber)) {
+        errors.phone = "Please enter a complete phone number";
       }
-      if (!isValidPhoneNumber(phoneNumber)) {
-        setPhoneError("Please enter a complete phone number");
-        toast({
-          title: "Invalid phone number",
-          description: "Please enter a valid, complete phone number.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (!insuranceAgreed) errors.insurance = "Required";
+      if (!safetyAgreed) errors.safety = "Required";
+      if (!liabilityAgreed) errors.liability = "Required";
     }
 
-    // Validate waivers are agreed (only for parent accounts)
-    if (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) {
-      toast({
-        title: "Agreement Required",
-        description: "Please read and agree to all the required waivers before creating your account.",
-        variant: "destructive",
-      });
-      return;
+    // Password match + strength only if both filled
+    if (password && confirmPassword && password !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
     }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate password requirements
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(password)) {
+    if (password && !passwordRegex.test(password)) {
+      errors.password = "Must be 8+ chars with uppercase, lowercase, and number";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       toast({
-        title: "Password requirements not met",
-        description: "Password must be at least 8 characters with uppercase, lowercase, and number.",
+        title: "Please complete all required fields",
+        description: "Highlighted fields need your attention.",
         variant: "destructive",
       });
+      // Scroll to first invalid field
+      const order: (keyof typeof errors)[] = [
+        "firstName", "lastName", "username", "phone",
+        "password", "confirmPassword", "insurance", "safety", "liability",
+      ];
+      const firstKey = order.find((k) => errors[k]);
+      const idMap: Record<string, string> = {
+        firstName: "firstName", lastName: "lastName", username: "username",
+        phone: "phone", password: "password", confirmPassword: "confirmPassword",
+        insurance: "insurance-waiver", safety: "safety-waiver", liability: "liability-waiver",
+      };
+      if (firstKey) {
+        const el = document.getElementById(idMap[firstKey]);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        (el as HTMLElement | null)?.focus?.();
+      }
       return;
     }
+
+    setFieldErrors({});
 
     // Ensure username availability before creating account
     const cleanUsername = username.trim();
