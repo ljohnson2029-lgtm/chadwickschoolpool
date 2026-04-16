@@ -33,7 +33,6 @@ const RequestAccess = () => {
     defaultValues: {
       email: "",
       full_name: "",
-      reason: "",
     },
   });
 
