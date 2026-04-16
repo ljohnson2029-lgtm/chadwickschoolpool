@@ -737,20 +737,30 @@ const Register = () => {
                   <Input
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={(e) => { setFirstName(e.target.value); if (e.target.value.trim()) clearFieldError("firstName"); }}
                     required
                     disabled={loading}
+                    aria-invalid={!!fieldErrors.firstName}
+                    className={fieldErrors.firstName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-sm text-destructive">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                   <Input
                     id="lastName"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={(e) => { setLastName(e.target.value); if (e.target.value.trim()) clearFieldError("lastName"); }}
                     required
                     disabled={loading}
+                    aria-invalid={!!fieldErrors.lastName}
+                    className={fieldErrors.lastName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-sm text-destructive">{fieldErrors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -763,11 +773,17 @@ const Register = () => {
                     setUsername(e.target.value);
                     setUsernameStatus('idle');
                     setUsernameHint('');
+                    if (e.target.value.trim()) clearFieldError("username");
                   }}
                   onBlur={checkUsernameAvailability}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.username}
+                  className={fieldErrors.username ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.username && (
+                  <p className="text-sm text-destructive">{fieldErrors.username}</p>
+                )}
                 {usernameHint && (
                   <p className="text-xs text-muted-foreground">{usernameHint}</p>
                 )}
@@ -780,9 +796,9 @@ const Register = () => {
                 <PhoneNumberInput
                   id="phone"
                   value={phoneNumber}
-                  onChange={(val) => { setPhoneNumber(val); setPhoneError(""); }}
+                  onChange={(val) => { setPhoneNumber(val); if (val.trim() && isValidPhoneNumber(val)) setPhoneError(""); }}
                   disabled={loading}
-                  className={phoneError ? "[&_input]:border-destructive" : ""}
+                  className={phoneError ? "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive" : ""}
                 />
                 {phoneError && (
                   <p className="text-sm text-destructive">{phoneError}</p>
@@ -807,13 +823,19 @@ const Register = () => {
                   id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); if (e.target.value) clearFieldError("password"); }}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.password}
+                  className={fieldErrors.password ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Must be 8+ characters with uppercase, lowercase, and number
-                </p>
+                {fieldErrors.password ? (
+                  <p className="text-sm text-destructive">{fieldErrors.password}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Must be 8+ characters with uppercase, lowercase, and number
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -822,10 +844,15 @@ const Register = () => {
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); if (e.target.value && (!password || e.target.value === password)) clearFieldError("confirmPassword"); }}
                   required
                   disabled={loading}
+                  aria-invalid={!!fieldErrors.confirmPassword}
+                  className={fieldErrors.confirmPassword ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
+                {fieldErrors.confirmPassword && (
+                  <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
 
               {/* Waiver Checkboxes - Only for parent accounts */}
@@ -834,10 +861,13 @@ const Register = () => {
                   insuranceAgreed={insuranceAgreed}
                   safetyAgreed={safetyAgreed}
                   liabilityAgreed={liabilityAgreed}
-                  onInsuranceChange={setInsuranceAgreed}
-                  onSafetyChange={setSafetyAgreed}
-                  onLiabilityChange={setLiabilityAgreed}
+                  onInsuranceChange={(v) => { setInsuranceAgreed(v); if (v) clearFieldError("insurance"); }}
+                  onSafetyChange={(v) => { setSafetyAgreed(v); if (v) clearFieldError("safety"); }}
+                  onLiabilityChange={(v) => { setLiabilityAgreed(v); if (v) clearFieldError("liability"); }}
                   disabled={loading}
+                  insuranceError={!!fieldErrors.insurance}
+                  safetyError={!!fieldErrors.safety}
+                  liabilityError={!!fieldErrors.liability}
                 />
               )}
 
@@ -846,7 +876,7 @@ const Register = () => {
                 className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
                 loading={loading}
                 loadingText="Creating Account..."
-                disabled={loading || !firstName.trim() || !lastName.trim() || !username.trim() || !password || !confirmPassword || (!isStudentEmail && (!insuranceAgreed || !safetyAgreed || !liabilityAgreed)) || (!isStudentEmail && (!phoneNumber.trim() || !isValidPhoneNumber(phoneNumber)))}
+                disabled={loading}
               >
                 Create Account
                 <UserPlus className="ml-2 h-4 w-4" />
