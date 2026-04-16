@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { haversineMiles } from "@/lib/rideValidation";
 
 interface RideChild {
   id: string;
@@ -81,9 +82,19 @@ interface OwnerContact {
 
 interface RidesListProps {
   onViewOnMap?: (ride: Ride) => void;
+  showRequests?: boolean;
+  showOffers?: boolean;
+  radiusMiles?: number | null;
+  homeCoords?: { lat: number; lng: number } | null;
 }
 
-const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
+const RidesList = ({
+  onViewOnMap,
+  showRequests = true,
+  showOffers = true,
+  radiusMiles = null,
+  homeCoords = null,
+}: RidesListProps = {}) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
