@@ -809,7 +809,7 @@ const RidesList = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rides.map((ride) => (
+              {visibleRides.map((ride) => (
                 <RideCard key={ride.id} ride={ride} />
               ))}
             </div>
