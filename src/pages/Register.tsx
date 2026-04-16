@@ -42,7 +42,30 @@ const Register = () => {
   const [insuranceAgreed, setInsuranceAgreed] = useState(false);
   const [safetyAgreed, setSafetyAgreed] = useState(false);
   const [liabilityAgreed, setLiabilityAgreed] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
+
+  // Field-level errors for inline red highlighting
+  const [fieldErrors, setFieldErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
+    phone?: string;
+    insurance?: string;
+    safety?: string;
+    liability?: string;
+  }>({});
+  const phoneError = fieldErrors.phone || "";
+  const setPhoneError = (msg: string) =>
+    setFieldErrors((prev) => ({ ...prev, phone: msg || undefined }));
+
+  const clearFieldError = (key: keyof typeof fieldErrors) =>
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
 
   useEffect(() => {
     if (user) {
