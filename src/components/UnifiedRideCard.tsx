@@ -383,7 +383,6 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
         setCurrentUserFullName(name);
       }
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count } = await supabase
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('ride_messages' as any)

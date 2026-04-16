@@ -292,7 +292,6 @@ const Register = () => {
             errorMessage = error.message;
           }
         } catch (e) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           logger.error("Error parsing function error:", e);
         }
 

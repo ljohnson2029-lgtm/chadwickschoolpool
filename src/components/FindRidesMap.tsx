@@ -286,7 +286,6 @@ const useMapRides = (userId: string | undefined) => {
       });
 
       const geocodedRides = await Promise.allSettled(geocodePromises);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const allRides = geocodedRides
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
@@ -300,10 +299,8 @@ const useMapRides = (userId: string | undefined) => {
       // Fetch profiles and emails
       const userIds = [...new Set(ridesWithLocation.map((r) => r.user_id))];
 
-      // eslint-disable-next-line prefer-const, @typescript-eslint/no-explicit-any
-      let profilesMap: Record<string, any> = {};
-      // eslint-disable-next-line prefer-const, @typescript-eslint/no-explicit-any
-      let emailsMap: Record<string, any> = {};
+      let profilesMap: Record<string, RideProfile> = {};
+      let emailsMap: Record<string, string> = {};
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const childrenMap: Record<string, any> = {};
 
@@ -348,16 +345,13 @@ const useMapRides = (userId: string | undefined) => {
       const combinedRides: Ride[] = ridesWithLocation.map((ride) => {
         const allChildren = childrenMap[ride.user_id] || [];
         const selectedIds: string[] | null = ride.selected_children;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filteredChildren = selectedIds && selectedIds.length > 0
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? allChildren.filter((c: any) => selectedIds.includes(c.id))
           : allChildren;
         return {
           ...ride,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           profile: profilesMap[ride.user_id] || null,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           userEmail: emailsMap[ride.user_id] || null,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           hasAcceptedConnection: (ride as any).is_fulfilled === true,

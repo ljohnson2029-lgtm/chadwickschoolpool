@@ -44,7 +44,6 @@ export function useVehicles() {
   const addVehicle = async (v: Omit<Vehicle, "id" | "is_primary">) => {
     if (!user) return;
     const isPrimary = vehicles.length === 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("vehicles").insert({
       user_id: user.id,
       car_make: v.car_make,

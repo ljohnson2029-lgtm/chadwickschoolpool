@@ -258,7 +258,6 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
       const ridesWithProfiles = allRides.map((ride: any) => {
         const allChildren = childrenMap[ride.user_id] || [];
         const selectedIds: string[] | null = ride.selected_children;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filteredChildren = selectedIds && selectedIds.length > 0
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? allChildren.filter((c: any) => selectedIds.includes(c.id))

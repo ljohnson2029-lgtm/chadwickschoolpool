@@ -55,7 +55,6 @@ const DeleteAccountSection = () => {
 
     try {
       // 1. Log the reason for leaving (optional, silent fail)
-      // eslint-disable-next-line no-console
       if (deleteReason) console.log("Account deletion reason:", deleteReason);
 
       // 2. Delete profile data (Cascading deletes handled by DB FKs usually, but explicit is safer)

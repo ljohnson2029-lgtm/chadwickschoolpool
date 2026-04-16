@@ -170,9 +170,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const otherUserIds = new Set<string>();
 
   if (pendingConvos) pendingConvos.forEach(c => otherUserIds.add(c.sender_id));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (joinedConvos) joinedConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (pendingSentConvos) pendingSentConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
   if (receivedConvos) receivedConvos.forEach(c => otherUserIds.add(c.sender_id));
   if (privateRequests) privateRequests.forEach(r => {

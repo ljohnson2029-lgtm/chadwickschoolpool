@@ -68,7 +68,6 @@ const FamilyCarpools = () => {
     setFocusRide({
       id: ride.id,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pickup_latitude: (ride as any).pickup_latitude || null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pickup_longitude: (ride as any).pickup_longitude || null,
