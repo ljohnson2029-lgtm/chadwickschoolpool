@@ -94,7 +94,7 @@ const Profile = () => {
           const parentIds = links.map(l => l.parent_id);
           const { data: parentsData } = await supabase
             .from('profiles')
-            .select('id, first_name, last_name, phone_number, user_id')
+            .select('id, first_name, last_name, phone_number')
             .in('id', parentIds);
           
           if (parentsData) {
@@ -263,6 +263,9 @@ const Profile = () => {
                   </CardHeader>
                   <CardContent>
                     <ProfileEditForm 
+                      user={{ id: user.id, email: user.email }}
+                      profile={profile}
+                      isParent={isParent}
                       onSave={handleEditSave} 
                       onCancel={() => setIsEditing(false)} 
                     />
