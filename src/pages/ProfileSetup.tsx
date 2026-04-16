@@ -63,6 +63,7 @@ const ProfileSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const formRef = useRef<HTMLDivElement>(null);
+  const { vehicles, loading: vehiclesLoading } = useVehicles();
 
   const isEditMode = !!profile?.profile_complete;
   const [step, setStep] = useState(1);
@@ -239,6 +240,11 @@ const ProfileSetup = () => {
 
   const errorInputClass = (field: string) => hasError(field) ? "border-destructive focus-visible:ring-destructive" : "";
 
+  const isVehicleComplete = (v: { car_make: string; car_model: string; car_color: string; license_plate: string }) =>
+    v.car_make.trim().length > 0 && v.car_model.trim().length > 0 && v.car_color.trim().length > 0 && v.license_plate.trim().length > 0;
+
+  const hasValidVehicle = vehicles.length > 0 && vehicles.some(isVehicleComplete);
+
   /* ── Step 2 validation ─────────────────────────── */
   const isStep2Valid = () => {
     if (!isMinLength(firstName, 2) || !isMinLength(lastName, 2)) return false;
@@ -246,8 +252,9 @@ const ProfileSetup = () => {
     if (!isParent && phoneNumber.trim() && !isValidPhone(phoneNumber)) return false;
     if (isParent && !hasSelectedAddress) return false;
     if (!isParent && !gradeLevel) return false;
-    // Vehicle validation removed - VehicleManager handles separately
-    
+    // Parents must have at least 1 complete vehicle
+    if (isParent && !hasValidVehicle) return false;
+
     // First child must be fully complete; additional children must not be partial
     if (isParent && (!children.length || !isChildComplete(children[0]))) return false;
     if (isParent && children.slice(1).some(c => isChildPartial(c))) return false;
