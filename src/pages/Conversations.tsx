@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,10 +98,10 @@ const Conversations = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching conversations:', error);
+      logger.error('Error fetching conversations:', error);
       toast.error('Failed to load conversations');
     } else {
-      console.log('[Conversations] Loaded conversations:', data?.length || 0);
+      logger.log('[Conversations] Loaded conversations:', data?.length || 0);
       setConversations(data as any || []);
       
       // Mark unread conversations as read (where user is recipient)
@@ -122,8 +123,15 @@ const Conversations = () => {
   }, [user, fetchConversations]);
 
   // Real-time subscription for conversation updates
+  // Only subscribe AFTER the initial data has been fetched to prevent race conditions
+  const initialFetchDone = useRef(false);
   useEffect(() => {
     if (!user) return;
+    if (!initialFetchDone.current) {
+      // Mark initial fetch as done after first successful fetchConversations
+      initialFetchDone.current = true;
+      return;
+    }
 
     const channel = supabase
       .channel('conversations-realtime')
@@ -136,7 +144,7 @@ const Conversations = () => {
           filter: `sender_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[Conversations] Real-time update (sender):', payload);
+          logger.log('[Conversations] Real-time update (sender):', payload);
           fetchConversations();
         }
       )
@@ -149,7 +157,7 @@ const Conversations = () => {
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[Conversations] Real-time update (recipient):', payload);
+          logger.log('[Conversations] Real-time update (recipient):', payload);
           fetchConversations();
         }
       )

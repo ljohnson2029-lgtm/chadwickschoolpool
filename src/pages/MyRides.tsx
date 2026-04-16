@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -123,10 +124,10 @@ const MyRides = () => {
               licensePlate: data.profile.license_plate || null,
             };
             phoneByParent[parentId] = data.profile.phone_number || null;
-            console.log(`[Student MyRides] Phone for ${parentId}:`, data.profile.phone_number);
+            logger.log(`[Student MyRides] Phone for ${parentId}:`, data.profile.phone_number);
         }
       } catch (err) {
-        console.warn(`Failed to fetch children for parent ${parentId}:`, err);
+        logger.warn(`Failed to fetch children for parent ${parentId}:`, err);
       }
     });
     await Promise.all(childFetches);
@@ -211,7 +212,7 @@ const MyRides = () => {
     const DAY_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const { data: seriesData } = await supabase.rpc('get_student_series_rides', { student_user_id: user.id });
     
-    console.log('[Student MyRides] Series data:', seriesData);
+    logger.log('[Student MyRides] Series data:', seriesData);
 
     if (seriesData && seriesData.length > 0) {
       // Build cancelled set
@@ -438,8 +439,8 @@ const MyRides = () => {
     }
 
     rides.sort((a, b) => {
-      const dateA = new Date(`${a.rideDate}T${a.rideTime}`);
-      const dateB = new Date(`${b.rideDate}T${b.rideTime}`);
+      const dateA = new Date(`${a.rideDate}T${a.rideTime}:00`);
+      const dateB = new Date(`${b.rideDate}T${b.rideTime}:00`);
       return dateA.getTime() - dateB.getTime();
     });
 
@@ -479,7 +480,7 @@ const MyRides = () => {
 
   const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
-    .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}`).getTime() - new Date(`${a.rideDate}T${a.rideTime}`).getTime());
+    .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
   const loadingData = isStudent ? loadingStudentRides : loadingParentRides;
 
   const getMyName = () => {
@@ -494,7 +495,7 @@ const MyRides = () => {
         body: { userId, type, message },
       });
     } catch (err) {
-      console.warn('Failed to send notification:', err);
+      logger.warn('Failed to send notification:', err);
     }
   };
 

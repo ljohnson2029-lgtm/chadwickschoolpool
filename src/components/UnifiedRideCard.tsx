@@ -159,7 +159,7 @@ const formatGrade = (grade: string) => {
 };
 
 function isWithin9Hours(rideDate: string, rideTime: string): boolean {
-  const rideDateTime = new Date(`${rideDate}T${rideTime}`);
+  const rideDateTime = new Date(`${rideDate}T${rideTime}:00`);
   const now = new Date();
   const diffMs = rideDateTime.getTime() - now.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);

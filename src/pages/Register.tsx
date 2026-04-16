@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,7 @@ const Register = () => {
       setIsStudentEmail(isStudent);
 
       if (checkError) {
-        console.error('Email check error:', checkError);
+        logger.error('Email check error:', checkError);
         throw new Error('Failed to verify email eligibility');
       }
 
@@ -161,11 +162,11 @@ const Register = () => {
     }
     setUsernameStatus('checking');
     setUsernameHint('Checking username availability...');
-    console.log('Checking username:', clean);
+    logger.log('Checking username:', clean);
     const { data, error } = await supabase.functions.invoke('auth-check-username', {
       body: { username: clean },
     });
-    console.log('Username check response:', data, error);
+    logger.log('Username check response:', data, error);
     if (error) {
       setUsernameStatus('idle');
       setUsernameHint('');
@@ -253,7 +254,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting to create account...');
+      logger.log('Attempting to create account...');
       const { data, error } = await supabase.functions.invoke("auth-create-account", {
         body: {
           email: email.toLowerCase().trim(),
@@ -266,8 +267,8 @@ const Register = () => {
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
+        logger.error('Edge function error:', error);
+        logger.error('Full error object:', JSON.stringify(error, null, 2));
         
         // Extract error message from edge function response
         let errorMessage = "An error occurred during registration";
@@ -290,10 +291,10 @@ const Register = () => {
             errorMessage = error.message;
           }
         } catch (e) {
-          console.error("Error parsing function error:", e);
+          logger.error("Error parsing function error:", e);
         }
         
-        console.error('Extracted error message:', errorMessage);
+        logger.error('Extracted error message:', errorMessage);
         
         // Check for specific error types and show user-friendly messages
         if (errorMessage.includes("Username already taken")) {
@@ -326,7 +327,7 @@ const Register = () => {
       }
 
       if (data && !data.success) {
-        console.error('Registration failed:', data);
+        logger.error('Registration failed:', data);
         toast({
           title: "Registration failed",
           description: data.error || "Could not create account",
@@ -336,7 +337,7 @@ const Register = () => {
         return;
       }
       
-      console.log('Account created successfully');
+      logger.log('Account created successfully');
 
       // Auto-login after successful registration
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -345,7 +346,7 @@ const Register = () => {
       });
 
       if (signInError) {
-        console.error('Auto-login failed:', signInError);
+        logger.error('Auto-login failed:', signInError);
         toast({
           title: "Account created!",
           description: "Please log in with your credentials.",
@@ -360,8 +361,8 @@ const Register = () => {
       }
     } catch (error: any) {
       // Handle unexpected errors (network issues, etc.)
-      console.error('Unexpected error during registration:', error);
-      console.error('Full exception:', JSON.stringify(error, null, 2));
+      logger.error('Unexpected error during registration:', error);
+      logger.error('Full exception:', JSON.stringify(error, null, 2));
       
       let errorMessage = "An unexpected error occurred. Please try again.";
       
@@ -381,7 +382,7 @@ const Register = () => {
           errorMessage = error.message;
         }
       } catch (e) {
-        console.error("Error parsing exception:", e);
+        logger.error("Error parsing exception:", e);
       }
       
       if (errorMessage.includes("Username already taken")) {

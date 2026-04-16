@@ -28,7 +28,7 @@ const getRelativeDay = (dateStr: string): string | null => {
 
 const getTimeUntil = (dateStr: string, timeStr: string): string | null => {
   try {
-    const rideDate = new Date(`${dateStr}T${timeStr}`);
+    const rideDate = new Date(`${dateStr}T${timeStr}:00`);
     if (isPast(rideDate)) return null;
     return formatDistanceToNow(rideDate, { addSuffix: true });
   } catch {
@@ -88,7 +88,7 @@ export function FamilyRideCard({ ride }: FamilyRideCardProps) {
 
   const rideDateTime = useMemo(() => {
     try {
-      return isPast(new Date(`${ride.ride_date}T${ride.ride_time}`));
+      return isPast(new Date(`${ride.ride_date}T${ride.ride_time}:00`));
     } catch {
       return false;
     }
