@@ -7,6 +7,7 @@ interface FetchResult {
   past: UnifiedRide[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> {
   if (ids.length === 0) return {};
   
@@ -20,6 +21,7 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
     const email = users?.find(u => u.user_id === p.id)?.email;
     acc[p.id] = { ...p, email };
     return acc;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, {} as Record<string, any>);
 }
 
@@ -52,6 +54,7 @@ function filterChildrenBySelection(
     .map(({ name, grade }) => ({ name, grade }));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toParticipant(p: any, children: { name: string; grade: string }[]): ParticipantInfo {
   return {
     id: p.id,
@@ -68,6 +71,7 @@ function toParticipant(p: any, children: { name: string; grade: string }[]): Par
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractCarInfo(vehicleInfoJson: any, profileFallback?: any): UnifiedRide['myCarInfo'] {
   if (vehicleInfoJson && typeof vehicleInfoJson === 'object') {
     return {
@@ -103,7 +107,7 @@ function getNextOccurrences(
       if (dayIndex === undefined) continue;
       
       const todayIndex = today.getDay();
-      let daysUntil = dayIndex - todayIndex;
+      const daysUntil = dayIndex - todayIndex;
       if (w === 0 && daysUntil < 0) continue; // skip past days in current week
       if (w === 0 && daysUntil === 0) {
         // include today
@@ -201,6 +205,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         requesterName: name,
         requesterEmail: profile?.email || null,
         requesterPhone: profile?.phone_number || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         children: filterChildrenBySelection(children, (conv as any).selected_children),
         message: conv.message,
         requestedAt: conv.created_at || '',
@@ -228,7 +233,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsNeeded: ride.seats_needed,
         isDriver: ride.type === 'offer',
         otherParent: null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myCarInfo: extractCarInfo((ride as any).vehicle_info, myProfile),
         originalData: ride,
         pendingRequests: pendingByRide[ride.id] || [],
@@ -257,7 +264,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: isHelpingWithRequest,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
@@ -285,7 +294,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: ride.type === 'request',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
         myCarInfo: extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
@@ -301,6 +312,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
       const existingIdx = allRides.findIndex(r => r.source === 'posted' && r.id === ride.id);
       const joiner = allProfiles[conv.sender_id];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const participant = joiner ? toParticipant(joiner, filterChildrenBySelection(allChildren[conv.sender_id] || [], (conv as any).selected_children)) : null;
 
       if (existingIdx !== -1) {
@@ -321,6 +333,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           seatsNeeded: ride.seats_needed,
           isDriver: ride.type === 'offer',
           otherParent: participant,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
           myCarInfo: extractCarInfo(null, myProfile),
           originalData: { conversation: conv, ride },
@@ -354,7 +367,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
       const isPast = isRidePast(req.ride_date, req.pickup_time);
       const profile = allProfiles[otherId];
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const senderChildIds = (req as any).selected_children as string[] | null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const recipientChildIds = (req as any).recipient_selected_children as string[] | null;
       const mySelectedIds = isSender ? senderChildIds : recipientChildIds;
       const otherSelectedIds = isSender ? recipientChildIds : senderChildIds;
@@ -380,6 +395,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         isDriver,
         otherParent: profile ? toParticipant(profile, filteredOtherKids) : null,
         myChildren: filteredMyChildren,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myCarInfo: extractCarInfo((req as any).vehicle_info, myProfile),
         originalData: req,
       });
@@ -397,6 +413,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
     // Fetch actual cancellations for found schedules
     const scheduleIds = schedules?.map(s => s.id) || [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let actualCancellations: any[] = [];
     if (scheduleIds.length > 0) {
       const { data } = await supabase.from('schedule_cancellations').select('*').in('schedule_id', scheduleIds);
@@ -404,6 +421,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
 
     const cancelledSet = new Set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       actualCancellations.map((c: any) => `${c.schedule_id}-${c.cancelled_date}-${c.cancelled_day}`)
     );
 
@@ -418,6 +436,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
     }
 
     // Build vehicles map: userId -> vehicle[]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const vehiclesMap: Record<string, any[]> = {};
     if (allDriverVehicles) {
       for (const v of allDriverVehicles) {
@@ -433,7 +452,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
         const otherId = space.parent_a_id === userId ? space.parent_b_id : space.parent_a_id;
         const otherProfile = allProfiles[otherId];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const assignments = (schedule.day_assignments as any[]) || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const days = assignments.map((a: any) => a.day);
 
         // Generate occurrences for next 4 weeks
@@ -469,6 +490,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           const cancelKey = `${schedule.id}-${occ.date}-${occ.day}`;
           if (cancelledSet.has(cancelKey)) continue;
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const assignment = assignments.find((a: any) => a.day === occ.day);
           if (!assignment) continue;
 
@@ -491,6 +513,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
           // Get ALL driver vehicles for series rides
           const driverAllVehicles = vehiclesMap[driverId] || [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const primaryVehicle = driverAllVehicles.find((v: any) => v.is_primary) || driverAllVehicles[0];
           const driverCarInfo = primaryVehicle ? extractCarInfo(primaryVehicle) : myProfileCarInfo;
 

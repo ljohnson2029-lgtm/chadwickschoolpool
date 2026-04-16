@@ -51,12 +51,14 @@ export function useVehicles() {
       car_color: v.car_color,
       license_plate: v.license_plate,
       is_primary: isPrimary,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
     if (!error) await fetchVehicles();
     return error;
   };
 
   const updateVehicle = async (id: string, v: Partial<Vehicle>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("vehicles").update(v as any).eq("id", id);
     if (!error) await fetchVehicles();
     return error;

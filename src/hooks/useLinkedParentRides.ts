@@ -101,8 +101,9 @@
          return;
        }
  
-       // Map the schedule to FamilyRide format
-       const ridesWithParentInfo: FamilyRide[] = (schedule || []).map((ride: any) => ({
+        // Map the schedule to FamilyRide format
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ridesWithParentInfo: FamilyRide[] = (schedule || []).map((ride: any) => ({
          id: ride.id,
          type: ride.type,
          ride_date: ride.ride_date,

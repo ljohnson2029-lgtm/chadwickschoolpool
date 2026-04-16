@@ -67,7 +67,9 @@ const FamilyCarpools = () => {
     setViewMode('map');
     setFocusRide({
       id: ride.id,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pickup_latitude: (ride as any).pickup_latitude || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       pickup_longitude: (ride as any).pickup_longitude || null,
       pickup_location: ride.pickup_location
     });

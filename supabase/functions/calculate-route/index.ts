@@ -11,6 +11,7 @@ interface RouteRequest {
 interface RouteResponse {
   distance: number; // in meters
   duration: number; // in seconds
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   geometry: any; // GeoJSON LineString
 }
 

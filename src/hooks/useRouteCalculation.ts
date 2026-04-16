@@ -10,6 +10,7 @@ interface Location {
 interface RouteInfo {
   distance: number; // in meters
   duration: number; // in seconds
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   geometry: any;
 }
 
