@@ -362,10 +362,13 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
               </FormItem>
             )} />
 
-            <Button type="submit" className="w-full gap-2" disabled={submitting}>
+            <Button type="submit" className="w-full gap-2" disabled={submitting || !isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time"))}>
               <Send className="h-4 w-4" />
               {submitting ? "Sending..." : `Send Direct Ride ${isRequest ? "Request" : "Offer"}`}
             </Button>
+            {!isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time")) && (
+              <p className="text-sm text-destructive text-center">{PAST_DATETIME_ERROR}</p>
+            )}
           </form>
         </Form>
       </DialogContent>

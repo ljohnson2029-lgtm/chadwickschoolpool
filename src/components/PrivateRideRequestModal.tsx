@@ -562,7 +562,7 @@ const PrivateRideRequestModal = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || !form.formState.isValid}
+                  disabled={submitting || !form.formState.isValid || !isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time"))}
                   className="flex-1 gap-2"
                 >
                   {submitting ? (
