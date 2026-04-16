@@ -14,4 +14,5 @@ const Toggle = React.forwardRef<
 
 Toggle.displayName = TogglePrimitive.Root.displayName;
 
+/* eslint-disable react-refresh/only-export-components */
 export { Toggle };
