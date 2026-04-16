@@ -1237,17 +1237,6 @@ const MyRides = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-purple-500/5 to-purple-600/5 border-purple-200/50 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="text-sm text-gray-500">Status</span>
-              </div>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {activeRides.length > 0 ? "Active" : "Ready"}
-              </p>
-            </CardContent>
-          </Card>
         </motion.div>
 
         {isStudent && (
