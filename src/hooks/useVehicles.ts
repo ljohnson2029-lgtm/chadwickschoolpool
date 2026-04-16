@@ -19,6 +19,8 @@ export interface VehicleInfo {
   vehicle_id?: string;
 }
 
+const VEHICLES_CHANGED_EVENT = "vehicles:changed";
+
 export function useVehicles() {
   const { user } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -41,6 +43,15 @@ export function useVehicles() {
     fetchVehicles();
   }, [fetchVehicles]);
 
+  // Sync across all useVehicles() consumers in the app
+  useEffect(() => {
+    const handler = () => fetchVehicles();
+    window.addEventListener(VEHICLES_CHANGED_EVENT, handler);
+    return () => window.removeEventListener(VEHICLES_CHANGED_EVENT, handler);
+  }, [fetchVehicles]);
+
+  const broadcastChange = () => window.dispatchEvent(new Event(VEHICLES_CHANGED_EVENT));
+
   const addVehicle = async (v: Omit<Vehicle, "id" | "is_primary">) => {
     if (!user) return;
     const isPrimary = vehicles.length === 0;
@@ -53,14 +64,14 @@ export function useVehicles() {
       is_primary: isPrimary,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    if (!error) await fetchVehicles();
+    if (!error) { await fetchVehicles(); broadcastChange(); }
     return error;
   };
 
   const updateVehicle = async (id: string, v: Partial<Vehicle>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("vehicles").update(v as any).eq("id", id);
-    if (!error) await fetchVehicles();
+    if (!error) { await fetchVehicles(); broadcastChange(); }
     return error;
   };
 
@@ -77,6 +88,7 @@ export function useVehicles() {
         }
       }
       await fetchVehicles();
+      broadcastChange();
     }
     return error;
   };
@@ -89,6 +101,7 @@ export function useVehicles() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from("vehicles").update({ is_primary: true } as any).eq("id", id);
     await fetchVehicles();
+    broadcastChange();
   };
 
   const primaryVehicle = vehicles.find((v) => v.is_primary) || vehicles[0] || null;

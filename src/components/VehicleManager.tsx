@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,11 @@ const VehicleManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<NewVehicle>(emptyVehicle);
   const [saving, setSaving] = useState(false);
+
+  // Auto-open the add form when there are no vehicles yet (mandatory field UX)
+  useEffect(() => {
+    if (!loading && vehicles.length === 0) setShowAdd(true);
+  }, [loading, vehicles.length]);
 
   const isValid = (v: NewVehicle) =>
     v.car_make.trim() && v.car_model.trim() && v.car_color.trim() && v.license_plate.trim();
