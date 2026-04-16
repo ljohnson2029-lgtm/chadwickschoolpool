@@ -174,6 +174,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     if (user && userRole) {
       fetchRides();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userRole]);
 
   const fetchRides = async () => {

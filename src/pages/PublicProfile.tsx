@@ -74,6 +74,7 @@ const PublicProfile = () => {
     setViewerIsParent(checkIsParent(authProfile.account_type));
   }, [authProfile]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (userId) {
       fetchProfile();

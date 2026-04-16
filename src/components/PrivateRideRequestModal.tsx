@@ -127,6 +127,7 @@ const PrivateRideRequestModal = ({
     if (open && recipientId) {
       fetchRecipientProfile();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, recipientId]);
 
   const fetchRecipientProfile = async () => {

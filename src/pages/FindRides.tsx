@@ -100,6 +100,7 @@ const FindRides = () => {
     }
   }, [user, loading, navigate]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchBroadcastRides();
   }, [user]);

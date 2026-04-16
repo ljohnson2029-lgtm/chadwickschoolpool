@@ -141,11 +141,12 @@
      } finally {
        setLoading(false);
      }
-   }, [user]);
- 
-   useEffect(() => {
-     fetchData();
-   }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
+  
+    useEffect(() => {
+      fetchData();
+    }, [fetchData]);
  
    return {
      linkedParents,

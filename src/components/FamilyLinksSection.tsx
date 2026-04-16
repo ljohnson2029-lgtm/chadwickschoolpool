@@ -51,6 +51,7 @@ const FamilyLinksSection = () => {
     if (user && profile) {
       fetchLinks();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   useEffect(() => {
@@ -77,6 +78,7 @@ const FamilyLinksSection = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isStudent]);
 
   const fetchLinks = async () => {

@@ -67,6 +67,7 @@ const ProfileSetup = () => {
   const totalSteps = isEditMode ? 2 : 3;
 
   // Start at step 2 for edit mode
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isEditMode && step === 1) setStep(2);
   }, [isEditMode]);

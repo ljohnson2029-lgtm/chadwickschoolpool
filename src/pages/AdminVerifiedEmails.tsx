@@ -58,6 +58,7 @@ const AdminVerifiedEmails = () => {
     if (user) {
       fetchVerifiedEmails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, navigate]);
 
   const formatDate = (dateString: string) => {

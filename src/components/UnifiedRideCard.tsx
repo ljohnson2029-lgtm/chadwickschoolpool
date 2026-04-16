@@ -413,6 +413,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatOpen, chatRideRefId, isConfirmed, isPast, ride.id, rideSource]);
 
   // Reset unread when chat opens

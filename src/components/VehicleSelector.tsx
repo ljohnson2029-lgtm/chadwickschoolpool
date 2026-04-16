@@ -18,6 +18,7 @@ const VehicleSelector = ({ selectedVehicleId, onSelect, label = "Driving Today W
     if (!selectedVehicleId && primaryVehicle) {
       onSelect(primaryVehicle.id, toVehicleInfo(primaryVehicle));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryVehicle, selectedVehicleId]);
 
   if (loading) return <p className="text-xs text-muted-foreground">Loading vehicles...</p>;

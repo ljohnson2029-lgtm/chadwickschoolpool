@@ -881,6 +881,7 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
       map.current?.remove();
       map.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
   /* ── Update markers and layers ──────────────────────────── */

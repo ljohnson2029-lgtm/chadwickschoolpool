@@ -42,6 +42,7 @@ const ChildrenRidingSelector = ({ selectedChildIds, onSelectionChange, error, ma
       setLoading(false);
     };
     fetchChildren();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (loading) return null;

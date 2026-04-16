@@ -110,6 +110,7 @@ export function useCache<T>(
     }
   }, [fetcher, setCachedData]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     isMountedRef.current = true;
 

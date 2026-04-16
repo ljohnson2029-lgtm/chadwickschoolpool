@@ -59,6 +59,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
 
   /* ── Sync prop → state ──────────────────────────────────── */
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setInputValue(value);
     // If value is set programmatically (e.g. quick-fill button), mark as selected

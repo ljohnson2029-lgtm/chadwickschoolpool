@@ -104,6 +104,7 @@ const Navigation = () => {
     };
     
     checkUserRole();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchPendingRequests = async () => {
@@ -137,6 +138,7 @@ const Navigation = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isParent]);
 
   const handleLogout = async () => {

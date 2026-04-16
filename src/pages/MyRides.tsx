@@ -771,6 +771,7 @@ const MyRides = () => {
     } catch (error) {
       toast.error('Failed: ' + (error as Error).message);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   const handleAcceptRequest = useCallback(async (conversationId: string) => {
@@ -833,6 +834,7 @@ const MyRides = () => {
       toast.error('Failed to accept request: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   const handleDeclineRequest = useCallback(async (conversationId: string) => {
@@ -867,6 +869,7 @@ const MyRides = () => {
       toast.error('Failed to decline request: ' + err.message);
     }
     setAcceptDeclineLoading(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   const handleAcceptDirect = useCallback(async (requestId: string) => {
@@ -927,6 +930,7 @@ const MyRides = () => {
       toast.error('Failed to accept: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptingDirectRide, user, profile]);
 
   const handleDeclineDirect = useCallback(async (requestId: string) => {
@@ -959,6 +963,7 @@ const MyRides = () => {
       toast.error('Failed to decline: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   const handleCancelDirect = useCallback(async (ride: UnifiedRide) => {
@@ -990,6 +995,7 @@ const MyRides = () => {
     } catch (err) {
       toast.error('Failed: ' + (err as Error).message);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile]);
 
   const handleClearPastRides = useCallback(async () => {
