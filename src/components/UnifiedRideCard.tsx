@@ -457,13 +457,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
       >
       <Card className={`rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 bg-white/90 backdrop-blur-sm overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
         <CardContent className="p-5 space-y-4">
-          {/* Status Badge Row */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <Badge variant="outline" className={`${statusConfig.className} gap-1 text-sm px-3 py-1`}>
-              {StatusIcon && <StatusIcon className="h-3.5 w-3.5" />}
-              {statusConfig.label}
-            </Badge>
-            <div className="flex items-center gap-1.5">
+          {/* Frequent Partner Badge Row (Status badge removed per request) */}
+          {(isFrequentPartner || rideStatusBadge) && (
+            <div className="flex items-center justify-end flex-wrap gap-2">
               {isFrequentPartner && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 gap-0.5">
                   <Star className="h-3 w-3 fill-current" />
@@ -472,7 +468,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
               )}
               {rideStatusBadge}
             </div>
-          </div>
+          )}
 
           {/* Route Section */}
           <div className="space-y-2">
