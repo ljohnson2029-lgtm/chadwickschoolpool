@@ -293,7 +293,15 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setChildren(children.filter((_, idx) => idx !== i))}
+                        disabled={children.length <= 1}
+                        title={children.length <= 1 ? "At least one child is required" : "Remove child"}
+                        onClick={() => {
+                          if (children.length <= 1) {
+                            toast({ title: "At least one child is required", variant: "destructive" });
+                            return;
+                          }
+                          setChildren(children.filter((_, idx) => idx !== i));
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
