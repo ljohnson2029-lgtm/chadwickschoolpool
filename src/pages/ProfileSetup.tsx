@@ -674,7 +674,17 @@ const ProfileSetup = () => {
             )}
 
             {/* Parent-only: Vehicle Information */}
-            {isParent && <VehicleManager />}
+            {isParent && (
+              <div className="space-y-2">
+                <VehicleManager />
+                {attemptedSubmit && !hasValidVehicle && !vehiclesLoading && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    At least one vehicle is required. Please add a vehicle with all 4 fields filled out.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Parent-only: Children */}
             {isParent && (
