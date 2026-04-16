@@ -64,14 +64,14 @@ export function useVehicles() {
       is_primary: isPrimary,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    if (!error) await fetchVehicles();
+    if (!error) { await fetchVehicles(); broadcastChange(); }
     return error;
   };
 
   const updateVehicle = async (id: string, v: Partial<Vehicle>) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("vehicles").update(v as any).eq("id", id);
-    if (!error) await fetchVehicles();
+    if (!error) { await fetchVehicles(); broadcastChange(); }
     return error;
   };
 
@@ -88,6 +88,7 @@ export function useVehicles() {
         }
       }
       await fetchVehicles();
+      broadcastChange();
     }
     return error;
   };
@@ -100,6 +101,7 @@ export function useVehicles() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from("vehicles").update({ is_primary: true } as any).eq("id", id);
     await fetchVehicles();
+    broadcastChange();
   };
 
   const primaryVehicle = vehicles.find((v) => v.is_primary) || vehicles[0] || null;
