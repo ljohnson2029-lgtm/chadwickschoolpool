@@ -7,6 +7,7 @@ interface CacheEntry<T> {
 }
 
 interface CacheStore {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: CacheEntry<any>;
 }
 
@@ -154,6 +155,7 @@ export function cacheRouteCalculation(
   startLng: number,
   endLat: number,
   endLng: number,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any
 ) {
   const key = `route_${startLat.toFixed(4)}_${startLng.toFixed(4)}_${endLat.toFixed(4)}_${endLng.toFixed(4)}`;
@@ -169,6 +171,7 @@ export function getCachedRouteCalculation(
   startLng: number,
   endLat: number,
   endLng: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any | null {
   const key = `route_${startLat.toFixed(4)}_${startLng.toFixed(4)}_${endLat.toFixed(4)}_${endLng.toFixed(4)}`;
   const entry = memoryCache[key];

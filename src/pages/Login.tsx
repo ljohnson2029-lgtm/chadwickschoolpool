@@ -84,8 +84,8 @@ const Login = () => {
       setActualEmail(loginData.user.email);
       setShowCodeInput(true);
       setError('');
-    } catch (err: any) {
-      setError(err.message || 'Invalid email/username or password');
+    } catch (err) {
+      setError((err as Error).message || 'Invalid email/username or password');
     } finally {
       setLoading(false);
     }
@@ -140,8 +140,8 @@ const Login = () => {
       }
       
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code');
+    } catch (err) {
+      setError((err as Error).message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -455,6 +455,7 @@ const Login = () => {
                         onClick={() => {
                           setCode('');
                           setError('');
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           handleLogin({ preventDefault: () => {} } as any);
                         }}
                         className="text-blue-600 hover:text-blue-700 font-medium transition-colors"

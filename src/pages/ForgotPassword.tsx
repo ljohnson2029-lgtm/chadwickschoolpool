@@ -51,8 +51,8 @@ const ForgotPassword = () => {
 
       setStep('code');
       setSuccess('A verification code has been sent to your email.');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err) {
+      setError((err as Error).message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -76,8 +76,8 @@ const ForgotPassword = () => {
       setVerifiedCode(code.trim());
       setStep('newPassword');
       setSuccess('Identity verified! Enter your new password.');
-    } catch (err: any) {
-      setError(err.message || 'Invalid verification code');
+    } catch (err) {
+      setError((err as Error).message || 'Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -116,8 +116,8 @@ const ForgotPassword = () => {
 
       setSuccess('Password reset successfully! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+    } catch (err) {
+      setError((err as Error).message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }

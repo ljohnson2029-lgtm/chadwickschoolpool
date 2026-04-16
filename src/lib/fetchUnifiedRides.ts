@@ -17,12 +17,12 @@ async function fetchProfilesForIds(ids: string[]): Promise<Record<string, any>> 
   ]);
 
   if (!profiles) return {};
-  return profiles.reduce((acc, p) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return profiles.reduce((acc: Record<string, any>, p) => {
     const email = users?.find(u => u.user_id === p.id)?.email;
     acc[p.id] = { ...p, email };
     return acc;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }, {} as Record<string, any>);
+  }, {});
 }
 
 async function fetchChildrenForIds(ids: string[]): Promise<Record<string, { id: string; name: string; grade: string }[]>> {
@@ -170,7 +170,9 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   const otherUserIds = new Set<string>();
 
   if (pendingConvos) pendingConvos.forEach(c => otherUserIds.add(c.sender_id));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (joinedConvos) joinedConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (pendingSentConvos) pendingSentConvos.forEach(c => { if (c.rides?.user_id) otherUserIds.add(c.rides.user_id); });
   if (receivedConvos) receivedConvos.forEach(c => otherUserIds.add(c.sender_id));
   if (privateRequests) privateRequests.forEach(r => {
@@ -533,6 +535,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
 
           allRides.push({
             id: `series-${schedule.id}-${occ.date}-${occ.day}`,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             source: 'series' as any,
             rideType: 'offer',
             status: 'confirmed',
@@ -555,6 +558,7 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
               date: occ.date,
               driverId,
               otherParentId: otherId,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               driverVehicles: driverAllVehicles.map((v: any) => ({
                 car_make: v.car_make,
                 car_model: v.car_model,

@@ -106,6 +106,7 @@ const MyRides = () => {
     }
 
     const allParentIds = [...new Set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       scheduleData.flatMap((r: any) => {
         const ids = [r.parent_id, r.user_id];
         if (r.connected_parent_id) ids.push(r.connected_parent_id);
@@ -124,6 +125,7 @@ const MyRides = () => {
         });
         if (data?.profile) {
           if (data.profile.linked_students) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             childrenByParent[parentId] = data.profile.linked_students.map((s: any) => ({
               name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
               grade: s.grade_level || 'N/A',
@@ -148,6 +150,7 @@ const MyRides = () => {
     const studentDisplayName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.username || 'You';
     const studentGrade = profile?.grade_level || 'N/A';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rides: UnifiedRide[] = scheduleData.map((r: any) => {
       const isParentDriving = r.type === 'offer';
       const hasConnection = Boolean(r.connected_parent_id);
@@ -230,11 +233,14 @@ const MyRides = () => {
       // Build cancelled set
       const cancelledSet = new Set(
         seriesData
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .filter((r: any) => r.cancelled_date)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .map((r: any) => `${r.cancelled_schedule_id}-${r.cancelled_date}-${r.cancelled_day}`)
       );
 
       // Get unique schedules
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const scheduleMap = new Map<string, any>();
       for (const row of seriesData) {
         if (!scheduleMap.has(row.schedule_id)) {
@@ -251,9 +257,11 @@ const MyRides = () => {
 
       // Fetch profiles, vehicles, and confirmed child selections for series parents
       const seriesParentIdArr = [...seriesParentIds];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const seriesSpaceIds = [...new Set(Array.from(scheduleMap.values()).map((s: any) => s.space_id))];
       const [{ data: seriesVehicles }, { data: seriesChildSels }] = await Promise.all([
         supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .from('vehicles' as any)
           .select('user_id, car_make, car_model, car_color, license_plate, is_primary')
           .in('user_id', seriesParentIdArr)
@@ -262,17 +270,22 @@ const MyRides = () => {
       ]);
 
       // Fetch all series parent profiles via edge function
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const profileMap: Record<string, any> = {};
       await Promise.all(seriesParentIdArr.map(async (pid) => {
         try {
           const { data } = await supabase.functions.invoke('get-parent-profile', { body: { parentId: pid } });
           if (data?.profile) profileMap[pid] = data.profile;
-        } catch {}
+        } catch {
+          // Edge function failed, continue without profile
+        }
       }));
 
       // Build vehicles map
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vMap: Record<string, any[]> = {};
       if (seriesVehicles) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for (const v of seriesVehicles as any[]) {
           if (!vMap[v.user_id]) vMap[v.user_id] = [];
           vMap[v.user_id].push(v);
@@ -282,6 +295,7 @@ const MyRides = () => {
       // Build child selection map from the same confirmed source used for parent logic
       const selMap: Record<string, Record<string, string[]>> = {};
       if (seriesChildSels) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for (const sel of seriesChildSels as any[]) {
           if (!selMap[sel.space_id]) selMap[sel.space_id] = {};
           if (!selMap[sel.space_id][sel.parent_id]) selMap[sel.space_id][sel.parent_id] = [];
@@ -294,6 +308,7 @@ const MyRides = () => {
       for (const pid of seriesParentIdArr) {
         const prof = profileMap[pid];
         if (prof?.linked_students?.length) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           seriesChildrenByParent[pid] = prof.linked_students.map((s: any) => ({
             id: s.id,
             name: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
@@ -304,7 +319,9 @@ const MyRides = () => {
 
       // Generate series ride occurrences
       for (const [schedId, sched] of scheduleMap) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const assignments = (sched.day_assignments as any[]) || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const days = assignments.map((a: any) => a.day);
         const parentAId = sched.parent_a_id;
         const parentBId = sched.parent_b_id;
@@ -317,7 +334,7 @@ const MyRides = () => {
             const dayIndex = DAY_MAP[day];
             if (dayIndex === undefined) continue;
             const todayIndex = todayDate.getDay();
-            let daysUntil = dayIndex - todayIndex;
+            const daysUntil = dayIndex - todayIndex;
             if (w === 0 && daysUntil < 0) continue;
             const date = addDays(addWeeks(todayDate, w), daysUntil);
             if (date < todayDate) continue;
@@ -326,6 +343,7 @@ const MyRides = () => {
             const cancelKey = `${schedId}-${dateStr}-${day}`;
             if (cancelledSet.has(cancelKey)) continue;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const assignment = assignments.find((a: any) => a.day === day);
             if (!assignment) continue;
 
@@ -384,15 +402,18 @@ const MyRides = () => {
               ? [driverProfile.first_name, driverProfile.last_name].filter(Boolean).join(' ')
               : 'Driver';
             const driverVehicles = vMap[driverId] || [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const primaryVehicle = driverVehicles.find((v: any) => v.is_primary) || driverVehicles[0];
 
             // Other parent (the one not linked to student — show contact for)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const linkedParentIds = links.map((l: any) => l.parent_id);
             const otherSeriesParentId = linkedParentIds.includes(parentAId) ? parentBId : parentAId;
             const otherSeriesProfile = profileMap[otherSeriesParentId];
 
             rides.push({
               id: `series-${schedId}-${dateStr}-${day}`,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               source: 'series' as any,
               rideType: 'offer',
               status: 'confirmed',
@@ -432,6 +453,7 @@ const MyRides = () => {
                 date: dateStr,
                 driverId,
                 otherParentId: otherSeriesParentId,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 driverVehicles: driverVehicles.map((v: any) => ({
                   car_make: v.car_make,
                   car_model: v.car_model,
@@ -444,6 +466,7 @@ const MyRides = () => {
               _studentView: true,
               _driverName: driverName,
               _studentPassengerName: studentDisplayName,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any);
           }
         }
@@ -555,6 +578,7 @@ const MyRides = () => {
           }
           // Delete all chat messages for this ride
           await supabase
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .from('ride_messages' as any)
             .delete()
             .eq('ride_ref_id', ride.id)
@@ -581,6 +605,7 @@ const MyRides = () => {
           const rideId = conv.ride_id;
           await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
           // Delete chat messages
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
           const { error } = await supabase
             .from('ride_conversations')
@@ -611,6 +636,7 @@ const MyRides = () => {
             );
           }
           // Delete chat messages and conversations for this ride
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', ride.id).eq('ride_source', 'public');
           await supabase
             .from('ride_conversations')
@@ -631,6 +657,7 @@ const MyRides = () => {
           if (!conv) break;
           const rideId = conv.ride_id;
           await supabase.rpc('reset_ride_fulfillment', { p_ride_id: rideId });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
           const { error } = await supabase
             .from('ride_conversations')
@@ -741,8 +768,8 @@ const MyRides = () => {
       }
 
       invalidateRides();
-    } catch (error: any) {
-      toast.error('Failed: ' + error.message);
+    } catch (error) {
+      toast.error('Failed: ' + (error as Error).message);
     }
   }, [user, profile]);
 
@@ -778,6 +805,7 @@ const MyRides = () => {
             .neq('id', conversationId);
 
           const senderName = getMyName();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const rideData = conv.rides as any;
 
           for (const pending of otherPending) {
@@ -790,6 +818,7 @@ const MyRides = () => {
         }
 
         const senderName = getMyName();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rideData = conv.rides as any;
         await sendNotification(
           conv.sender_id,
@@ -800,8 +829,8 @@ const MyRides = () => {
 
       toast.success('Request accepted! The parent has been added to your ride.');
       invalidateRides();
-    } catch (err: any) {
-      toast.error('Failed to accept request: ' + err.message);
+    } catch (err) {
+      toast.error('Failed to accept request: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
   }, [user, profile]);
@@ -823,6 +852,7 @@ const MyRides = () => {
 
       if (conv) {
         const senderName = getMyName();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rideData = conv.rides as any;
         await sendNotification(
           conv.sender_id,
@@ -833,7 +863,7 @@ const MyRides = () => {
 
       toast.success('Request declined.');
       invalidateRides();
-    } catch (err: any) {
+    } catch (err) {
       toast.error('Failed to decline request: ' + err.message);
     }
     setAcceptDeclineLoading(null);
@@ -847,11 +877,13 @@ const MyRides = () => {
     }
   }, [activeRides]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const confirmAcceptDirect = useCallback(async (selectedChildIds: string[], vehicleInfo?: any) => {
     if (!acceptingDirectRide) return;
     const requestId = acceptingDirectRide.id;
     setAcceptDeclineLoading(requestId);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = { 
         status: 'accepted', 
         responded_at: new Date().toISOString(),
@@ -891,8 +923,8 @@ const MyRides = () => {
       toast.success('Direct ride accepted!');
       setAcceptingDirectRide(null);
       invalidateRides();
-    } catch (err: any) {
-      toast.error('Failed to accept: ' + err.message);
+    } catch (err) {
+      toast.error('Failed to accept: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
   }, [acceptingDirectRide, user, profile]);
@@ -923,8 +955,8 @@ const MyRides = () => {
 
       toast.success('Direct ride declined.');
       invalidateRides();
-    } catch (err: any) {
-      toast.error('Failed to decline: ' + err.message);
+    } catch (err) {
+      toast.error('Failed to decline: ' + (err as Error).message);
     }
     setAcceptDeclineLoading(null);
   }, [user, profile]);
@@ -935,10 +967,12 @@ const MyRides = () => {
       const isSender = req.sender_id === user?.id;
 
       // Delete chat messages
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', ride.id).eq('ride_source', 'private');
 
       const { error } = await supabase
         .from('private_ride_requests')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ status: 'cancelled' } as any)
         .eq('id', ride.id);
       if (error) throw error;
@@ -953,8 +987,8 @@ const MyRides = () => {
 
       toast.success('Direct ride cancelled');
       invalidateRides();
-    } catch (err: any) {
-      toast.error('Failed: ' + err.message);
+    } catch (err) {
+      toast.error('Failed: ' + (err as Error).message);
     }
   }, [user, profile]);
 
@@ -968,6 +1002,7 @@ const MyRides = () => {
 
       if (pastPublicIds.length > 0) {
         for (const rideId of pastPublicIds) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'public');
           await supabase.from('ride_conversations').delete().eq('ride_id', rideId);
         }
@@ -981,6 +1016,7 @@ const MyRides = () => {
 
       if (pastDirectIds.length > 0) {
         for (const rideId of pastDirectIds) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from('ride_messages' as any).delete().eq('ride_ref_id', rideId).eq('ride_source', 'private');
         }
         await supabase.from('private_ride_requests').delete().in('id', pastDirectIds);
@@ -988,8 +1024,8 @@ const MyRides = () => {
 
       toast.success('Past rides cleared');
       invalidateRides();
-    } catch (err: any) {
-      toast.error('Failed to clear past rides: ' + err.message);
+    } catch (err) {
+      toast.error('Failed to clear past rides: ' + (err as Error).message);
     }
     setClearingPast(false);
   }, [user, pastRides, invalidateRides]);

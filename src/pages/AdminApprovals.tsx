@@ -54,7 +54,7 @@ const AdminApprovals = () => {
 
       setAuthorized(true);
       setRequests(data.requests || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching requests:", err);
       toast({ title: "Error", description: "Failed to load requests", variant: "destructive" });
     } finally {
@@ -86,8 +86,8 @@ const AdminApprovals = () => {
       }
 
       fetchRequests();
-    } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Action failed", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Error", description: (err as Error)?.message || "Action failed", variant: "destructive" });
     } finally {
       setActionLoading(null);
     }

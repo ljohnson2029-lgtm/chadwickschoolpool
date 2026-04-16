@@ -143,10 +143,10 @@ export default function Help() {
       setName("");
       setSubject("");
       setMessage("");
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Failed to send",
-        description: error.message || "Please try again later or email us directly.",
+        description: (error as Error).message || "Please try again later or email us directly.",
         variant: "destructive",
       });
     } finally {

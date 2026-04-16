@@ -32,10 +32,10 @@ const AdminVerifiedEmails = () => {
       if (error) throw error;
 
       setEmails(data || []);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to fetch verified emails",
+        description: (error as Error).message || "Failed to fetch verified emails",
         variant: "destructive",
       });
     } finally {

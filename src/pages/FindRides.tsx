@@ -125,6 +125,7 @@ const FindRides = () => {
 
     const userIds = [...new Set(ridesData?.map(r => r.user_id) || [])];
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let profilesMap: Record<string, any> = {};
     let emailsMap: Record<string, string> = {};
     
@@ -138,6 +139,7 @@ const FindRides = () => {
         profilesMap = profilesData.reduce((acc, p) => {
           acc[p.id] = p;
           return acc;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }, {} as Record<string, any>);
       }
 
@@ -162,18 +164,20 @@ const FindRides = () => {
 
    // Fetch accepted conversations to mark rides as "full"
    // Use is_fulfilled column from rides table for "Ride Full" status
-   const ridesWithConnectionStatus = combinedData.map(ride => ({
-     ...ride,
-     hasAcceptedConnection: (ride as any).is_fulfilled === true
-   }));
+    const ridesWithConnectionStatus = combinedData.map(ride => ({
+      ...ride,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      hasAcceptedConnection: (ride as any).is_fulfilled === true
+    }));
    
    // Keep this for backwards compatibility but it's now derived from is_fulfilled
    const acceptedIds = new Set(
      ridesWithConnectionStatus.filter(r => r.hasAcceptedConnection).map(r => r.id)
    );
-   setAcceptedRideIds(acceptedIds);
-   
-   setBroadcasts(ridesWithConnectionStatus as any);
+    setAcceptedRideIds(acceptedIds);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setBroadcasts(ridesWithConnectionStatus as any);
     setLoadingRides(false);
   };
 

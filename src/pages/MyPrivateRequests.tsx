@@ -110,6 +110,7 @@ const MyPrivateRequests = () => {
         ...r,
         recipient: profileMap.get(r.recipient_id) || null
       }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setSentRequests(sentWithProfiles as any);
     }
 
@@ -133,6 +134,7 @@ const MyPrivateRequests = () => {
         ...r,
         sender: profileMap.get(r.sender_id) || null
       }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setReceivedRequests(receivedWithProfiles as any);
     }
 

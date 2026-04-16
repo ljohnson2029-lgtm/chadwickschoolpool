@@ -51,10 +51,10 @@ const EmailVerification = () => {
       } else {
         throw new Error(data?.error || "Failed to send code");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to send verification code",
+        description: (error as Error).message || "Failed to send verification code",
         variant: "destructive",
       });
     } finally {
@@ -99,7 +99,7 @@ const EmailVerification = () => {
       } else {
         throw new Error(data?.error || "Invalid or expired code");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Wrong code",
         description: "Please try again or request a new code",

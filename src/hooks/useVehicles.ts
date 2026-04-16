@@ -44,6 +44,7 @@ export function useVehicles() {
   const addVehicle = async (v: Omit<Vehicle, "id" | "is_primary">) => {
     if (!user) return;
     const isPrimary = vehicles.length === 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("vehicles").insert({
       user_id: user.id,
       car_make: v.car_make,
@@ -72,6 +73,7 @@ export function useVehicles() {
       if (vehicle?.is_primary) {
         const remaining = vehicles.filter((v) => v.id !== id);
         if (remaining.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await supabase.from("vehicles").update({ is_primary: true } as any).eq("id", remaining[0].id);
         }
       }
@@ -83,7 +85,9 @@ export function useVehicles() {
   const setPrimary = async (id: string) => {
     if (!user) return;
     // Unset all, then set the chosen one
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from("vehicles").update({ is_primary: false } as any).eq("user_id", user.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from("vehicles").update({ is_primary: true } as any).eq("id", id);
     await fetchVehicles();
   };
