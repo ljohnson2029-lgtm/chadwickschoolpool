@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
-import { Car, History, Info, LinkIcon, RefreshCw, Trash2, Sparkles, Calendar, TrendingUp } from "lucide-react";
+import { Car, History, Info, LinkIcon, RefreshCw, Trash2, Sparkles, Calendar, TrendingUp, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
