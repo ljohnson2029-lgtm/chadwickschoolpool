@@ -478,6 +478,23 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  const isFormValid =
+    !!firstName.trim() &&
+    !!lastName.trim() &&
+    !!username.trim() &&
+    !!password &&
+    passwordRegex.test(password) &&
+    !!confirmPassword &&
+    password === confirmPassword &&
+    (isStudentEmail
+      ? true
+      : !!phoneNumber.trim() &&
+        isValidPhoneNumber(phoneNumber) &&
+        insuranceAgreed &&
+        safetyAgreed &&
+        liabilityAgreed);
+
   return (
     <>
       <Navigation />
@@ -873,7 +890,11 @@ const Register = () => {
 
               <LoadingButton 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300" 
+                className={`w-full transition-all duration-300 ${
+                  isFormValid
+                    ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl cursor-pointer"
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                }`}
                 loading={loading}
                 loadingText="Creating Account..."
                 disabled={loading}

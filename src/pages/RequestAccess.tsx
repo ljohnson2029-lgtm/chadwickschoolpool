@@ -20,7 +20,6 @@ const requestSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100),
   requester_type: z.enum(["parent", "student"], { required_error: "Please select your role" }),
   attends_chadwick: z.enum(["yes", "no"], { required_error: "Please answer this question" }),
-  reason: z.string().trim().min(1, "Please tell us why you need access").max(500),
 });
 
 type RequestFormValues = z.infer<typeof requestSchema>;
@@ -34,7 +33,6 @@ const RequestAccess = () => {
     defaultValues: {
       email: "",
       full_name: "",
-      reason: "",
     },
   });
 
@@ -204,24 +202,7 @@ const RequestAccess = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="reason"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Why do you need access? *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Tell us briefly why you'd like to join SchoolPool..."
-                          className="resize-none"
-                          rows={3}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <Button type="submit" className="w-full" disabled={submitting}>
                   <Send className="w-4 h-4 mr-2" />
