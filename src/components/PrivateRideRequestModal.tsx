@@ -172,6 +172,15 @@ const PrivateRideRequestModal = ({
   };
 
   const onSubmit = async (values: RequestFormValues) => {
+    // Block past date/time
+    if (!isFutureDateAndTime(values.ride_date, values.pickup_time)) {
+      toast({
+        title: "Invalid Date/Time",
+        description: PAST_DATETIME_ERROR,
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
 
     try {

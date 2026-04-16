@@ -126,6 +126,10 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
 
   const onSubmit = async (values: FormValues) => {
     if (!profile) return;
+    if (!isFutureDateAndTime(values.ride_date, values.pickup_time)) {
+      toast({ title: "Invalid Date/Time", description: PAST_DATETIME_ERROR, variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
 
     try {
