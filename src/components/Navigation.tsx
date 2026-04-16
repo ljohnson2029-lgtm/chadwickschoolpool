@@ -1,19 +1,38 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, Car, Home, HelpCircle } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Menu, 
+  X, 
+  Car, 
+  Home, 
+  ChevronDown,
+  Bell,
+  User,
+  Settings,
+  LogOut,
+  MapPin,
+  Calendar,
+  Users,
+  Shield,
+  Sparkles
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationDropdown } from "./NotificationDropdown";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Premium navigation with glassmorphism and animations
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,6 +41,7 @@ const Navigation = () => {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingAccessRequests, setPendingAccessRequests] = useState(0);
+  const [profile, setProfile] = useState<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,9 +49,9 @@ const Navigation = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -43,25 +63,28 @@ const Navigation = () => {
         setPendingRequestsCount(0);
         setIsAdmin(false);
         setPendingAccessRequests(0);
+        setProfile(null);
         return;
       }
       
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
+      // Fetch profile and role
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('account_type, first_name, last_name, username')
+        .eq('id', user.id)
         .maybeSingle();
       
-      if (data) {
-        setUserRole(data.role);
-        setIsParent(data.role === 'parent');
+      if (profileData) {
+        setProfile(profileData);
+        setUserRole(profileData.account_type);
+        setIsParent(profileData.account_type === 'parent');
         
-        if (data.role === 'parent') {
+        if (profileData.account_type === 'parent') {
           fetchPendingRequests();
         }
       }
 
-      // Check admin status via edge function
+      // Check admin status
       try {
         const { data: adminData, error } = await supabase.functions.invoke("manage-access-requests", {
           method: "GET",
@@ -93,7 +116,7 @@ const Navigation = () => {
     setPendingRequestsCount(count || 0);
   };
 
-  // Real-time subscription for pending requests
+  // Real-time subscription
   useEffect(() => {
     if (!user || !isParent) return;
 
@@ -107,270 +130,273 @@ const Navigation = () => {
           table: 'account_links',
           filter: `parent_id=eq.${user.id}`,
         },
-        () => {
-          fetchPendingRequests();
-        }
+        () => fetchPendingRequests()
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, isParent]);
 
-  const scrollToSection = (id: string) => {
-    if (location.pathname !== "/") {
-      navigate("/");
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) {
-          const offset = 80;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - offset;
-          window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-        }
-      }, 100);
-    } else {
-      const element = document.getElementById(id);
-      if (element) {
-        const offset = 80;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
-        window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-      }
-    }
-    setIsMobileMenuOpen(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
-  // Define navigation item type
-  type NavItem = {
-    label: string;
-    path: string;
-    authRequired?: boolean;
-    parentOnly?: boolean;
-  };
-
-  // Main navigation items (same for all users)
-  const mainNavItems: NavItem[] = [
-    { label: "Features", path: "/features", authRequired: true },
-    { label: "Dashboard", path: "/dashboard", authRequired: true },
+  const navItems = [
+    { label: "Find Rides", path: "/find-rides", icon: MapPin, auth: true },
+    { label: "Dashboard", path: "/dashboard", icon: Home, auth: true },
+    ...(isParent ? [{ label: "My Rides", path: "/my-rides", icon: Car, auth: true }] : []),
+    ...(isParent ? [{ label: "Calendar", path: "/series", icon: Calendar, auth: true }] : []),
   ];
 
-  // Additional navigation items (in hamburger menu)
-  const moreNavItems: NavItem[] = [
-    { label: "About", path: "/about" },
-    { label: "Safety", path: "/safety" },
-    { label: "How It Works", path: "/how-it-works" },
-    { label: "Help Center", path: "/help" },
-    { label: "Give Feedback", path: "/feedback" },
-    { label: "Privacy Policy", path: "/privacy" },
-    { label: "Settings", path: "/settings", authRequired: true },
-  ];
-
-  // Student-specific navigation items
-  const studentNavItems: NavItem[] = [
-    { label: "Family Links", path: "/family-links", authRequired: true },
-  ];
-
-  const navClasses = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled
-      ? "bg-background/95 backdrop-blur-xl border-b border-border/50 shadow-lg"
-      : "bg-background/80 backdrop-blur-md border-b border-border/30"
-  }`;
-
-  const textColorClass = "text-foreground";
-  const hoverColorClass = "hover:text-primary";
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className={navClasses}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <button
-            onClick={() => navigate("/")}
-            className={`flex items-center gap-2 text-2xl font-bold transition-all duration-300 ${textColorClass} hover:scale-105`}
-          >
-            <div className="relative">
-              <Car className="w-8 h-8" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-glow" />
-            </div>
-            <span className={textColorClass}>SchoolPool</span>
-          </button>
-
-          {/* Desktop Navigation - Home Icon + Main Items + More Menu */}
-          <div className="hidden md:flex items-center space-x-6">
-            {/* Home Icon Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              className={`transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-110`}
-              aria-label="Home"
+    <>
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          isScrolled
+            ? "bg-white/80 backdrop-blur-2xl border-b border-gray-200/50 shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+            : isHomePage
+            ? "bg-transparent"
+            : "bg-white/60 backdrop-blur-xl border-b border-gray-200/30"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 lg:h-18">
+            {/* Logo */}
+            <motion.div 
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => navigate(user ? "/dashboard" : "/")}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Home className="h-5 w-5" />
-            </Button>
-
-            {/* Main Navigation Buttons */}
-            {mainNavItems.map((item) => {
-              if (item.authRequired && !user) return null;
-              return (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  onClick={() => navigate(item.path)}
-                  className={`relative text-[15px] font-medium transition-all duration-200 ${textColorClass} ${hoverColorClass} hover:scale-105`}
-                >
-                  {item.label}
-                </Button>
-              );
-            })}
-
-            {/* Profile/Login Button */}
-            {user ? (
-              <div className="flex items-center gap-3">
-                {userRole && (
-                  <Badge 
-                    variant={userRole === 'student' ? 'secondary' : 'default'}
-                    className={`hidden sm:flex ${
-                      userRole === 'student' 
-                        ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' 
-                        : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
-                    }`}
-                  >
-                    {userRole === 'student' ? 'Student - View Only' : 'Parent Account'}
-                  </Badge>
-                )}
-                <NotificationDropdown />
-                <Button
-                  onClick={() => navigate("/profile")}
-                  className="rounded-full px-6 py-2 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-250"
-                >
-                  Profile
-                </Button>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <Car className="w-5 h-5 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
               </div>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/login")}
-                  className="rounded-full px-6 transition-all duration-250 hover:scale-105 hover:-translate-y-0.5"
-                >
-                  Log In
-                </Button>
-                <Button
-                  onClick={() => navigate("/register")}
-                  className="rounded-full px-7 py-2.5 bg-gradient-to-r from-primary to-secondary text-white hover:scale-105 hover:shadow-2xl hover:-translate-y-1 hover:brightness-110 transition-all duration-250 shadow-lg"
-                >
-                  Sign Up
-                </Button>
-              </>
-            )}
-          </div>
+              <div className="flex flex-col">
+                <span className={`font-bold text-lg tracking-tight transition-colors ${
+                  isScrolled || !isHomePage ? "text-gray-900" : "text-gray-900"
+                }`}>
+                  SchoolPool
+                </span>
+                <span className={`text-[10px] -mt-1 font-medium tracking-wider uppercase ${
+                  isScrolled || !isHomePage ? "text-gray-500" : "text-gray-500"
+                }`}>
+                  Chadwick
+                </span>
+              </div>
+            </motion.div>
 
-          {/* Mobile: Notification Bell + Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            {user && <NotificationDropdown />}
-            <button
-              className="p-2 transition-transform duration-200 hover:scale-110"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? (
-                <X className={`h-6 w-6 ${textColorClass}`} />
-              ) : (
-                <Menu className={`h-6 w-6 ${textColorClass}`} />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => (
+                (!item.auth || user) && (
+                  <motion.button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                      isActive(item.path)
+                        ? "text-blue-600 bg-blue-50/80"
+                        : isScrolled || !isHomePage
+                        ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+                        : "text-gray-700 hover:text-gray-900 hover:bg-white/40"
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                    {isActive(item.path) && (
+                      <motion.div
+                        layoutId="navIndicator"
+                        className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full"
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </motion.button>
+                )
+              ))}
+            </div>
 
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-foreground/95 backdrop-blur-xl border-t border-border animate-fade-in">
-          <div className="px-4 py-6 space-y-1">
-            {/* Home button in mobile menu */}
-            <button
-              onClick={() => {
-                navigate("/");
-                setIsMobileMenuOpen(false);
-              }}
-              className="flex items-center gap-3 w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
-            >
-              <Home className="h-5 w-5" />
-              Home
-            </button>
-            
-            {[...mainNavItems, ...moreNavItems, ...(userRole === 'student' ? studentNavItems : [])].map((item, index) => {
-              if (item.authRequired && !user) return null;
-              if (item.parentOnly && !isParent) return null;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  navigate("/admin/approvals");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center justify-between w-full text-left px-4 py-3 text-background hover:bg-background/10 rounded-lg transition-all duration-200 font-medium"
-              >
-                <span>Admin</span>
-                {pendingAccessRequests > 0 && (
-                  <Badge variant="destructive">{pendingAccessRequests}</Badge>
-                )}
-              </button>
-            )}
-            
-            <div className="pt-4 space-y-3">
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-2">
               {user ? (
-                <Button
-                  onClick={() => {
-                    navigate("/profile");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full bg-gradient-to-r from-primary to-secondary text-white"
-                >
-                  Profile
-                </Button>
-              ) : (
                 <>
+                  {/* Notifications */}
+                  <NotificationDropdown />
+                  
+                  {/* Profile Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <motion.button
+                        className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100/80 transition-all"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Avatar className="w-8 h-8 ring-2 ring-white shadow-md">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-semibold">
+                            {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <ChevronDown className="w-4 h-4 text-gray-500 hidden sm:block" />
+                      </motion.button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 glass-card">
+                      <div className="px-3 py-2 border-b border-gray-100">
+                        <p className="font-semibold text-gray-900">{profile?.first_name} {profile?.last_name}</p>
+                        <p className="text-xs text-gray-500">@{profile?.username}</p>
+                      </div>
+                      <DropdownMenuItem onClick={() => navigate("/profile")} className="gap-2">
+                        <User className="w-4 h-4" /> Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/settings")} className="gap-2">
+                        <Settings className="w-4 h-4" /> Settings
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem onClick={() => navigate("/admin/approvals")} className="gap-2">
+                          <Shield className="w-4 h-4" /> Admin
+                          {pendingAccessRequests > 0 && (
+                            <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs">
+                              {pendingAccessRequests}
+                            </Badge>
+                          )}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="gap-2 text-red-600">
+                        <LogOut className="w-4 h-4" /> Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    onClick={() => {
-                      navigate("/login");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full text-background border border-background/30 hover:bg-background/10"
+                    className={`hidden sm:flex ${isScrolled || !isHomePage ? "text-gray-700" : "text-gray-700"}`}
+                    onClick={() => navigate("/login")}
                   >
-                    Log In
+                    Log in
                   </Button>
                   <Button
-                    onClick={() => {
-                      navigate("/register");
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full bg-gradient-to-r from-primary to-secondary text-white"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                    onClick={() => navigate("/register")}
                   >
-                    Sign Up
+                    <Sparkles className="w-4 h-4 mr-1.5" />
+                    Sign up
                   </Button>
-                </>
+                </div>
               )}
+
+              {/* Mobile Menu Button */}
+              <motion.button
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100/80 transition-colors"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                whileTap={{ scale: 0.95 }}
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6 text-gray-700" />
+                ) : (
+                  <Menu className="w-6 h-6 text-gray-700" />
+                )}
+              </motion.button>
             </div>
           </div>
         </div>
-      )}
-    </nav>
+      </motion.nav>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 top-16 z-40 lg:hidden"
+          >
+            <div className="mx-4 mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 overflow-hidden">
+              <div className="p-4 space-y-1">
+                {navItems.map((item, index) => (
+                  (!item.auth || user) && (
+                    <motion.button
+                      key={item.path}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => {
+                        navigate(item.path);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                        isActive(item.path)
+                          ? "bg-blue-50 text-blue-600"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {item.label}
+                    </motion.button>
+                  )
+                ))}
+                
+                {user && (
+                  <>
+                    <div className="h-px bg-gray-200 my-2" />
+                    <motion.button
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                      onClick={() => {
+                        navigate("/profile");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <User className="w-5 h-5" />
+                      Profile
+                    </motion.button>
+                    <motion.button
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.35 }}
+                      onClick={() => {
+                        navigate("/settings");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <Settings className="w-5 h-5" />
+                      Settings
+                    </motion.button>
+                    <motion.button
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Log out
+                    </motion.button>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

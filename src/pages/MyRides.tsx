@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -7,7 +8,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { EmptyState } from "@/components/EmptyState";
-import { Car, History, Info, LinkIcon, RefreshCw, Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Car, History, Info, LinkIcon, RefreshCw, Trash2, Sparkles, Calendar, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { UnifiedRideCard, UnifiedRideCardSkeleton, type UnifiedRide, type CancelAction } from "@/components/UnifiedRideCard";
@@ -29,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, startOfToday } from "date-fns";
+import { useScrollReveal, useCountUp, useStaggeredAnimation } from "@/lib/animations";
 
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
@@ -1059,86 +1062,215 @@ const MyRides = () => {
     );
   };
 
+  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
+  const { ref: statsRef, isVisible: statsVisible } = useScrollReveal<HTMLDivElement>();
+  const activeCount = useCountUp(activeRides.length, 1000);
+  const pastCount = useCountUp(pastRides.length, 1000);
+
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 max-w-4xl">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30"
+      >
+      <div className="container mx-auto px-4 max-w-4xl py-8">
         <Breadcrumbs items={[{ label: "My Rides" }]} />
 
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">My Rides</h1>
-            <p className="text-muted-foreground">
-              {isStudent
-                ? "Rides scheduled by your parent"
-                : "All your rides in one place"}
-            </p>
+        {/* Premium Header with Animation */}
+        <motion.div
+          ref={headerRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={headerVisible ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <motion.div 
+                className="flex items-center gap-3 mb-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={headerVisible ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={headerVisible ? { scale: 1, rotate: 0 } : {}}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25"
+                >
+                  <Car className="w-6 h-6 text-white" />
+                </motion.div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+                    My Rides
+                  </h1>
+                </div>
+              </motion.div>
+              <motion.p 
+                className="text-gray-500 ml-15 pl-15"
+                initial={{ opacity: 0 }}
+                animate={headerVisible ? { opacity: 1 } : {}}
+                transition={{ delay: 0.3 }}
+              >
+                {isStudent
+                  ? "Rides scheduled by your parent"
+                  : "All your rides in one place"}
+              </motion.p>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={headerVisible ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0 bg-white/80 backdrop-blur-sm hover:bg-white shadow-sm"
+                disabled={refreshing || loadingData}
+                onClick={handleRefresh}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </motion.div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 shrink-0"
-            disabled={refreshing || loadingData}
-            onClick={handleRefresh}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <motion.div
+          ref={statsRef}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={statsVisible ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="bg-gradient-to-br from-blue-500/5 to-blue-600/5 border-blue-200/50 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-gray-500">Active</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{activeCount}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-gray-500/5 to-gray-600/5 border-gray-200/50 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-500">Past</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{pastCount}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-emerald-500/5 to-emerald-600/5 border-emerald-200/50 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm text-gray-500">This Week</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {activeRides.filter(r => {
+                  const rideDate = new Date(r.rideDate);
+                  const today = new Date();
+                  const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                  return rideDate >= today && rideDate <= weekFromNow;
+                }).length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-500/5 to-purple-600/5 border-purple-200/50 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span className="text-sm text-gray-500">Status</span>
+              </div>
+              <p className="text-lg font-semibold text-gray-900 mt-1">
+                {activeRides.length > 0 ? "Active" : "Ready"}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {isStudent && (
-          <Alert className="mb-4 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
-              These rides were arranged by your linked parent account. Contact your parent to make changes.
-            </AlertDescription>
-          </Alert>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-6"
+          >
+            <Alert className="rounded-2xl border-blue-200 bg-blue-50/80 backdrop-blur-sm dark:border-blue-800 dark:bg-blue-950/20">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+                These rides were arranged by your linked parent account. Contact your parent to make changes.
+              </AlertDescription>
+            </Alert>
+          </motion.div>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="active" className="gap-1.5">
+          <TabsList className="mb-4 bg-white/80 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger value="active" className="gap-1.5 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Car className="h-4 w-4" />
               {isStudent ? 'Upcoming' : 'Active'} ({activeRides.length})
             </TabsTrigger>
-            <TabsTrigger value="past" className="gap-1.5">
+            <TabsTrigger value="past" className="gap-1.5 rounded-lg data-[state=active]:bg-gray-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Past ({pastRides.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active">
-            {renderRideList(activeRides, false)}
-          </TabsContent>
+          <AnimatePresence mode="wait">
+            <TabsContent value="active" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderRideList(activeRides, false)}
+              </motion.div>
+            </TabsContent>
 
-          <TabsContent value="past">
-            {!isStudent && pastRides.length > 0 && (
-              <div className="flex justify-end mb-4">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" disabled={clearingPast}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Clear Past Rides
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Clear all past rides?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently remove all your past rides and their associated messages. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearPastRides} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Clear All
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
-            {renderRideList(pastRides, true)}
-          </TabsContent>
+            <TabsContent value="past" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {!isStudent && pastRides.length > 0 && (
+                  <div className="flex justify-end mb-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" disabled={clearingPast}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Clear Past Rides
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Clear all past rides?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently remove all your past rides and their associated messages. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleClearPastRides} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Clear All
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
+                {renderRideList(pastRides, true)}
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
         </Tabs>
 
         {/* Accept Direct Ride Dialog with Children Selector */}
@@ -1155,6 +1287,7 @@ const MyRides = () => {
           />
         )}
       </div>
+      </motion.div>
     </DashboardLayout>
   );
 };

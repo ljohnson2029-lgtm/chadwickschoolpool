@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,9 +12,10 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { GRADE_LEVELS, PARENT_GRADE_LEVEL } from "@/constants/gradeLevels";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
-import { User, GraduationCap, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle } from "lucide-react";
+import { User, GraduationCap, Home, Phone, Mail, Link2, ArrowRight, ArrowLeft, CheckCircle2, Plus, Trash2, Users, AlertCircle, Sparkles } from "lucide-react";
 import VehicleManager from "@/components/VehicleManager";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
+import { useScrollReveal } from "@/lib/animations";
 
 interface Child {
   first_name: string;
@@ -453,7 +455,11 @@ const ProfileSetup = () => {
   if (loading || !user || !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <motion.div 
+          className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
@@ -462,46 +468,91 @@ const ProfileSetup = () => {
   const step2Valid = isStep2Valid();
 
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div 
+      className="min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">{isEditMode ? "Edit Your Profile" : "Complete Your Profile"}</h1>
-          <p className="text-muted-foreground">
+        {/* Premium Header */}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+            className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25"
+          >
+            <Sparkles className="h-8 w-8 text-white" />
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-2">
+            {isEditMode ? "Edit Your Profile" : "Complete Your Profile"}
+          </h1>
+          <p className="text-gray-500">
             Step {step} of {totalSteps}:{" "}
             {step === 1 && "Welcome"}
             {step === 2 && "Your Information"}
             {step === 3 && "Link Accounts"}
           </p>
-          <Progress value={progressPercent} className="mt-4" />
+          <div className="mt-4 bg-white/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
+            <Progress value={progressPercent} className="h-2" />
+          </div>
           {step === 2 && (
             <p className="text-xs text-muted-foreground mt-2">Required fields marked with <span className="text-destructive">*</span></p>
           )}
-        </div>
+        </motion.div>
 
+        {/* Steps with AnimatePresence */}
+        <AnimatePresence mode="wait">
         {/* Step 1: Welcome */}
         {step === 1 && (
-          <Card>
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+          <Card className="rounded-2xl border-gray-100 bg-white/90 backdrop-blur-sm shadow-lg">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                {isParent ? <User className="h-8 w-8 text-primary" /> : <GraduationCap className="h-8 w-8 text-primary" />}
-              </div>
+              <motion.div 
+                className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center"
+                whileHover={{ scale: 1.05 }}
+              >
+                {isParent ? <User className="h-8 w-8 text-blue-600" /> : <GraduationCap className="h-8 w-8 text-blue-600" />}
+              </motion.div>
               <CardTitle className="text-2xl">Welcome, {profile.username}!</CardTitle>
               <CardDescription className="text-base">
                 Your {isParent ? "parent" : "student"} account has been created. Let's set up your profile so you can start using the app.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Button size="lg" onClick={() => setStep(2)} className="gap-2">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button size="lg" onClick={() => setStep(2)} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/25">
+                  Get Started <ArrowRight className="h-4 w-4" />
+                </Button>
+              </motion.div>
             </CardContent>
           </Card>
+          </motion.div>
         )}
 
         {/* Step 2: Profile Information */}
         {step === 2 && (
-          <div className="space-y-6" ref={formRef}>
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+            ref={formRef}
+          >
             {/* Personal Info */}
             <Card>
               <CardHeader>
@@ -731,12 +782,19 @@ const ProfileSetup = () => {
                 {saving ? "Saving..." : step2Valid ? "Save & Continue" : "Complete required fields"} <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Step 3: Account Linking */}
         {step === 3 && (
-          <div className="space-y-6">
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
             <Card>
               <CardHeader className="text-center">
                 <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -797,10 +855,11 @@ const ProfileSetup = () => {
                 {saving ? "Finishing..." : linkSent ? "Continue to App" : "Skip for Now"} <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

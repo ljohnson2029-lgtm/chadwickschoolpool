@@ -1,16 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { 
+  Car, 
+  Mail, 
+  Lock, 
+  ArrowRight, 
+  Shield, 
+  Zap,
+  Eye,
+  EyeOff,
+  Sparkles,
+  CheckCircle2,
+  ChevronLeft
+} from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import CreatorFooter from '@/components/CreatorFooter';
 import AddressRequiredModal from '@/components/AddressRequiredModal';
+import { useScrollReveal, useCountUp } from '@/lib/animations';
 
+// Premium Login Page with Apple/ESPN-quality design
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +34,8 @@ const Login = () => {
   const [error, setError] = useState('');
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
   const [actualEmail, setActualEmail] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [userAccountType, setUserAccountType] = useState<'student' | 'parent'>('parent');
@@ -28,10 +44,14 @@ const Login = () => {
   
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { ref: heroRef, isVisible: heroVisible } = useScrollReveal<HTMLDivElement>();
+
+  // Animated counters for stats
+  const satisfactionRate = useCountUp(98, 1500);
 
   useEffect(() => {
     if (user) {
-      navigate('/profile');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -92,7 +112,6 @@ const Login = () => {
 
       if (signInError) throw signInError;
       
-      // Check profile setup and first login
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
         const { data: profileData } = await supabase
@@ -101,7 +120,6 @@ const Login = () => {
           .eq('id', authUser.id)
           .maybeSingle();
 
-        // Store user info for modals
         setLoggedInUserId(authUser.id);
         setUserAccountType((profileData?.account_type as 'student' | 'parent') || 'parent');
         setUserFirstName(profileData?.first_name || '');
@@ -109,13 +127,11 @@ const Login = () => {
         const isParent = profileData?.account_type === 'parent';
         const needsAddress = !profileData?.home_address;
 
-        // For parents without address, show address modal
         if (isParent && needsAddress) {
           setShowAddressModal(true);
           return;
         }
 
-        // For students without address, navigate to family links
         if (profileData?.account_type === 'student' && needsAddress) {
           navigate('/family-links');
           return;
@@ -130,10 +146,15 @@ const Login = () => {
     }
   };
 
-
   const handleAddressAdded = () => {
     setShowAddressModal(false);
     navigate('/dashboard');
+  };
+
+  const goBack = () => {
+    setShowCodeInput(false);
+    setCode('');
+    setError('');
   };
 
   return (
@@ -146,138 +167,300 @@ const Login = () => {
           onAddressAdded={handleAddressAdded}
         />
       )}
-      <div className="min-h-screen flex items-center justify-center hero-gradient px-4 page-transition pt-16 sm:pt-20 pb-8">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blob" style={{ animationDelay: "5s" }} />
-      </div>
       
-      <div className="relative z-10 w-full max-w-md space-y-6 sm:space-y-8 animate-fade-up">
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-2">Welcome Back</h1>
-          <p className="text-sm sm:text-base text-primary-foreground/80">Log in to your SchoolPool account</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4 pt-24">
+        {/* Background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 8, repeat: Infinity }}
+          />
+          <motion.div 
+            className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-300/10 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
         </div>
 
-        {!showCodeInput ? (
-          <form onSubmit={handleLogin} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8 space-y-5 sm:space-y-6 shadow-2xl">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div>
-              <Label htmlFor="email" className="text-foreground text-sm sm:text-base">Email or Username</Label>
-              <Input
-                id="email"
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email or username"
-                required
-                className="mt-1 h-11 sm:h-10 text-base sm:text-sm"
-              />
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Left side - Hero content */}
+          <motion.div
+            ref={heroRef}
+            initial={{ opacity: 0, x: -30 }}
+            animate={heroVisible ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="hidden lg:block space-y-8"
+          >
+            <div className="space-y-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-sm font-medium"
+              >
+                <Sparkles className="w-4 h-4" />
+                Welcome Back
+              </motion.div>
+              
+              <h1 className="text-4xl xl:text-5xl font-bold text-gray-900 leading-tight">
+                Connecting Chadwick
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
+                  Families Together
+                </span>
+              </h1>
+              
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Join hundreds of Chadwick School families who save time, reduce traffic, 
+                and build community through smart carpooling.
+              </p>
             </div>
 
-            <div>
-              <Label htmlFor="password" className="text-foreground text-sm sm:text-base">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 h-11 sm:h-10 text-base sm:text-sm"
-              />
-            </div>
 
-            <LoadingButton 
-              type="submit" 
-              loading={loading}
-              loadingText="Signing in..."
-              className="w-full h-12 sm:h-11 text-base sm:text-sm bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
+
+            {/* Trust badges */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="flex items-center gap-4 pt-4"
             >
-              Continue
-            </LoadingButton>
-
-            <div className="text-center space-y-2">
-              <Button variant="ghost" onClick={() => navigate('/forgot-password')} className="p-0 h-auto text-sm font-semibold text-primary hover:text-primary/80">
-                Forgot Password?
-              </Button>
-              <p className="text-sm text-foreground/70">
-                Don't have an account?{' '}
-                <Button variant="ghost" onClick={() => navigate('/register')} className="p-0 h-auto font-semibold text-primary hover:text-primary/80">
-                  Sign up
-                </Button>
-              </p>
-              <p className="text-sm text-foreground/70">
-                Don't have access?{' '}
-                <Button variant="ghost" onClick={() => navigate('/request-access')} className="p-0 h-auto font-semibold text-primary hover:text-primary/80">
-                  Request Access
-                </Button>
-              </p>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyCode} className="bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8 space-y-5 sm:space-y-6 shadow-2xl animate-fade-in">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {error}
-                  {attemptsRemaining > 0 && ` (${attemptsRemaining} attempts remaining)`}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="text-center">
-              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <span className="text-xl sm:text-2xl">📧</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Shield className="w-4 h-4 text-green-500" />
+                <span>Secure & Private</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                We've sent a verification code to your email
-              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Zap className="w-4 h-4 text-amber-500" />
+                <span>Lightning Fast</span>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Right side - Login form */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="relative"
+          >
+            <div className="bg-white/80 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/50 p-8 lg:p-10">
+              <AnimatePresence mode="wait">
+                {!showCodeInput ? (
+                  <motion.div
+                    key="login-form"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-6"
+                  >
+                    {/* Header */}
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/25 mb-4">
+                        <Car className="w-8 h-8 text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+                      <p className="text-gray-500">Sign in to your SchoolPool account</p>
+                    </div>
+
+                    {/* Error */}
+                    <AnimatePresence>
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-center gap-2"
+                        >
+                          <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                          {error}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Form */}
+                    <form onSubmit={handleLogin} className="space-y-5">
+                      {/* Email */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Email or Username</Label>
+                        <div className="relative">
+                          <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+                            focusedInput === 'email' ? 'text-blue-500' : 'text-gray-400'
+                          }`} />
+                          <Input
+                            type="text"
+                            placeholder="Enter your email or username"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onFocus={() => setFocusedInput('email')}
+                            onBlur={() => setFocusedInput(null)}
+                            className="pl-12 h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Password */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Password</Label>
+                        <div className="relative">
+                          <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
+                            focusedInput === 'password' ? 'text-blue-500' : 'text-gray-400'
+                          }`} />
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onFocus={() => setFocusedInput('password')}
+                            onBlur={() => setFocusedInput(null)}
+                            className="pl-12 pr-12 h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Submit */}
+                      <LoadingButton
+                        type="submit"
+                        loading={loading}
+                        className="w-full h-14 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                      >
+                        Continue
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </LoadingButton>
+                    </form>
+
+                    {/* Footer */}
+                    <div className="space-y-4 text-center">
+                      <button
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                      
+                      <div className="h-px bg-gray-200" />
+                      
+                      <p className="text-sm text-gray-600">
+                        Don't have an account?{' '}
+                        <button
+                          onClick={() => navigate('/register')}
+                          className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                        >
+                          Sign up
+                        </button>
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="2fa-form"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-6"
+                  >
+                    {/* Back button */}
+                    <button
+                      onClick={goBack}
+                      className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                      Back
+                    </button>
+
+                    {/* Header */}
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-green-500/25 mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900">Verify Your Identity</h2>
+                      <p className="text-gray-500">
+                        Enter the 6-digit code sent to<br />
+                        <span className="font-medium text-gray-700">{actualEmail}</span>
+                      </p>
+                    </div>
+
+                    {/* Error */}
+                    <AnimatePresence>
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center"
+                        >
+                          {error}
+                          {attemptsRemaining > 0 && (
+                            <p className="text-xs mt-1">{attemptsRemaining} attempts remaining</p>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Code Input */}
+                    <form onSubmit={handleVerifyCode} className="space-y-5">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700 text-center block">
+                          Verification Code
+                        </Label>
+                        <Input
+                          type="text"
+                          placeholder="123456"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-gray-50/50 border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all"
+                          maxLength={6}
+                          autoFocus
+                          required
+                        />
+                      </div>
+
+                      <LoadingButton
+                        type="submit"
+                        loading={loading}
+                        className="w-full h-14 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all"
+                      >
+                        Verify & Sign In
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </LoadingButton>
+                    </form>
+
+                    <p className="text-center text-sm text-gray-500">
+                      Didn't receive the code?{' '}
+                      <button
+                        onClick={() => {
+                          setCode('');
+                          setError('');
+                          handleLogin({ preventDefault: () => {} } as any);
+                        }}
+                        className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      >
+                        Resend
+                      </button>
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-
-            <div>
-              <Label htmlFor="code" className="text-foreground text-sm sm:text-base">Verification Code</Label>
-              <Input
-                id="code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Enter 6-digit code"
-                required
-                maxLength={6}
-                className="mt-1 text-center text-xl sm:text-2xl tracking-widest h-12 sm:h-auto"
-              />
-            </div>
-
-            <LoadingButton 
-              type="submit" 
-              loading={loading}
-              loadingText="Verifying..."
-              className="w-full h-12 sm:h-11 text-base sm:text-sm bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl transition-all duration-300"
-            >
-              Verify & Log In
-            </LoadingButton>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setShowCodeInput(false);
-                setCode('');
-                setError('');
-              }}
-              className="w-full text-foreground/70 hover:text-foreground h-10"
-            >
-              ← Back to login
-            </Button>
-          </form>
-        )}
+          </motion.div>
+        </div>
       </div>
-    </div>
-    <CreatorFooter />
     </>
   );
 };

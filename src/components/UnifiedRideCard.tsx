@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -287,20 +288,48 @@ function getCancelActionConfig(ride: UnifiedRide): {
 }
 
 export const UnifiedRideCardSkeleton = () => (
-  <Card className="rounded-lg shadow-sm">
-    <CardContent className="p-5">
-      <Skeleton className="h-7 w-32 rounded-full mb-4" />
-      <Skeleton className="h-4 w-full mb-2" />
-      <Skeleton className="h-4 w-3/4 mb-4" />
-      <div className="flex gap-4 mb-4">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-4 w-20" />
-      </div>
-      <Skeleton className="h-px w-full mb-4" />
-      <Skeleton className="h-4 w-48 mb-2" />
-      <Skeleton className="h-3 w-36" />
-    </CardContent>
-  </Card>
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <Card className="rounded-2xl shadow-sm border border-gray-100 bg-white/80 backdrop-blur-sm overflow-hidden">
+      <CardContent className="p-5">
+        {/* Status Badge Skeleton */}
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-7 w-32 rounded-full" />
+          <div className="flex gap-2">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+        </div>
+        
+        {/* Route Section Skeleton */}
+        <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-4 h-4 rounded-full" />
+            <Skeleton className="h-4 flex-1 rounded" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-4 h-4 rounded-full" />
+            <Skeleton className="h-4 w-3/4 rounded" />
+          </div>
+        </div>
+        
+        {/* Date/Time Skeleton */}
+        <div className="flex gap-4 mb-4">
+          <Skeleton className="h-4 w-32 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+        </div>
+        
+        {/* Info Sections Skeleton */}
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
 );
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
@@ -418,7 +447,12 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
 
   return (
     <>
-      <Card className={`rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border ${isPast ? 'opacity-70' : ''}`}>
+      <motion.div
+        whileHover={!isPast ? { y: -4, scale: 1.01 } : {}}
+        whileTap={!isPast ? { scale: 0.99 } : {}}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
+      <Card className={`rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 bg-white/90 backdrop-blur-sm overflow-hidden ${isPast ? 'opacity-70' : ''}`}>
         <CardContent className="p-5 space-y-4">
           {/* Status Badge Row */}
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -792,10 +826,11 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                       : 'Must be cancelled at least 9 hours before the scheduled ride time'}
                 </p>
               )}
-            </div>
-          )}
+          </div>
+        )}
         </CardContent>
       </Card>
+      </motion.div>
 
       {/* Confirmation Dialog */}
       {cancelConfig && (

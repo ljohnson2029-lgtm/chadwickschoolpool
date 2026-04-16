@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ParentOnlyRoute from "./components/ParentOnlyRoute";
 import RequireProfileComplete from "./components/RequireProfileComplete";
 import SplashScreen from "./components/SplashScreen";
+import PageTransition from "./components/PageTransition";
 
 // Eager load critical pages
 import Index from "./pages/Index";
@@ -47,10 +49,20 @@ const Series = lazy(() => import("./pages/Series"));
 
 // Loading component for lazy loaded pages
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
+  <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30">
     <div className="flex flex-col items-center gap-4">
-      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="text-muted-foreground text-sm">Loading...</p>
+      <motion.div
+        className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.p 
+        className="text-muted-foreground text-sm"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        Loading...
+      </motion.p>
     </div>
   </div>
 );
@@ -77,6 +89,7 @@ const AppRoutes = () => {
   return (
     <RequireProfileComplete>
       <Suspense fallback={<PageLoader />}>
+        <PageTransition>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
@@ -129,6 +142,7 @@ const AppRoutes = () => {
           <Route path="/admin/approvals" element={<AdminApprovals />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </PageTransition>
       </Suspense>
     </RequireProfileComplete>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -14,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Calendar, 
   Clock, 
@@ -27,8 +29,12 @@ import {
   AlertCircle,
   Phone,
   Mail,
-  CheckCircle
+  CheckCircle,
+  ArrowRight,
+  Sparkles,
+  Filter
 } from "lucide-react";
+
 import { EmptyState } from "@/components/EmptyState";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -225,9 +231,14 @@ const FindRides = () => {
   if (loading || !user || !profile) {
     return (
       <DashboardLayout>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-muted-foreground">Loading...</div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30 p-8">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <Skeleton className="h-8 w-48" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-48 rounded-2xl" />
+              ))}
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -244,8 +255,13 @@ const FindRides = () => {
       : ride.profiles?.username || 'Unknown';
 
     return (
-      <Card className="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-border">
-        <CardContent className="p-5 space-y-4">
+      <motion.div
+        whileHover={{ y: -4, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+      >
+      <Card className="rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 bg-white/80 backdrop-blur-sm overflow-hidden group">
+        <CardContent className="p-6 space-y-4">
           {/* Header: Avatar + Name + Type Badge */}
           <div className="flex items-start gap-3">
             <Avatar className="h-10 w-10 border border-border flex-shrink-0">
@@ -359,50 +375,64 @@ const FindRides = () => {
           )}
         </CardContent>
       </Card>
+      </motion.div>
     );
   };
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 max-w-7xl">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30"
+      >
+      <div className="container mx-auto px-4 max-w-7xl py-8">
         <Breadcrumbs items={[{ label: "Find Rides" }]} />
 
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold">Find Rides</h1>
-                <Badge 
-                  variant={isUserStudent ? 'secondary' : 'default'}
-                  className={isUserStudent 
-                    ? 'bg-blue-500/10 text-blue-600' 
-                    : 'bg-green-500/10 text-green-600'
-                  }
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25"
                 >
-                  {isUserStudent ? 'Student Account' : 'Parent Account'}
-                </Badge>
+                  <Car className="w-6 h-6 text-white" />
+                </motion.div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Find Rides</h1>
+                  <p className="text-gray-500 mt-1">
+                    Browse available carpools on the map or list view
+                  </p>
+                </div>
               </div>
-              <p className="text-muted-foreground mt-1">
-                Browse available rides on the map or list
-              </p>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'map' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('map')}
-              >
-                <MapIcon className="h-4 w-4 mr-2" />
-                Map View
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4 mr-2" />
-                List View
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={viewMode === 'map' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('map')}
+                  className={viewMode === 'map' ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/25' : ''}
+                >
+                  <MapIcon className="h-4 w-4 mr-2" />
+                  Map View
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/25' : ''}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  List View
+                </Button>
+              </motion.div>
             </div>
           </div>
 
@@ -420,7 +450,12 @@ const FindRides = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+        <Card className="mb-6 rounded-2xl shadow-sm border border-gray-100 bg-white/80 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
               {viewMode === 'list' && (
@@ -461,6 +496,7 @@ const FindRides = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         <Tabs defaultValue="browse" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
@@ -570,6 +606,7 @@ const FindRides = () => {
           </TabsContent>
         </Tabs>
       </div>
+      </motion.div>
     </DashboardLayout>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
@@ -9,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Mail, ShieldCheck, UserPlus, Info, CheckCircle2, GraduationCap, Users, Sparkles, Eye, EyeOff } from "lucide-react";
 import PhoneNumberInput, { isValidPhoneNumber } from "@/components/PhoneNumberInput";
 import Navigation from "@/components/Navigation";
 import CreatorFooter from "@/components/CreatorFooter";
@@ -439,30 +440,74 @@ const Register = () => {
     }
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+
   return (
     <>
       <Navigation />
-      <div className="min-h-screen flex items-center justify-center hero-gradient p-4 page-transition pt-20">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blob" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blob" style={{ animationDelay: "5s" }} />
-      </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4 pt-24">
+        {/* Animated background */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+            className="absolute top-20 left-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 8, repeat: Infinity }}
+          />
+          <motion.div 
+            className="absolute bottom-20 right-10 w-96 h-96 bg-blue-300/10 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+        </div>
 
-      <Card className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl border-white/20 shadow-2xl animate-fade-up">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center text-foreground">Create Account</CardTitle>
-          <CardDescription className="text-center">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-md"
+      >
+      <Card className="bg-white/95 backdrop-blur-2xl border-white/50 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] rounded-3xl overflow-hidden">
+        {/* Gradient top border */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600" />
+        
+        <CardHeader className="pt-6 pb-4">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <motion.div 
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25"
+            >
+              <UserPlus className="w-7 h-7 text-white" />
+            </motion.div>
+          </div>
+          
+          <CardTitle className="text-2xl text-center font-bold text-gray-900">
+            Create Account
+          </CardTitle>
+          <CardDescription className="text-center text-gray-500 mt-2">
             {step === 1 && "Enter your email to get started"}
             {step === 2 && "Verify your email address"}
             {step === 3 && "Complete your account details"}
           </CardDescription>
           
-          <div className="flex items-center justify-center gap-2 mt-4">
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center gap-2 mt-6">
             {[1, 2, 3].map((s) => (
-              <div
+              <motion.div
                 key={s}
-                className={`h-2 w-12 rounded-full transition-all duration-300 ${
-                  s <= step ? "bg-gradient-to-r from-primary to-secondary" : "bg-muted"
+                initial={false}
+                animate={{ 
+                  scale: s === step ? 1.1 : 1,
+                  backgroundColor: s <= step ? "#3B82F6" : "#E5E7EB"
+                }}
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  s <= step ? "w-12" : "w-8"
                 }`}
               />
             ))}
@@ -785,8 +830,9 @@ const Register = () => {
               </Button>
             </form>
           )}
-        </CardContent>
+         </CardContent>
       </Card>
+      </motion.div>
     </div>
     <CreatorFooter />
     </>

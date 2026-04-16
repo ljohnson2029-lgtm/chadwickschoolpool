@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MessageSquare, 
   Calendar, 
@@ -20,7 +22,9 @@ import {
   X,
   CheckCheck,
   Send,
-  Inbox
+  Inbox,
+  Sparkles,
+  TrendingUp
 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { format, formatDistanceToNow } from "date-fns";
@@ -30,6 +34,7 @@ import {
   DeclineRequestDialog,
   ConfirmDialog,
 } from "@/components/ConfirmDialogs";
+import { useScrollReveal, useStaggeredAnimation } from "@/lib/animations";
 
 interface Conversation {
   id: string;
@@ -443,67 +448,172 @@ const Conversations = () => {
     );
   };
 
+  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
+
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 max-w-5xl">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="min-h-screen bg-gradient-to-br from-gray-50/50 via-white to-blue-50/30"
+      >
+      <div className="container mx-auto px-4 max-w-5xl py-8">
         <Breadcrumbs items={[{ label: "My Conversations" }]} />
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">My Conversations</h1>
-          <p className="text-muted-foreground">
-            All your direct ride negotiations and responses to public posts
-          </p>
-        </div>
+        {/* Premium Header */}
+        <motion.div
+          ref={headerRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={headerVisible ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <motion.div 
+                className="flex items-center gap-3 mb-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={headerVisible ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={headerVisible ? { scale: 1, rotate: 0 } : {}}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/25"
+                >
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </motion.div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+                    My Conversations
+                  </h1>
+                </div>
+              </motion.div>
+              <motion.p 
+                className="text-gray-500 ml-15"
+                initial={{ opacity: 0 }}
+                animate={headerVisible ? { opacity: 1 } : {}}
+                transition={{ delay: 0.3 }}
+              >
+                All your direct ride negotiations and responses to public posts
+              </motion.p>
+            </div>
+
+            {/* Quick Stats */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={headerVisible ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.4 }}
+              className="flex items-center gap-2"
+            >
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200">
+                <TrendingUp className="w-4 h-4 text-violet-600" />
+                <span className="text-sm font-medium text-gray-700">{conversations.length} Total</span>
+              </div>
+              {unreadCount > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                  <Sparkles className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-700">{unreadCount} New</span>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="all" className="gap-2">
+          <TabsList className="bg-white/80 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger value="all" className="gap-2 rounded-lg data-[state=active]:bg-violet-500 data-[state=active]:text-white">
               All
-              <Badge variant="secondary" className="ml-1">{conversations.length}</Badge>
+              <Badge variant="secondary" className="ml-1 bg-gray-100">{conversations.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="sent" className="gap-2">
+            <TabsTrigger value="sent" className="gap-2 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Send className="h-4 w-4" />
               Sent
-              <Badge variant="secondary" className="ml-1">{sentCount}</Badge>
+              <Badge variant="secondary" className="ml-1 bg-gray-100">{sentCount}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="received" className="gap-2">
+            <TabsTrigger value="received" className="gap-2 rounded-lg data-[state=active]:bg-emerald-500 data-[state=active]:text-white">
               <Inbox className="h-4 w-4" />
               Received
               {unreadCount > 0 && (
-                <Badge className="ml-1 bg-primary">{unreadCount}</Badge>
+                <Badge className="ml-1 bg-red-500 text-white">{unreadCount}</Badge>
               )}
               {unreadCount === 0 && (
-                <Badge variant="secondary" className="ml-1">{receivedCount}</Badge>
+                <Badge variant="secondary" className="ml-1 bg-gray-100">{receivedCount}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {loadingConversations ? (
-          <div className="text-center py-12">Loading conversations...</div>
-        ) : filteredConversations.length === 0 ? (
-          <EmptyState
-            icon={MessageSquare}
-            title={activeTab === 'sent' ? "No Sent Requests" : activeTab === 'received' ? "No Received Requests" : "No Active Conversations"}
-            description={
-              activeTab === 'sent' 
-                ? "When you respond to rides, they'll appear here" 
-                : activeTab === 'received'
-                ? "When others respond to your rides, they'll appear here"
-                : "When you respond to rides or receive ride requests, they'll appear here"
-            }
-            action={{
-              label: "Find Rides",
-              onClick: () => navigate('/family-carpools')
-            }}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredConversations.map((conversation) => (
-              <ConversationCard key={conversation.id} conversation={conversation} />
-            ))}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {loadingConversations ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="rounded-2xl border-gray-100 bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </motion.div>
+          ) : filteredConversations.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <EmptyState
+                icon={MessageSquare}
+                title={activeTab === 'sent' ? "No Sent Requests" : activeTab === 'received' ? "No Received Requests" : "No Active Conversations"}
+                description={
+                  activeTab === 'sent' 
+                    ? "When you respond to rides, they'll appear here" 
+                    : activeTab === 'received'
+                    ? "When others respond to your rides, they'll appear here"
+                    : "When you respond to rides or receive ride requests, they'll appear here"
+                }
+                action={{
+                  label: "Find Rides",
+                  onClick: () => navigate('/family-carpools')
+                }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredConversations.map((conversation, index) => (
+                  <motion.div
+                    key={conversation.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.05 }}
+                    layout
+                  >
+                    <ConversationCard conversation={conversation} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Accept Dialog */}
         <ConfirmDialog
@@ -536,6 +646,7 @@ const Conversations = () => {
           loading={actionLoading}
         />
       </div>
+      </motion.div>
     </DashboardLayout>
   );
 };
