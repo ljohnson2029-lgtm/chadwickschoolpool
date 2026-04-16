@@ -82,6 +82,7 @@ export interface UnifiedRide {
   isDriver: boolean;
   otherParent: ParticipantInfo | null;
   myChildren?: { name: string; grade: string }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   originalData: any;
   _studentView?: boolean;
   _driverName?: string;
@@ -382,7 +383,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
         setCurrentUserFullName(name);
       }
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { count } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('ride_messages' as any)
         .select('*', { count: 'exact', head: true })
         .eq('ride_ref_id', chatRideRefId)
@@ -546,6 +549,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                   );
                 }
                 // For non-series rides, show single vehicle as before
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const carInfo = (ride as any)._studentView ? ride.myCarInfo : (ride.isDriver ? ride.myCarInfo : ride.otherParent);
                 const hasVehicle = carInfo && (carInfo.carMake || carInfo.carModel || carInfo.carColor);
                 if (!hasVehicle) return null;

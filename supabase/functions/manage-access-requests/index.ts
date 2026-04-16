@@ -136,7 +136,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405, headers: jsonHeaders,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500, headers: jsonHeaders,

@@ -105,10 +105,10 @@ const Register = () => {
       });
 
       setStep(2);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to send verification code",
+        description: (error as Error).message || "Failed to send verification code",
         variant: "destructive",
       });
     } finally {
@@ -142,10 +142,10 @@ const Register = () => {
       });
 
       setStep(3);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to verify code",
+        description: (error as Error).message || "Failed to verify code",
         variant: "destructive",
       });
     } finally {
@@ -292,11 +292,12 @@ const Register = () => {
             errorMessage = error.message;
           }
         } catch (e) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           logger.error("Error parsing function error:", e);
         }
-        
+
         logger.error('Extracted error message:', errorMessage);
-        
+
         // Check for specific error types and show user-friendly messages
         if (errorMessage.includes("Username already taken")) {
           toast({
@@ -360,27 +361,29 @@ const Register = () => {
         });
         // AuthContext will pick up the session and RequireProfileComplete will redirect to /profile/setup
       }
-    } catch (error: any) {
+    } catch (error) {
       // Handle unexpected errors (network issues, etc.)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const err = error as any;
       logger.error('Unexpected error during registration:', error);
       logger.error('Full exception:', JSON.stringify(error, null, 2));
-      
+
       let errorMessage = "An unexpected error occurred. Please try again.";
-      
+
       try {
-        if (error.context && typeof error.context === 'object') {
-          if (error.context.error) {
-            errorMessage = error.context.error;
-          } else if (typeof error.context === 'string') {
+        if (err.context && typeof err.context === 'object') {
+          if (err.context.error) {
+            errorMessage = err.context.error;
+          } else if (typeof err.context === 'string') {
             try {
-              const parsed = JSON.parse(error.context);
+              const parsed = JSON.parse(err.context);
               errorMessage = parsed.error || errorMessage;
             } catch {
-              errorMessage = error.context;
+              errorMessage = err.context;
             }
           }
-        } else if (error.message) {
-          errorMessage = error.message;
+        } else if (err.message) {
+          errorMessage = err.message;
         }
       } catch (e) {
         logger.error("Error parsing exception:", e);
@@ -429,10 +432,10 @@ const Register = () => {
         title: "Code resent",
         description: "A new verification code has been sent to your email.",
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to resend code",
+        description: (error as Error).message || "Failed to resend code",
         variant: "destructive",
       });
     } finally {

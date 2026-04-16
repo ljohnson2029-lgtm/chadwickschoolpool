@@ -238,6 +238,28 @@ Authentication uses a **two-step process**:
 
 ---
 
+#### 7. auth-reset-password
+**Endpoint:** `POST /functions/v1/auth-reset-password`  
+**Public:** Yes  
+**Purpose:** Send password reset email
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Password reset instructions sent"
+}
+```
+
+---
+
 ### Data & Utility Functions
 
 #### 7. get-mapbox-token
@@ -405,9 +427,100 @@ Authentication uses a **two-step process**:
 
 ---
 
+#### 14. search-parents
+**Endpoint:** `POST /functions/v1/search-parents`  
+**Auth:** JWT Required  
+**Purpose:** Search for parents by name, email, or username
+
+**Request:**
+```json
+{
+  "query": "john",
+  "limit": 10
+}
+```
+
+**Response:**
+```json
+{
+  "parents": [
+    {
+      "id": "uuid",
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "username": "johndoe"
+    }
+  ]
+}
+```
+
+---
+
+#### 15. suggest-carpool-partners
+**Endpoint:** `POST /functions/v1/suggest-carpool-partners`  
+**Auth:** JWT Required  
+**Purpose:** AI-powered carpool partner suggestions based on location and schedule
+
+**Request:**
+```json
+{
+  "userId": "uuid",
+  "location": { "lat": 33.77, "lng": -118.36 },
+  "radius": 5
+}
+```
+
+**Response:**
+```json
+{
+  "suggestions": [
+    {
+      "parent_id": "uuid",
+      "name": "Jane Smith",
+      "distance": 0.8,
+      "match_score": 0.92,
+      "common_routes": 3
+    }
+  ]
+}
+```
+
+---
+
+#### 16. suggest-piggyback-routes
+**Endpoint:** `POST /functions/v1/suggest-piggyback-routes`  
+**Auth:** JWT Required  
+**Purpose:** Suggest efficient piggyback routes for multiple pickups
+
+**Request:**
+```json
+{
+  "pickup_points": [
+    { "lat": 33.77, "lng": -118.36 },
+    { "lat": 33.78, "lng": -118.37 }
+  ],
+  "destination": { "lat": 33.80, "lng": -118.40 }
+}
+```
+
+**Response:**
+```json
+{
+  "optimized_route": {
+    "waypoints": [...],
+    "total_distance": 4.5,
+    "total_duration": 12,
+    "savings": "15%"
+  }
+}
+```
+
+---
+
 ### Admin Functions
 
-#### 14. submit-access-request
+#### 17. submit-access-request
 **Endpoint:** `POST /functions/v1/submit-access-request`  
 **Public:** Yes  
 **Purpose:** Request access for non-approved email
@@ -425,7 +538,7 @@ Authentication uses a **two-step process**:
 
 ---
 
-#### 15. manage-access-requests
+#### 18. manage-access-requests
 **Endpoint:** `POST /functions/v1/manage-access-requests`  
 **Auth:** JWT Required (Admin only)  
 **Purpose:** Approve/deny access requests
@@ -565,4 +678,4 @@ const { data } = await supabase.from('rides').select('*');
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

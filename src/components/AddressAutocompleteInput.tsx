@@ -123,6 +123,7 @@ export const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> =
 
       const data = await response.json();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formatted: AddressSuggestion[] = (data.features ?? []).map((f: any) => ({
         place_name: f.place_name,
         center: f.center as [number, number],

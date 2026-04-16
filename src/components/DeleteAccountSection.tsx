@@ -55,9 +55,8 @@ const DeleteAccountSection = () => {
 
     try {
       // 1. Log the reason for leaving (optional, silent fail)
-      if (deleteReason) {
-        console.log("Account deletion reason:", deleteReason);
-      }
+      // eslint-disable-next-line no-console
+      if (deleteReason) console.log("Account deletion reason:", deleteReason);
 
       // 2. Delete profile data (Cascading deletes handled by DB FKs usually, but explicit is safer)
       const { error: profileError } = await supabase.from("profiles").delete().eq("id", user.id);
@@ -81,7 +80,7 @@ const DeleteAccountSection = () => {
       });
 
       navigate("/");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting account:", error);
       toast({
         title: "Deletion Failed",

@@ -292,6 +292,7 @@ const ProfileSetup = () => {
     setSaving(true);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: Record<string, any> = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -349,8 +350,8 @@ const ProfileSetup = () => {
       } else {
         setStep(3);
       }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -411,8 +412,8 @@ const ProfileSetup = () => {
 
       setLinkSent(true);
       toast({ title: "Link request sent!", description: "They will receive a notification to approve." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     } finally {
       setLinkSending(false);
     }
@@ -445,8 +446,8 @@ const ProfileSetup = () => {
 
       toast({ title: "Welcome!", description: "Your profile is complete. Enjoy the app!" });
       window.location.href = "/dashboard";
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

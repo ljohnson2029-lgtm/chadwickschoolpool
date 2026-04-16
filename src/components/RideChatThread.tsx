@@ -44,19 +44,23 @@ export function RideChatThread({
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from("ride_messages" as any)
       .select("*")
       .eq("ride_ref_id", rideRefId)
       .eq("ride_source", rideSource)
       .order("created_at", { ascending: false })
       .limit(50);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (data) setMessages((data as any).reverse());
     setLoading(false);
   }, [rideRefId, rideSource]);
 
   const markAsRead = useCallback(async () => {
     await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from("ride_messages" as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({ is_read: true } as any)
       .eq("ride_ref_id", rideRefId)
       .eq("ride_source", rideSource)
@@ -115,12 +119,14 @@ export function RideChatThread({
     setNewMessage("");
 
     const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from("ride_messages" as any)
       .insert({
         ride_ref_id: rideRefId,
         ride_source: rideSource,
         sender_id: currentUserId,
         message_text: msgText,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
     if (error) {

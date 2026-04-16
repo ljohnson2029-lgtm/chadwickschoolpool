@@ -118,7 +118,7 @@ serve(async (req) => {
       JSON.stringify({ found: true, user_id: userData.user_id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('lookup-parent error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),

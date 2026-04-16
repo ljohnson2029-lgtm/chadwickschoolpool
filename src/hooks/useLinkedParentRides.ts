@@ -55,13 +55,11 @@
      setLoading(true);
  
      try {
-       // Check if user is a student by their profile account_type
-       const userIsStudent = profile?.account_type === 'student';
-       setIsStudent(userIsStudent);
- 
-       console.log('[useLinkedParentRides] account_type:', profile?.account_type, 'isStudent:', userIsStudent);
- 
-       if (!userIsStudent) {
+        // Check if user is a student by their profile account_type
+        const userIsStudent = profile?.account_type === 'student';
+        setIsStudent(userIsStudent);
+  
+        if (!userIsStudent) {
          // Not a student, no family rides to show
          setLinkedParents([]);
          setFamilyRides([]);
@@ -69,14 +67,12 @@
          return;
        }
  
-       // Fetch linked parents using RPC function
-       const { data: parents, error: parentsError } = await supabase.rpc('get_linked_parents', {
-         student_user_id: user.id
-       });
-       
-       console.log('[useLinkedParentRides] Linked parents:', parents, 'Error:', parentsError);
- 
-       if (parentsError) {
+        // Fetch linked parents using RPC function
+        const { data: parents, error: parentsError } = await supabase.rpc('get_linked_parents', {
+          student_user_id: user.id
+        });
+  
+        if (parentsError) {
          console.error('Error fetching linked parents:', parentsError);
          setLinkedParents([]);
          setFamilyRides([]);
@@ -92,15 +88,13 @@
          return;
        }
  
-       // Fetch family schedule using the new RPC that includes joined rides
-       const { data: schedule, error: scheduleError } = await supabase.rpc(
-         'get_family_schedule',
-         { student_user_id: user.id }
-       );
-       
-       console.log('[useLinkedParentRides] Family schedule:', schedule, 'Error:', scheduleError);
- 
-       if (scheduleError) {
+        // Fetch family schedule using the new RPC that includes joined rides
+        const { data: schedule, error: scheduleError } = await supabase.rpc(
+          'get_family_schedule',
+          { student_user_id: user.id }
+        );
+  
+        if (scheduleError) {
          console.error('Error fetching family schedule:', scheduleError);
          setFamilyRides([]);
          setLoading(false);

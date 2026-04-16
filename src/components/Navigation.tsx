@@ -41,7 +41,8 @@ const Navigation = () => {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingAccessRequests, setPendingAccessRequests] = useState(0);
-  const [profile, setProfile] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,6 +92,7 @@ const Navigation = () => {
         });
         if (!error && adminData?.requests) {
           setIsAdmin(true);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const pending = (adminData.requests as any[]).filter((r: any) => r.status === 'pending').length;
           setPendingAccessRequests(pending);
         } else {

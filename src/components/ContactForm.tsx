@@ -86,7 +86,7 @@ export const ContactForm = () => {
 
       // Reset success state after animation
       setTimeout(() => setIsSuccess(false), 3000);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending email:", error);
       toast({
         title: "Submission Failed",

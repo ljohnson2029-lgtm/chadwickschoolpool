@@ -129,6 +129,7 @@ const ScheduleRecurringRideForm = ({
 
     const vehicleInfo = primaryVehicle ? toVehicleInfo(primaryVehicle) : null;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const insertData: Record<string, any> = {
       space_id: spaceId,
       proposer_id: myId,
@@ -142,6 +143,7 @@ const ScheduleRecurringRideForm = ({
       proposer_vehicle: vehicleInfo,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("recurring_schedules").insert(insertData as any);
 
     if (error) {
@@ -156,7 +158,9 @@ const ScheduleRecurringRideForm = ({
             message: `📅 ${myName} has proposed a recurring carpool schedule with you`,
           },
         });
-      } catch {}
+      } catch {
+        // Silently ignore notification errors
+      }
       toast.success("Schedule proposed!");
       onSuccess();
     }

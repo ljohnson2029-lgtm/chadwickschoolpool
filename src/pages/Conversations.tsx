@@ -81,6 +81,11 @@ const Conversations = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'sent' | 'received'>('all');
 
+  // Animation hooks must be called before any early returns
+  // Animation hooks must be called before any early returns
+  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
+  const staggeredAnimation = useStaggeredAnimation(50);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate("/login");
@@ -447,8 +452,6 @@ const Conversations = () => {
       </Card>
     );
   };
-
-  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
 
   return (
     <DashboardLayout>

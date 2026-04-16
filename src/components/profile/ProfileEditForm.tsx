@@ -28,6 +28,7 @@ interface EditChild {
 
 interface ProfileEditFormProps {
   user: { id: string; email?: string };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profile: any;
   isParent: boolean;
   onSave: () => void;
@@ -115,6 +116,7 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
 
     setSaving(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: Record<string, any> = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -168,8 +170,8 @@ const ProfileEditForm = ({ user, profile, isParent, onSave, onCancel }: ProfileE
 
       toast({ title: "Profile updated successfully" });
       onSave();
-    } catch (error: any) {
-      toast({ title: "Error saving profile", description: error.message, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Error saving profile", description: (error as Error).message, variant: "destructive" });
     } finally {
       setSaving(false);
     }

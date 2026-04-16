@@ -36,12 +36,15 @@ interface RecurringRide {
   dropoff_address: string;
   ride_time: string;
   recurring_days: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   creator_children: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recipient_children: any;
   status: string;
   created_at: string;
   seats_available?: number | null;
   seats_needed?: number | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vehicle_info?: any;
 }
 
@@ -72,6 +75,7 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
 
   // Fetch child names
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fetchNames = async (ids: any, setter: (v: string[]) => void) => {
       if (!ids || !Array.isArray(ids) || ids.length === 0) return;
       const { data } = await supabase
@@ -105,7 +109,9 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
             message: `✅ ${currentName} has accepted your recurring ride in your Series space`,
           },
         });
-      } catch {}
+      } catch {
+        // Silently ignore notification errors
+      }
       toast.success("Recurring ride accepted!");
       onUpdate();
     }
@@ -124,8 +130,10 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
           type: "series_ride",
           message: `❌ ${currentName} has declined your recurring ride`,
         },
-      });
-    } catch {}
+        });
+    } catch {
+      // Silently ignore notification errors
+    }
     toast.info("Ride declined");
     onUpdate();
     setProcessing(false);
@@ -143,8 +151,10 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
           type: "series_ride",
           message: `🚫 ${currentName} has cancelled the recurring ride series. Please coordinate a new schedule in your Series space.`,
         },
-      });
-    } catch {}
+        });
+    } catch {
+      // Silently ignore notification errors
+    }
     toast.info("Recurring ride cancelled");
     onUpdate();
     setProcessing(false);
@@ -181,7 +191,9 @@ const RecurringRideCard = ({ ride, otherParentName, onUpdate }: Props) => {
             message: `📅 ${currentName} has cancelled the recurring ride on ${format(cancelDate, "MMMM d, yyyy")}`,
           },
         });
-      } catch {}
+      } catch {
+        // Silently ignore notification errors
+      }
       toast.success(`Cancelled ride on ${format(cancelDate, "MMMM d, yyyy")}`);
     } else {
       toast.error("Already cancelled for that date");

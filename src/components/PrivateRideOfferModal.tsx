@@ -79,7 +79,8 @@ interface PrivateRideOfferModalProps {
   recipientId: string;
   recipientName: string;
   distance: number;
-  userProfile: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  userProfile: Record<string, any>;
   onSuccess?: () => void;
 }
 
@@ -96,7 +97,8 @@ const PrivateRideOfferModal = ({
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
-  const [recipientProfile, setRecipientProfile] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [recipientProfile, setRecipientProfile] = useState<Record<string, any> | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [recipientContact, setRecipientContact] = useState<{
@@ -257,11 +259,12 @@ const PrivateRideOfferModal = ({
       });
 
       form.reset();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error sending offer:', err);
       toast({
         title: "Error",
-        description: err.message || "Unable to send offer. Please try again.",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        description: (err as any).message || "Unable to send offer. Please try again.",
         variant: "destructive",
       });
     } finally {

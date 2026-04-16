@@ -104,7 +104,7 @@ serve(async (req) => {
       JSON.stringify({ available }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('auth-check-username error:', error);
     return new Response(
       JSON.stringify({ error: 'Unable to check username at this time' }),

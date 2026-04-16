@@ -253,7 +253,83 @@ Allow parents to type ride requests in plain English.
 
 ---
 
-### 10. 📱 User Experience Features
+### 10. 👨‍👩‍👧 Co-Parent Linking
+
+#### Co-Parent Account Linking
+**What it does:**
+Link co-parents together for shared ride management and visibility.
+
+**Process:**
+1. Parent sends link request to co-parent
+2. Co-parent receives notification
+3. Co-parent accepts link
+4. Both parents can see and manage shared children's rides
+
+**Benefits:**
+- Both parents see same ride schedule
+- Either parent can coordinate pickups
+- Reduces duplicate ride creation
+- Improves family coordination
+
+---
+
+### 11. 👶 Children Management
+
+#### Child Profiles
+**What it does:**
+Parents can add and manage their children's information.
+
+**Fields:**
+- Name, age, grade level
+- School (defaults to Chadwick)
+- Special requirements
+
+**Usage:**
+- Reference children when creating rides
+- Other parents see children's names in ride details
+- Age-appropriate pickup/dropoff logic
+
+---
+
+### 12. 🤖 AI-Powered Suggestions
+
+#### Carpool Partner Suggestions
+**What it does:**
+AI analyzes your location and schedule to suggest compatible carpool partners.
+
+**Factors:**
+- Proximity to your home
+- Similar schedules and routes
+- Grade-level compatibility
+- Historical ride patterns
+
+#### Piggyback Route Optimization
+**What it does:**
+Suggests efficient pickup routes when driving multiple children.
+
+**Features:**
+- Optimizes pickup order
+- Calculates time savings
+- Shows route on map
+- Considers traffic patterns
+
+---
+
+### 13. 🔑 Password Recovery
+
+#### Forgot Password
+**What it does:**
+Allows users to reset their password via email.
+
+**Flow:**
+1. Click "Forgot Password" on login
+2. Enter registered email
+3. Receive reset email with secure link
+4. Set new password
+
+---
+
+### 14. 📱 User Experience Features
 
 #### Responsive Design
 **Works on:**
@@ -267,6 +343,7 @@ Allow parents to type ride requests in plain English.
 - Skeleton screens during data fetch
 - Loading spinners for actions
 - Progress indicators for multi-step processes
+- Animated transitions (Framer Motion)
 
 #### Error Handling
 **User-friendly errors:**
@@ -396,6 +473,10 @@ Added to ride history
 | Messaging | ✅ | ❌ | ❌ |
 | Edit Profile | ✅ | ✅ | ❌ |
 | Link Accounts | ✅ | ✅* | ❌ |
+| Link Co-Parents | ✅ | ❌ | ❌ |
+| Manage Children | ✅ | ❌ | ❌ |
+| AI Carpool Suggestions | ✅ | ❌ | ❌ |
+| Route Optimization | ✅ | ❌ | ❌ |
 | Admin Functions | ❌ | ❌ | ❌ |
 
 *Student can accept link requests
@@ -413,6 +494,14 @@ Added to ride history
 - [ ] **Emergency Contacts** - Auto-notify on delays
 - [ ] **School Integration** - Sync with school calendar
 - [ ] **Multi-School** - Support other schools
+- [ ] **Push Notifications** - Browser push notifications
+- [ ] **Advanced AI** - Smarter carpool matching
+
+### In Progress
+- [x] **AI Carpool Suggestions** - Smart partner matching
+- [x] **Route Optimization** - Efficient piggyback routes
+- [x] **Co-Parent Linking** - Shared ride management
+- [x] **Children Management** - Child profiles in rides
 
 ### Under Consideration
 - [ ] **Carpool Groups** - Create private groups
@@ -432,4 +521,4 @@ Added to ride history
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

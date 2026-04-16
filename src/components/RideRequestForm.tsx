@@ -157,6 +157,7 @@ const RideRequestForm = ({
         transaction_type: isBroadcast ? 'broadcast' : 'direct',
         recipient_id: isBroadcast ? null : (recipientParentId || null),
         selected_children: selectedChildIds,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any).select();
 
       if (rideError) throw rideError;
@@ -210,10 +211,11 @@ const RideRequestForm = ({
       if (!isBroadcast && recipientParentId) {
         navigate('/conversations');
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        description: (error as any).message || "An error occurred",
         variant: "destructive",
       });
     } finally {

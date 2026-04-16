@@ -175,6 +175,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
           license_plate: selectedVehicleInfo.license_plate,
           vehicle_id: selectedVehicleInfo.vehicle_id,
         } : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       if (insertError) throw insertError;
@@ -195,7 +196,7 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
       form.reset();
       onClose();
       onSuccess?.();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error sending direct ride:", err);
       const msg = err.message || "";
       if (msg.includes("unique") || msg.includes("duplicate")) {

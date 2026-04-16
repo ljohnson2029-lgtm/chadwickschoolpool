@@ -279,6 +279,95 @@ CREATE TABLE public.banned_emails (
 
 ---
 
+### 10. access_requests (Admin)
+```sql
+CREATE TABLE public.access_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text NOT NULL,
+  full_name text NOT NULL,
+  user_type text NOT NULL,
+  reason text,
+  status text DEFAULT 'pending',
+  approved_by uuid REFERENCES auth.users(id),
+  reviewed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
+);
+```
+
+**Purpose:** Store access requests from non-approved emails  
+**RLS:** Admin-only write, requester can view own request
+
+**Workflow:**
+1. User submits access request with contact info
+2. Admin reviews in approval dashboard
+3. Approved emails added to whitelist
+4. User can then register normally
+
+---
+
+### 11. approved_emails (Verification)
+```sql
+CREATE TABLE public.approved_emails (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text UNIQUE NOT NULL,
+  approved_by uuid REFERENCES auth.users(id),
+  created_at timestamp with time zone DEFAULT now()
+);
+```
+
+**Purpose:** Track emails that have been manually approved  
+**RLS:** Admin write, authenticated read
+
+---
+
+### 12. children (Family Data)
+```sql
+CREATE TABLE public.children (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) NOT NULL,
+  name text NOT NULL,
+  first_name text,
+  last_name text,
+  age integer NOT NULL,
+  grade_level text,
+  school text NOT NULL,
+  created_at timestamp with time zone DEFAULT now()
+);
+```
+
+**Purpose:** Store children's information for parents  
+**RLS:** Parents can manage own children, linked accounts can view
+
+**Fields:**
+- `user_id`: Parent who owns this child record
+- `grade_level`: K-12 or preschool
+- `school`: School name (defaults to Chadwick School)
+
+---
+
+### 13. co_parent_links (Co-Parenting)
+```sql
+CREATE TABLE public.co_parent_links (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  requester_id uuid REFERENCES auth.users(id),
+  requested_id uuid REFERENCES auth.users(id),
+  status text DEFAULT 'pending',
+  approved_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now()
+);
+```
+
+**Purpose:** Link co-parents for shared ride management  
+**RLS:** Linked co-parents can see each other's rides
+
+**Workflow:**
+1. Parent A sends link request to co-parent (Parent B)
+2. Parent B approves the link
+3. Both parents can manage rides for shared children
+
+---
+
 ## 🔐 Row Level Security (RLS) Policies
 
 ### Profiles Table
@@ -442,9 +531,8 @@ CREATE INDEX idx_account_links_student ON account_links(student_id);
 
 - [Project Overview](./PROJECT_OVERVIEW.md)
 - [API Reference](./API.md)
-- [Security](./SECURITY.md)
 - [Features](./FEATURES.md)
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

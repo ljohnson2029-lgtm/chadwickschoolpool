@@ -50,10 +50,11 @@ const RequestAccess = () => {
         let message = "Failed to submit request. Please try again.";
         if (error instanceof Error) {
           // For FunctionsHttpError, try to get the response body
-          const context = (error as any).context;
-          if (context && typeof context.json === 'function') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const errContext = (error as any).context;
+          if (errContext && typeof errContext.json === 'function') {
             try {
-              const errorBody = await context.json();
+              const errorBody = await errContext.json();
               message = errorBody?.error || message;
             } catch {
               // ignore parse error
@@ -73,11 +74,11 @@ const RequestAccess = () => {
       }
 
       setSubmitted(true);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Submit access request error:", err);
       toast({
         title: "Error",
-        description: err?.message || "Failed to submit request. Please try again.",
+        description: (err as Error)?.message || "Failed to submit request. Please try again.",
         variant: "destructive",
       });
     } finally {

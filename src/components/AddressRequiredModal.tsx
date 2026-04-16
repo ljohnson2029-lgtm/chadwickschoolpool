@@ -167,7 +167,7 @@ export const AddressRequiredModal = ({ open, userId, onAddressAdded, onSkip }: A
       });
 
       onAddressAdded();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving address:", error);
       toast({
         title: "Save Failed",

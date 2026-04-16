@@ -161,7 +161,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({ success: false, error: 'Unable to send email at this time' }),

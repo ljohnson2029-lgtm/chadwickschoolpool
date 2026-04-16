@@ -85,12 +85,19 @@ Vite (esbuild + Rollup)
 ```json
 {
   "dependencies": {
+    "@hookform/resolvers": "Form validation resolvers",
     "@radix-ui/react-*": "Various Radix primitives",
     "@supabase/supabase-js": "Database client",
     "@tanstack/react-query": "Server state management",
+    "@turf/turf": "Geospatial analysis",
     "class-variance-authority": "Component variants",
     "clsx": "Conditional classes",
+    "cmdk": "Command palette",
     "date-fns": "Date utilities",
+    "embla-carousel-react": "Carousel component",
+    "framer-motion": "Animation library",
+    "he": "HTML entities encoder/decoder",
+    "input-otp": "OTP input component",
     "lucide-react": "Icons",
     "mapbox-gl": "Maps",
     "react": "UI framework",
@@ -98,9 +105,13 @@ Vite (esbuild + Rollup)
     "react-dom": "React DOM",
     "react-hook-form": "Forms",
     "react-map-gl": "React Mapbox",
+    "react-resizable-panels": "Resizable panel layout",
     "react-router-dom": "Routing",
+    "recharts": "Chart library",
     "sonner": "Toast notifications",
     "tailwind-merge": "Class merging",
+    "tailwindcss-animate": "Tailwind animations",
+    "vaul": "Drawer component",
     "zod": "Validation"
   }
 }
@@ -110,13 +121,20 @@ Vite (esbuild + Rollup)
 ```json
 {
   "devDependencies": {
+    "@eslint/js": "ESLint core",
+    "@tailwindcss/typography": "Typography plugin",
     "@types/*": "TypeScript definitions",
     "@vitejs/plugin-react-swc": "SWC-based React plugin",
     "autoprefixer": "CSS autoprefixing",
+    "eslint": "Linting",
+    "eslint-plugin-react-hooks": "React hooks rules",
+    "eslint-plugin-react-refresh": "React refresh rules",
+    "globals": "Global variable definitions",
     "lovable-tagger": "Lovable dev tool",
     "postcss": "CSS processing",
     "tailwindcss": "CSS framework",
     "typescript": "Type system",
+    "typescript-eslint": "TypeScript ESLint",
     "vite": "Build tool"
   }
 }
@@ -326,4 +344,4 @@ Production (lovable.app)
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

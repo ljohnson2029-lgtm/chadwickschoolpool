@@ -219,13 +219,16 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
 
       if (error) throw error;
 
-      const allRides = data || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allRides: any[] = data || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const userIds = [...new Set(allRides.map((r: any) => r.user_id))];
 
       // Fetch profiles, emails, and children in parallel
-      let profilesMap: Record<string, any> = {};
-      let emailsMap: Record<string, string> = {};
-      let childrenMap: Record<string, RideChild[]> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const profilesMap: Record<string, any> = {};
+      const emailsMap: Record<string, string> = {};
+      const childrenMap: Record<string, RideChild[]> = {};
 
       if (userIds.length > 0) {
         const [profilesResult, usersResult, childrenResult] = await Promise.all([
@@ -251,10 +254,13 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
         }
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ridesWithProfiles = allRides.map((ride: any) => {
         const allChildren = childrenMap[ride.user_id] || [];
         const selectedIds: string[] | null = ride.selected_children;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const filteredChildren = selectedIds && selectedIds.length > 0
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? allChildren.filter((c: any) => selectedIds.includes(c.id))
           : allChildren;
         return {
@@ -356,6 +362,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             ? `I'd like to join your offered ride!`
             : `I can help with your ride request!`,
           selected_children: selectedChildIds || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
 
       if (error) {
@@ -726,7 +733,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                       setRides(prev => prev.filter(r => r.id !== ride.id));
                       toast({ title: "Ride deleted", description: "Your ride has been removed." });
                       setShowDeleteDialog(false);
-                    } catch (err: any) {
+                    } catch (err) {
                       console.error('Error deleting ride:', err);
                       toast({ title: "Error", description: "Failed to delete ride. Please try again.", variant: "destructive" });
                     } finally {
@@ -897,7 +904,9 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
                         message: `🔄 ${senderName} has cancelled their ${cancelPendingRide.type === 'request' ? 'offer to help with' : 'request to join'} your ride`,
                       }
                     });
-                  } catch {}
+                  } catch {
+                    // Notification failed but ride was still cancelled
+                  }
 
                   toast({ title: "Request cancelled", description: "Your pending request has been removed." });
                   await fetchUserResponses();

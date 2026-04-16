@@ -64,6 +64,7 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
     }
     setSubmitting(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const insertData: any = {
       space_id: spaceId,
       creator_id: user.id,
@@ -111,7 +112,9 @@ const RecurringRideForm = ({ spaceId, otherParentId, otherParentName, rideType, 
             message: `🔄 ${currentName} has sent you a recurring ${label} in your Series space`,
           },
         });
-      } catch {}
+      } catch {
+        // Silently ignore notification errors
+      }
       toast.success("Recurring ride posted!");
       onSuccess();
     }

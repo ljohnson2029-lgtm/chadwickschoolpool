@@ -149,7 +149,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error:', error);
     return new Response(
       JSON.stringify({ approved: false, message: 'Unable to verify email at this time' }),

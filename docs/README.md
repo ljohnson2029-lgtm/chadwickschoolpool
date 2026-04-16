@@ -9,13 +9,13 @@ Welcome to the SchoolPool documentation! This directory contains comprehensive d
 - [Development Guide](./DEVELOPMENT.md) - Setup, debugging, and workflow
 
 ### Technical Documentation
-- [Architecture](./ARCHITECTURE.md) - System architecture and data flow
-- [Tech Stack](./TECH_STACK.md) - Technologies, libraries, and dependencies
-- [Database Schema](./DATABASE.md) - Tables, relationships, and RLS policies
-- [API Reference](./API.md) - Edge functions and API endpoints
+- [Architecture](./ARCHITECTURE.md) - System architecture, data flow, and component structure
+- [Tech Stack](./TECH_STACK.md) - Technologies, libraries, dependencies, and tools
+- [Database Schema](./DATABASE.md) - Tables, relationships, RLS policies, and functions
+- [API Reference](./API.md) - Edge functions, endpoints, and authentication
 
 ### Features
-- [Features Guide](./FEATURES.md) - Detailed feature documentation
+- [Features Guide](./FEATURES.md) - Detailed feature documentation and user workflows
 
 ---
 
@@ -41,4 +41,4 @@ Welcome to the SchoolPool documentation! This directory contains comprehensive d
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

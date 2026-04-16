@@ -27,8 +27,6 @@ export const AcceptDirectRideDialog = ({ open, onClose, onConfirm, senderName, r
   const isRequestType = rideType === 'request';
   const effectiveMaxSeats = isRequestType ? null : maxSeats;
 
-  console.log('[AcceptDirectRideDialog] rideType:', rideType, '| isRequestType:', isRequestType, '| maxSeats prop:', maxSeats, '| effectiveMaxSeats:', effectiveMaxSeats);
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>

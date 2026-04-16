@@ -26,6 +26,7 @@ interface ScheduleData {
   space_id: string;
   proposer_id: string;
   recipient_id: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   day_assignments: any;
   proposer_regular_time: string | null;
   proposer_wednesday_time: string | null;
@@ -33,7 +34,9 @@ interface ScheduleData {
   recipient_wednesday_time: string | null;
   proposer_children: string[];
   recipient_children: string[] | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   proposer_vehicle: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   recipient_vehicle: any;
   status: string;
   created_at: string;
@@ -108,12 +111,14 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
         // Other parent submitted = has selections in DB
         const otherHasSelections = otherSelections && otherSelections.length > 0;
         setOtherParentSubmitted(!!otherHasSelections);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setOtherParentSelectedChildIds(otherHasSelections ? otherSelections.map((s: any) => s.child_id) : []);
 
         // My submitted state
         const myHasSelections = mySelections && mySelections.length > 0;
         setMySubmitted(!!myHasSelections);
         if (myHasSelections) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setSelectedChildIds(mySelections.map((s: any) => s.child_id));
         }
       }
@@ -190,6 +195,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
       .order("created_at", { ascending: false });
     if (data) {
       setSchedules(data as unknown as ScheduleData[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ids = [...new Set(data.map((s: any) => s.proposer_id))];
       if (ids.length > 0) {
         const { data: profiles } = await supabase
@@ -221,9 +227,11 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
       ]);
       const myHas = mySelections && mySelections.length > 0;
       setMySubmitted(!!myHas);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (myHas) setSelectedChildIds(mySelections.map((s: any) => s.child_id));
       const otherHas = otherSelections && otherSelections.length > 0;
       setOtherParentSubmitted(!!otherHas);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setOtherParentSelectedChildIds(otherHas ? otherSelections.map((s: any) => s.child_id) : []);
     }
     setRefreshingSeries(false);
@@ -276,6 +284,7 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
           .eq("space_id", spaceId)
           .eq("parent_id", otherParentId);
         if (data && data.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setOtherParentSelectedChildIds(data.map((s: any) => s.child_id));
           setOtherParentSubmitted(true);
         } else {
@@ -316,7 +325,9 @@ const SeriesSpaceView = ({ spaceId, otherParentName, onBack }: Props) => {
               message: `💬 ${currentUserName} sent you a message in your Series space`,
             },
           });
-        } catch {}
+        } catch {
+          // Silently ignore notification errors
+        }
       }
     }
     setSending(false);

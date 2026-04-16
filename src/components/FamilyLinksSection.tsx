@@ -96,7 +96,8 @@ const FamilyLinksSection = () => {
         isStudent ? link.parent_id : link.student_id
       ).filter(Boolean) || [];
       
-      let userDetails: any = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let userDetails: Record<string, any> = {};
       
       if (userIds.length > 0) {
         const { data: usersData } = await supabase
@@ -104,12 +105,14 @@ const FamilyLinksSection = () => {
           .select('user_id, email, first_name, last_name')
           .in('user_id', userIds);
         
-        userDetails = (usersData || []).reduce((acc: any, u: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        userDetails = (usersData || []).reduce((acc: Record<string, any>, u: any) => {
           acc[u.user_id] = u;
           return acc;
         }, {});
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedLinks = links?.map((link: any) => {
         const userId = isStudent ? link.parent_id : link.student_id;
         const details = userDetails[userId];

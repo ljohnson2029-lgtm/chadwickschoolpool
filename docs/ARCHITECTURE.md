@@ -59,10 +59,13 @@
 │  │  │ • auth-verify-2fa     │ • get-parent-locations    │   │   │
 │  │  │ • auth-check-email    │ • get-parent-profile      │   │   │
 │  │  │ • auth-check-username │ • lookup-parent           │   │   │
+│  │  │ • auth-reset-password │ • search-parents          │   │   │
 │  │  │ • submit-access-req   │ • create-notification     │   │   │
 │  │  │ • manage-access-reqs  │ • cleanup-expired-rides   │   │   │
 │  │  │ • send-link-verify    │ • generate-test-parent    │   │   │
 │  │  │ • send-email          │ • delete-test-parents     │   │   │
+│  │  │                       │ • suggest-carpool-partners│   │   │
+│  │  │                       │ • suggest-piggyback-routes│   │   │
 │  │  └──────────────────────────────────────────────────┘   │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -298,14 +301,19 @@ interface AuthContextType {
 /my-rides            → MyRides
 /conversations       → Conversations
 /family-links        → FamilyLinks
+/family-carpools     → FamilyCarpools
 /series              → Series (ParentOnly)
 /settings            → Settings
 /privacy             → Privacy
 /terms               → Terms
 /help                → Help
+/feedback             → Feedback
 /verify-email        → EmailVerification
 /request-access      → RequestAccess
+/forgot-password     → ForgotPassword
 /admin/approvals     → AdminApprovals
+/admin/verified-emails → AdminVerifiedEmails
+/requests/private    → MyPrivateRequests (ParentOnly)
 
 // Public profiles
 /profile/:userId    → PublicProfile
@@ -415,4 +423,4 @@ Local Development
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

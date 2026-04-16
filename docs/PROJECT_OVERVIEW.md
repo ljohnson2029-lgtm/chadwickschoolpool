@@ -123,8 +123,17 @@ Student approves → Accounts linked → Shared schedule visible
 | **Post Ride** | Create new ride offer/request | Parents |
 | **Conversations** | Ride request management | Parents |
 | **Family Links** | Student-parent linking | All |
+| **Family Carpools** | View family ride schedules | All |
 | **Profile** | User information & settings | All |
+| **Profile Setup** | Complete profile after registration | All |
 | **Series** | Recurring ride management | Parents |
+| **My Private Requests** | Manage private ride invitations | Parents |
+| **Settings** | App preferences and account settings | All |
+| **Feedback** | Submit app feedback | All |
+| **Forgot Password** | Password recovery flow | Public |
+| **Admin Approvals** | Review access requests | Admin |
+| **Admin Verified Emails** | Manage approved email list | Admin |
+| **Public Profile** | View other user's public info | All |
 
 ---
 
@@ -193,8 +202,6 @@ Student approves → Accounts linked → Shared schedule visible
 - [API Reference](./API.md) - Edge Functions, endpoints, authentication
 - [Features](./FEATURES.md) - Detailed feature documentation
 - [Development Guide](./DEVELOPMENT.md) - Setup, debugging, deployment
-- [Security](./SECURITY.md) - Security measures, authentication flow
-- [Deployment](./DEPLOYMENT.md) - Production deployment process
 
 ---
 
@@ -207,4 +214,4 @@ Student approves → Accounts linked → Shared schedule visible
 
 ---
 
-*Last Updated: April 15, 2026*
+*Last Updated: April 16, 2026*

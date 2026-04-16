@@ -172,6 +172,7 @@ const RideOfferForm = ({
           license_plate: selectedVehicleInfo.license_plate,
           vehicle_id: selectedVehicleInfo.vehicle_id,
         } : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any).select();
 
       if (rideError) throw rideError;
@@ -226,10 +227,11 @@ const RideOfferForm = ({
       if (!isBroadcast && recipientParentId) {
         navigate('/conversations');
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        description: (error as any).message || "An error occurred",
         variant: "destructive",
       });
     } finally {

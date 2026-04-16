@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,10 +63,14 @@ const MyRides = () => {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  const invalidateRides = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
-    queryClient.invalidateQueries({ queryKey: ['student-rides'] });
-  }, [queryClient]);
+  // Animation hooks must be called before any early returns
+  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
+  const { ref: statsRef, isVisible: statsVisible } = useScrollReveal<HTMLDivElement>();
+  // Using refs to store target values for count-up animation
+  const activeRidesTargetRef = useRef(0);
+  const pastRidesTargetRef = useRef(0);
+  const activeCount = useCountUp(activeRidesTargetRef.current, 1000);
+  const pastCount = useCountUp(pastRidesTargetRef.current, 1000);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -74,6 +78,11 @@ const MyRides = () => {
     setRefreshing(false);
     toast.success('Rides updated', { duration: 2000 });
   }, [queryClient, isStudent]);
+
+  const invalidateRides = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['my-rides'] });
+    queryClient.invalidateQueries({ queryKey: ['student-rides'] });
+  }, [queryClient]);
 
   // Student rides fetcher for React Query
   const fetchStudentRides = useCallback(async (): Promise<{ active: UnifiedRide[]; past: UnifiedRide[]; hasLinked: boolean }> => {
@@ -484,6 +493,16 @@ const MyRides = () => {
   const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
     .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
+  
+  // Update refs for count-up animation
+  useEffect(() => {
+    activeRidesTargetRef.current = activeRides.length;
+  }, [activeRides.length]);
+  
+  useEffect(() => {
+    pastRidesTargetRef.current = pastRides.length;
+  }, [pastRides.length]);
+  
   const loadingData = isStudent ? loadingStudentRides : loadingParentRides;
 
   const getMyName = () => {
@@ -1061,11 +1080,6 @@ const MyRides = () => {
       </ScrollArea>
     );
   };
-
-  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal<HTMLDivElement>();
-  const { ref: statsRef, isVisible: statsVisible } = useScrollReveal<HTMLDivElement>();
-  const activeCount = useCountUp(activeRides.length, 1000);
-  const pastCount = useCountUp(pastRides.length, 1000);
 
   return (
     <DashboardLayout>

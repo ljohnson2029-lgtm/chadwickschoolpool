@@ -370,7 +370,7 @@ const HowItWorksSection = ({
       onVideoClick();
     } else {
       // Default behavior - could open a modal or external link
-      console.log("Video tutorial clicked - implement your video player here");
+      // Placeholder for video tutorial functionality
     }
   };
 

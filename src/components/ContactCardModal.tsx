@@ -11,7 +11,6 @@ interface ContactCardModalProps {
 }
 
 export function ContactCardModal({ open, onClose, parentName, phone }: ContactCardModalProps) {
-  console.log("[ContactCardModal] parentName:", parentName, "phone:", phone);
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
