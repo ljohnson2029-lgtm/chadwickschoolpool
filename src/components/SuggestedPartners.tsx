@@ -109,7 +109,7 @@ const SuggestedPartners = () => {
         if (spData.ai_powered) setAiPowered(true);
       }
 
-      setSuggestions(unified.slice(0, 6));
+      setSuggestions(unified.slice(0, 4));
       setLoading(false);
     };
 

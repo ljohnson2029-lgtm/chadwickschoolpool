@@ -131,7 +131,7 @@ const Dashboard = () => {
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-50",
       iconColor: "text-blue-600",
-      path: '/find-rides',
+      path: '/family-carpools?view=map',
       badge: null
     }
   ];
@@ -220,16 +220,6 @@ const Dashboard = () => {
                 </div>
                 <div className="text-3xl font-bold">{ridesCount}</div>
                 <div className="text-sm text-blue-100">Upcoming Rides</div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white border-gray-100 shadow-sm">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <Users className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900">{connectionsCount}</div>
-                <div className="text-sm text-gray-500">Family Links</div>
               </CardContent>
             </Card>
             

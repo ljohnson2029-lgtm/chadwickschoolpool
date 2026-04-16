@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,9 @@ import { useScrollReveal } from "@/lib/animations";
 const FamilyCarpools = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>(searchParams.get('view') === 'map' ? 'map' : 'list');
   const [showRequests, setShowRequests] = useState(true);
   const [showOffers, setShowOffers] = useState(true);
   const [showHome, setShowHome] = useState(false);
