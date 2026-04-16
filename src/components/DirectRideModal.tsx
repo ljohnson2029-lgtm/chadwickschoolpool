@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isFutureDateAndTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 import { cn } from "@/lib/utils";
 import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { useAuth } from "@/contexts/AuthContext";
@@ -125,6 +126,10 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
 
   const onSubmit = async (values: FormValues) => {
     if (!profile) return;
+    if (!isFutureDateAndTime(values.ride_date, values.pickup_time)) {
+      toast({ title: "Invalid Date/Time", description: PAST_DATETIME_ERROR, variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -357,10 +362,13 @@ const DirectRideModal = ({ open, onClose, recipientId, recipientName, type, onSu
               </FormItem>
             )} />
 
-            <Button type="submit" className="w-full gap-2" disabled={submitting}>
+            <Button type="submit" className="w-full gap-2" disabled={submitting || !isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time"))}>
               <Send className="h-4 w-4" />
               {submitting ? "Sending..." : `Send Direct Ride ${isRequest ? "Request" : "Offer"}`}
             </Button>
+            {!isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time")) && (
+              <p className="text-sm text-destructive text-center">{PAST_DATETIME_ERROR}</p>
+            )}
           </form>
         </Form>
       </DialogContent>

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { haversineMiles } from "@/lib/rideValidation";
 
 interface RideChild {
   id: string;
@@ -81,9 +82,19 @@ interface OwnerContact {
 
 interface RidesListProps {
   onViewOnMap?: (ride: Ride) => void;
+  showRequests?: boolean;
+  showOffers?: boolean;
+  radiusMiles?: number | null;
+  homeCoords?: { lat: number; lng: number } | null;
 }
 
-const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
+const RidesList = ({
+  onViewOnMap,
+  showRequests = true,
+  showOffers = true,
+  radiusMiles = null,
+  homeCoords = null,
+}: RidesListProps = {}) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -755,20 +766,36 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
     return <div className="text-center py-8">Loading rides...</div>;
   }
 
-  const requests = rides.filter(r => r.type === "request");
-  const offers = rides.filter(r => r.type === "offer");
+  // Apply type + radius filters from FamilyCarpools page
+  const visibleRides = rides.filter((r) => {
+    if (r.type === "request" && !showRequests) return false;
+    if (r.type === "offer" && !showOffers) return false;
+    if (radiusMiles != null && homeCoords) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lat = (r as any).pickup_latitude;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lng = (r as any).pickup_longitude;
+      if (lat == null || lng == null) return false;
+      const dist = haversineMiles(homeCoords.lat, homeCoords.lng, lat, lng);
+      if (dist > radiusMiles) return false;
+    }
+    return true;
+  });
+
+  const requests = visibleRides.filter(r => r.type === "request");
+  const offers = visibleRides.filter(r => r.type === "offer");
 
   return (
     <>
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All Rides ({rides.length})</TabsTrigger>
+          <TabsTrigger value="all">All Rides ({visibleRides.length})</TabsTrigger>
           <TabsTrigger value="requests">Requests ({requests.length})</TabsTrigger>
           <TabsTrigger value="offers">Offers ({offers.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          {rides.length === 0 ? (
+          {visibleRides.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg font-medium mb-2">
@@ -782,7 +809,7 @@ const RidesList = ({ onViewOnMap }: RidesListProps = {}) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {rides.map((ride) => (
+              {visibleRides.map((ride) => (
                 <RideCard key={ride.id} ride={ride} />
               ))}
             </div>

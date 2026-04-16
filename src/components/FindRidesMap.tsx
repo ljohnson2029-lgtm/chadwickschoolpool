@@ -92,6 +92,8 @@ interface FindRidesMapProps {
     pickup_location: string;
   } | null;
   onFocusRideHandled?: () => void;
+  radiusMiles?: number | null;
+  homeCoords?: { lat: number; lng: number } | null;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -803,6 +805,8 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
   onToggleSchool,
   focusRide,
   onFocusRideHandled,
+  radiusMiles = null,
+  homeCoords = null,
 }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -829,8 +833,28 @@ const FindRidesMap: React.FC<FindRidesMapProps> = ({
 
   /* ── Derived data ───────────────────────────────────────── */
   const filteredRides = useMemo(
-    () => rides.filter((r) => (showRequests && r.type === "request") || (showOffers && r.type === "offer")),
-    [rides, showRequests, showOffers],
+    () =>
+      rides.filter((r) => {
+        if (!((showRequests && r.type === "request") || (showOffers && r.type === "offer"))) {
+          return false;
+        }
+        if (radiusMiles != null && homeCoords) {
+          if (r.pickup_latitude == null || r.pickup_longitude == null) return false;
+          const R = 3958.8;
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const dLat = toRad(r.pickup_latitude - homeCoords.lat);
+          const dLon = toRad(r.pickup_longitude - homeCoords.lng);
+          const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(homeCoords.lat)) *
+              Math.cos(toRad(r.pickup_latitude)) *
+              Math.sin(dLon / 2) ** 2;
+          const dist = R * 2 * Math.asin(Math.sqrt(a));
+          if (dist > radiusMiles) return false;
+        }
+        return true;
+      }),
+    [rides, showRequests, showOffers, radiusMiles, homeCoords],
   );
 
   const rideCounts = useMemo(

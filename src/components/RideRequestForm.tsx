@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { canRequestRide, getStudentPermissionError } from "@/lib/permissions";
 import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import { isFutureDateTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 
 interface RideRequestFormProps {
   onSuccess: () => void;
@@ -106,6 +107,16 @@ const RideRequestForm = ({
       toast({
         title: "Permission Denied",
         description: getStudentPermissionError("request rides"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate future date/time
+    if (!isFutureDateTime(rideDate, rideTime)) {
+      toast({
+        title: "Invalid Date/Time",
+        description: PAST_DATETIME_ERROR,
         variant: "destructive",
       });
       return;
@@ -403,9 +414,12 @@ const RideRequestForm = ({
             error={childError}
           />
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
+          <Button type="submit" disabled={submitting || !isFutureDateTime(rideDate, rideTime)} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Request to ${recipientParentName.split(' ')[0]}` : "Post Ride Request"}
           </Button>
+          {rideDate && rideTime && !isFutureDateTime(rideDate, rideTime) && (
+            <p className="text-sm text-destructive text-center">{PAST_DATETIME_ERROR}</p>
+          )}
         </form>
       </CardContent>
     </Card>

@@ -16,6 +16,7 @@ import RideOfferForm from "@/components/RideOfferForm";
 import RidesList, { type Ride } from "@/components/RidesList";
 import FindRidesMap from "@/components/FindRidesMap";
 import ParentSearchBar from "@/components/ParentSearchBar";
+import CarpoolFiltersBar, { type RadiusOption } from "@/components/CarpoolFiltersBar";
 import { useScrollReveal } from "@/lib/animations";
 
 const FamilyCarpools = () => {
@@ -28,6 +29,18 @@ const FamilyCarpools = () => {
   const [showOffers, setShowOffers] = useState(true);
   const [showHome, setShowHome] = useState(false);
   const [showSchool, setShowSchool] = useState(true);
+  const [radius, setRadius] = useState<RadiusOption>("any");
+
+  const handleClearFilters = () => {
+    setShowRequests(true);
+    setShowOffers(true);
+    setRadius("any");
+  };
+
+  const hasHomeAddress = !!(profile?.home_latitude && profile?.home_longitude);
+  const homeCoords = hasHomeAddress
+    ? { lat: profile!.home_latitude as number, lng: profile!.home_longitude as number }
+    : null;
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
   const [focusRide, setFocusRide] = useState<{
@@ -301,6 +314,24 @@ const FamilyCarpools = () => {
             <ParentSearchBar />
           </motion.div>
 
+          {/* Shared Filter Bar (applies to both map + list) */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+          >
+            <CarpoolFiltersBar
+              showRequests={showRequests}
+              showOffers={showOffers}
+              radius={radius}
+              onToggleRequests={setShowRequests}
+              onToggleOffers={setShowOffers}
+              onRadiusChange={setRadius}
+              onClear={handleClearFilters}
+              hasHomeAddress={hasHomeAddress}
+            />
+          </motion.div>
+
           {/* View Content with AnimatePresence */}
           <AnimatePresence mode="wait">
             {viewMode === 'map' ? (
@@ -323,6 +354,8 @@ const FamilyCarpools = () => {
                   onToggleSchool={setShowSchool}
                   focusRide={focusRide}
                   onFocusRideHandled={() => setFocusRide(null)}
+                  radiusMiles={radius === "any" ? null : parseInt(radius, 10)}
+                  homeCoords={homeCoords}
                 />
               </motion.div>
             ) : (
@@ -333,7 +366,14 @@ const FamilyCarpools = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <RidesList key={refreshKey} onViewOnMap={handleViewOnMap} />
+                <RidesList
+                  key={refreshKey}
+                  onViewOnMap={handleViewOnMap}
+                  showRequests={showRequests}
+                  showOffers={showOffers}
+                  radiusMiles={radius === "any" ? null : parseInt(radius, 10)}
+                  homeCoords={homeCoords}
+                />
               </motion.div>
             )}
           </AnimatePresence>

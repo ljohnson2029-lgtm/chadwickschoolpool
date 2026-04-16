@@ -22,6 +22,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isFutureDateAndTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 import { cn } from "@/lib/utils";
 
 const CHADWICK_SCHOOL = {
@@ -171,6 +172,15 @@ const PrivateRideRequestModal = ({
   };
 
   const onSubmit = async (values: RequestFormValues) => {
+    // Block past date/time
+    if (!isFutureDateAndTime(values.ride_date, values.pickup_time)) {
+      toast({
+        title: "Invalid Date/Time",
+        description: PAST_DATETIME_ERROR,
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -552,7 +562,7 @@ const PrivateRideRequestModal = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={submitting || !form.formState.isValid}
+                  disabled={submitting || !form.formState.isValid || !isFutureDateAndTime(form.watch("ride_date"), form.watch("pickup_time"))}
                   className="flex-1 gap-2"
                 >
                   {submitting ? (

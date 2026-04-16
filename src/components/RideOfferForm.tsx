@@ -15,6 +15,7 @@ import AddressAutocompleteInput from "@/components/AddressAutocompleteInput";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
 import VehicleSelector from "@/components/VehicleSelector";
 import { type VehicleInfo } from "@/hooks/useVehicles";
+import { isFutureDateTime, PAST_DATETIME_ERROR } from "@/lib/rideValidation";
 
 
 interface RideOfferFormProps {
@@ -113,6 +114,16 @@ const RideOfferForm = ({
       toast({
         title: "Permission Denied",
         description: getStudentPermissionError("create ride offers"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate future date/time
+    if (!isFutureDateTime(rideDate, rideTime)) {
+      toast({
+        title: "Invalid Date/Time",
+        description: PAST_DATETIME_ERROR,
         variant: "destructive",
       });
       return;
@@ -424,9 +435,12 @@ const RideOfferForm = ({
             onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
           />
 
-          <Button type="submit" disabled={submitting} className="w-full h-12 sm:h-11 text-base sm:text-sm">
+          <Button type="submit" disabled={submitting || !isFutureDateTime(rideDate, rideTime)} className="w-full h-12 sm:h-11 text-base sm:text-sm">
             {submitting ? "Sending..." : recipientParentName ? `Send Offer to ${recipientParentName.split(' ')[0]}` : "Post Ride Offer"}
           </Button>
+          {rideDate && rideTime && !isFutureDateTime(rideDate, rideTime) && (
+            <p className="text-sm text-destructive text-center">{PAST_DATETIME_ERROR}</p>
+          )}
         </form>
       </CardContent>
     </Card>
