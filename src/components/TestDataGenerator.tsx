@@ -15,23 +15,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 
-// Generate a secure random password for test accounts
-const generateSecurePassword = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
-};
-
 const TestDataGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
-  const [generatedPasswords, setGeneratedPasswords] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const testParentsData = [
@@ -61,7 +50,6 @@ const TestDataGenerator = () => {
     setIsGenerating(true);
     setProgress(0);
     setStatusMessage("Starting test data generation...");
-    const passwords: Record<string, string> = {};
 
     try {
       const total = testParentsData.length;
@@ -70,8 +58,6 @@ const TestDataGenerator = () => {
         const parent = testParentsData[i];
         const [firstName, lastName] = parent.name.split(" ");
         const email = `testparent${i + 1}@example.com`;
-        const password = generateSecurePassword();
-        passwords[email] = password;
         
         setStatusMessage(`Creating test parent ${i + 1}/${total}: ${parent.name}...`);
         setProgress(((i + 1) / total) * 100);
@@ -83,27 +69,21 @@ const TestDataGenerator = () => {
             firstName,
             lastName,
             address: parent.address,
-            password
+            password: "Test123!"
           }
         });
 
         if (error) {
           console.error(`Failed to create ${parent.name}:`, error);
-          delete passwords[email];
           // Continue with next parent instead of stopping
         }
       }
 
-      setGeneratedPasswords(passwords);
-      const passwordCount = Object.keys(passwords).length;
-      setStatusMessage(`Successfully created ${passwordCount} test parents! Check console for passwords.`);
+      setStatusMessage(`Successfully created ${total} test parents!`);
       toast({
         title: "Test Data Generated",
-        description: `Created ${passwordCount} test parent accounts. Passwords logged to browser console.`,
+        description: `Created ${total} test parent accounts. Login with testparent1@example.com through testparent${total}@example.com, password: Test123!`,
       });
-      
-      // Log passwords to console for developer access
-      console.table(passwords);
 
       // Clear status after 3 seconds
       setTimeout(() => {
@@ -166,23 +146,9 @@ const TestDataGenerator = () => {
         <div className="text-sm text-yellow-600">
           <p className="font-semibold mb-1">Development Mode Active</p>
           <p>Generate test parent accounts to populate the map with sample data.</p>
-          <p className="mt-2 text-xs">Each account gets a unique random password logged to console.</p>
+          <p className="mt-2 text-xs">All test accounts use password: <code className="bg-yellow-500/20 px-1 rounded">Test123!</code></p>
         </div>
       </div>
-      
-      {Object.keys(generatedPasswords).length > 0 && (
-        <div className="p-3 bg-muted rounded-lg text-xs">
-          <p className="font-semibold mb-2">Generated Account Passwords:</p>
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {Object.entries(generatedPasswords).map(([email, pwd]) => (
-              <div key={email} className="flex justify-between">
-                <span>{email}</span>
-                <code className="bg-background px-1 rounded">{pwd}</code>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-3">
         <Button
