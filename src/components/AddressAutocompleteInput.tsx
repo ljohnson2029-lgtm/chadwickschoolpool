@@ -24,8 +24,9 @@ const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_MS = 300;
 const MAX_RESULTS = 5;
 
-// Mapbox token from environment variables
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+// Mapbox token (same one used elsewhere in the project)
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
 
 // Bias toward Palos Verdes / LA area (Chadwick School vicinity)
 const PROXIMITY_LNG = -118.3965;
