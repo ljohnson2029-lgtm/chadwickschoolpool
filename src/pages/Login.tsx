@@ -169,7 +169,7 @@ const Login = () => {
         />
       )}
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-center justify-center p-4 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 flex items-start lg:items-center justify-center p-4 pt-24 pb-32 lg:pb-24">
         {/* Background decorations */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <motion.div 
