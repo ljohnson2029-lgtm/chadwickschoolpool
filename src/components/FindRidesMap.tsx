@@ -113,8 +113,7 @@ const CLUSTER_MAX_ZOOM = 14;
 const CLUSTER_RADIUS = 50;
 const FIT_BOUNDS_PADDING = { top: 80, bottom: 80, left: 100, right: 100 };
 
-const MAPBOX_TOKEN =
-  "pk.eyJ1IjoibHVrZWpvaG5zb24xMSIsImEiOiJjbWk5NXYzMWcwa2d5MmxvajBpc3Q1dWh1In0.MNg4LdPq3iaNHA3ojJ1VPg";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPERS
@@ -157,8 +156,18 @@ const createHomeMarkerElement = (): HTMLDivElement => {
   el.className =
     "flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full shadow-lg border-2 border-white cursor-pointer";
   el.style.zIndex = "1";
-  el.innerHTML =
-    '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+  
+  // Create SVG safely using DOM API instead of innerHTML
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "w-4 h-4 text-white");
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("viewBox", "0 0 20 20");
+  
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z");
+  
+  svg.appendChild(path);
+  el.appendChild(svg);
   el.setAttribute("aria-label", "Your home location");
   return el;
 };
@@ -168,8 +177,18 @@ const createSchoolMarkerElement = (): HTMLDivElement => {
   el.className =
     "flex items-center justify-center w-9 h-9 bg-orange-500 rounded-full shadow-lg border-2 border-white cursor-pointer";
   el.style.zIndex = "1";
-  el.innerHTML =
-    '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>';
+  
+  // Create SVG safely using DOM API instead of innerHTML
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "w-5 h-5 text-white");
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z");
+  
+  svg.appendChild(path);
+  el.appendChild(svg);
   el.setAttribute("aria-label", "Chadwick School");
   return el;
 };
