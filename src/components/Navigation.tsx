@@ -284,7 +284,7 @@ const Navigation = () => {
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    className={`hidden sm:flex ${isScrolled || !isHomePage ? "text-gray-700" : "text-gray-700"}`}
+                    className="hidden sm:flex bg-white hover:bg-gray-50 text-blue-700 font-semibold ring-2 ring-blue-500 hover:ring-blue-600 shadow-md"
                     onClick={() => navigate("/login")}
                   >
                     Log in
