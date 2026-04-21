@@ -290,7 +290,7 @@ const Navigation = () => {
                     Log in
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
+                    className="bg-white hover:bg-gray-50 text-blue-700 font-semibold ring-2 ring-blue-500 hover:ring-blue-600 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
                     onClick={() => navigate("/register")}
                   >
                     <Sparkles className="w-4 h-4 mr-1.5" />
