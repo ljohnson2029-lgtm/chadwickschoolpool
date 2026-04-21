@@ -301,14 +301,14 @@ const Navigation = () => {
 
               {/* Mobile Menu Button */}
               <motion.button
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100/80 transition-colors"
+                className="lg:hidden p-2 rounded-lg bg-white ring-2 ring-blue-500 hover:bg-gray-50 transition-colors"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 whileTap={{ scale: 0.95 }}
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gray-700" />
+                  <X className="w-6 h-6 text-blue-700" />
                 ) : (
-                  <Menu className="w-6 h-6 text-gray-700" />
+                  <Menu className="w-6 h-6 text-blue-700" />
                 )}
               </motion.button>
             </div>
