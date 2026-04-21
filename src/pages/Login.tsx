@@ -338,7 +338,7 @@ const Login = () => {
                       <LoadingButton
                         type="submit"
                         loading={loading}
-                        className="w-full h-16 text-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-bold rounded-xl shadow-xl shadow-blue-500/40 hover:shadow-blue-500/60 ring-2 ring-blue-400/30 hover:ring-blue-400/50 transition-all"
+                        className="w-full h-16 text-lg bg-white hover:bg-gray-50 text-blue-700 font-bold rounded-xl shadow-xl shadow-blue-500/40 hover:shadow-blue-500/60 ring-2 ring-blue-500 hover:ring-blue-600 transition-all"
                       >
                         Sign In
                         <ArrowRight className="w-6 h-6 ml-2" />
