@@ -890,9 +890,9 @@ const Register = () => {
 
               <LoadingButton 
                 type="submit" 
-                className={`w-full transition-all duration-300 ${
+                className={`w-full h-14 text-lg font-bold rounded-xl transition-all duration-300 ${
                   isFormValid
-                    ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:scale-105 hover:shadow-xl cursor-pointer"
+                    ? "bg-white hover:bg-gray-50 text-blue-700 ring-2 ring-blue-500 hover:ring-blue-600 shadow-xl shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-105 cursor-pointer"
                     : "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                 }`}
                 loading={loading}
