@@ -299,6 +299,10 @@ export const NotificationDropdown = () => {
            type === 'private_ride_request_received' || type === 'private_ride_offer_received';
   };
 
+  // Notifications that mean "someone wants to join/help with YOUR ride" — deep-link to Pending tab
+  const isIncomingJoinRequestNotif = (type: string) =>
+    type === 'ride_join_request' || type === 'ride_request' || type === 'ride_offer';
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.is_read) {
       markAsRead(notification.id);
@@ -329,6 +333,9 @@ export const NotificationDropdown = () => {
     } else if (isPrivateRequestNotification(notification.type)) {
       setIsOpen(false);
       navigate('/requests/private');
+    } else if (isIncomingJoinRequestNotif(notification.type)) {
+      setIsOpen(false);
+      navigate('/my-rides?tab=pending');
     } else if (isRideNotification(notification.type)) {
       setIsOpen(false);
       navigate('/find-rides');
@@ -426,7 +433,7 @@ export const NotificationDropdown = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsOpen(false);
-                          navigate('/my-rides');
+                          navigate(isIncomingJoinRequestNotif(notification.type) ? '/my-rides?tab=pending' : '/my-rides');
                         }}
                         className="h-7 mt-2 gap-1 text-xs"
                       >
