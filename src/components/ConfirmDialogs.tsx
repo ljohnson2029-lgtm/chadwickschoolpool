@@ -756,6 +756,10 @@ export const InstantOfferRideDialog = ({
                 onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
                 error={childError}
               />
+              <VehicleSelector
+                selectedVehicleId={selectedVehicleId}
+                onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
+              />
               <p className="text-sm text-muted-foreground">
                 You'll be connected immediately and can coordinate pickup details.
               </p>
