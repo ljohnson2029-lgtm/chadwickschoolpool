@@ -86,7 +86,7 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (RESEND_API_KEY) {
       const escapeHtml = (t: string) => t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      const adminEmails = ["luke.r.johnson.2010@gmail.com", "efang508@gmail.com"];
+      const adminEmails = ["chadwickschoolpool@gmail.com"];
       const typeLabel = user_type === "parent" ? "Chadwick Parent" : "Chadwick Student";
 
       await fetch("https://api.resend.com/emails", {
