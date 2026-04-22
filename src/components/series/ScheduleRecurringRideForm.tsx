@@ -73,6 +73,10 @@ const ScheduleRecurringRideForm = ({
   const myDrivingWed = hasWednesday && driverAssignments["Wed"] === myId;
   const otherDrivingWed = hasWednesday && driverAssignments["Wed"] === otherParentId;
 
+  // I am a RIDER on days the OTHER parent drives — those are the days I need to set my pickup time
+  const myRidingRegular = otherDrivingRegular;
+  const myRidingWed = otherDrivingWed;
+
   const allDaysAssigned = selectedDays.every((d) => driverAssignments[d]);
   const myDriveCount = selectedDays.filter((d) => driverAssignments[d] === myId).length;
   const otherDriveCount = selectedDays.filter((d) => driverAssignments[d] === otherParentId).length;
@@ -80,8 +84,8 @@ const ScheduleRecurringRideForm = ({
 
   const step1Valid = selectedDays.length > 0 && allDaysAssigned && bothDrive;
   const step2Valid = (() => {
-    if (myDrivingRegular.length > 0 && !myRegularTime) return false;
-    if (myDrivingWed && !myWednesdayTime) return false;
+    if (myRidingRegular.length > 0 && !myRegularTime) return false;
+    if (myRidingWed && !myWednesdayTime) return false;
     return true;
   })();
 
