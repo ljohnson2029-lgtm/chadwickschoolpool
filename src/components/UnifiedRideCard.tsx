@@ -336,6 +336,7 @@ export const UnifiedRideCardSkeleton = () => (
 );
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
+  const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -790,7 +791,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                       variant="outline"
                       size="sm"
                       className="flex-1 gap-1.5 text-xs"
-                      onClick={() => window.location.href = '/series'}
+                      onMouseEnter={() => preloadRoute('/series')}
+                      onTouchStart={() => preloadRoute('/series')}
+                      onClick={() => navigate('/series')}
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                       Messages (in Series)
