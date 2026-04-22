@@ -282,10 +282,13 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
 
     const isWed = dayName === "Wed";
     let timeStr: string | null = null;
+    // Time is stored on the PASSENGER side (non-driver)
     if (assignment.driver_id === schedule.proposer_id) {
-      timeStr = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
-    } else {
+      // Recipient is the rider — read recipient's time
       timeStr = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+    } else {
+      // Proposer is the rider — read proposer's time
+      timeStr = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
     }
 
     if (timeStr) {
