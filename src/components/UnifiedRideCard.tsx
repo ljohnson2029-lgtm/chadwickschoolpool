@@ -459,7 +459,10 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
       <Card className={`rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border bg-white/90 backdrop-blur-sm overflow-hidden ${isPast ? 'opacity-70' : ''} ${
-        ride.status === 'pending-approval' || ride.status === 'pending-direct-sent' || ride.status === 'pending-direct-received'
+        ride.status === 'pending-approval' ||
+        ride.status === 'pending-direct-sent' ||
+        ride.status === 'pending-direct-received' ||
+        ((ride.status === 'posted-looking' || ride.status === 'posted-offering') && !ride.otherParent)
           ? 'border-amber-300 ring-1 ring-amber-200'
           : 'border-gray-100'
       }`}>
@@ -467,6 +470,7 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           {/* Pending status banner */}
           {(() => {
             const otherName = getParentName(ride.otherParent) || 'the other parent';
+            const pendingCount = ride.pendingRequests?.length || 0;
             let bannerText: string | null = null;
             if (ride.status === 'pending-approval') {
               bannerText = `Pending ride — ${otherName} has to confirm first`;
@@ -474,6 +478,14 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
               bannerText = `Pending ride — waiting for ${otherName} to respond`;
             } else if (ride.status === 'pending-direct-received') {
               bannerText = `Pending ride — your response needed for ${otherName}`;
+            } else if (ride.status === 'posted-looking' && !ride.otherParent) {
+              bannerText = pendingCount > 0
+                ? `Pending ride — ${pendingCount} parent${pendingCount > 1 ? 's' : ''} offered to help, awaiting your approval`
+                : `Pending ride — waiting for a parent to offer help`;
+            } else if (ride.status === 'posted-offering' && !ride.otherParent) {
+              bannerText = pendingCount > 0
+                ? `Pending ride — ${pendingCount} parent${pendingCount > 1 ? 's' : ''} requested to join, awaiting your approval`
+                : `Pending ride — waiting for riders to request a seat`;
             }
             if (!bannerText) return null;
             return (
