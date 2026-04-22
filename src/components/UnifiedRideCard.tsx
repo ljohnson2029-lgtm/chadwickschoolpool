@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { preloadRoute } from "@/lib/routePreload";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -334,6 +336,7 @@ export const UnifiedRideCardSkeleton = () => (
 );
 
 export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAcceptRequest, onDeclineRequest, onAcceptDirect, onDeclineDirect, acceptDeclineLoading }: UnifiedRideCardProps) => {
+  const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -788,7 +791,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
                       variant="outline"
                       size="sm"
                       className="flex-1 gap-1.5 text-xs"
-                      onClick={() => window.location.href = '/series'}
+                      onMouseEnter={() => preloadRoute('/series')}
+                      onTouchStart={() => preloadRoute('/series')}
+                      onClick={() => navigate('/series')}
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                       Messages (in Series)
