@@ -107,8 +107,7 @@ const HeroSection = () => {
           variants={itemVariants}
           className="text-lg sm:text-xl text-blue-100/80 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Join 234+ Chadwick families coordinating safe, reliable rides. 
-          Built by parents, for parents.
+          Coordinate safe, reliable rides for your family. Built by parents, for parents.
         </motion.p>
 
         {/* CTA Buttons */}
