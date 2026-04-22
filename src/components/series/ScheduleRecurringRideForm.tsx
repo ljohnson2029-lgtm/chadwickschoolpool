@@ -142,8 +142,9 @@ const ScheduleRecurringRideForm = ({
       proposer_id: myId,
       recipient_id: otherParentId,
       day_assignments: dayAssignments,
-      proposer_regular_time: myDrivingRegular.length > 0 ? myRegularTime || null : null,
-      proposer_wednesday_time: myDrivingWed ? myWednesdayTime || null : null,
+      // proposer_*_time = the time the PROPOSER (rider on those days) wants to be picked up
+      proposer_regular_time: myRidingRegular.length > 0 ? myRegularTime || null : null,
+      proposer_wednesday_time: myRidingWed ? myWednesdayTime || null : null,
       recipient_regular_time: null,
       recipient_wednesday_time: null,
       proposer_children: [],
