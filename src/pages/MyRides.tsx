@@ -550,9 +550,9 @@ const MyRides = () => {
   ];
   const isPending = (r: typeof allRides[number]) => PENDING_STATUSES.includes(r.status as string);
 
-  // Students see ALL upcoming parent-scheduled rides as Upcoming (no Pending split — they have no actions to take)
-  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && (isStudent || !isPending(r)));
-  const pendingRides = isStudent ? [] : allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
+  // Students see the same Active/Pending split as parents (read-only view of their parent's rides)
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && !isPending(r));
+  const pendingRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
     .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
   
@@ -1298,14 +1298,12 @@ const MyRides = () => {
           <TabsList className="mb-4 bg-white/80 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger value="active" className="gap-1.5 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Car className="h-4 w-4" />
-              {isStudent ? 'Upcoming' : 'Active'} ({activeRides.length})
+              Active ({activeRides.length})
             </TabsTrigger>
-            {!isStudent && (
-              <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
-                <Clock className="h-4 w-4" />
-                Pending ({pendingRides.length})
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Clock className="h-4 w-4" />
+              Pending ({pendingRides.length})
+            </TabsTrigger>
             <TabsTrigger value="past" className="gap-1.5 rounded-lg data-[state=active]:bg-gray-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Past ({pastRides.length})
