@@ -1290,7 +1290,7 @@ const MyRides = () => {
           </motion.div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="mb-4 bg-white/80 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger value="active" className="gap-1.5 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Car className="h-4 w-4" />
