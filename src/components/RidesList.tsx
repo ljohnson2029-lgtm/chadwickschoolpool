@@ -310,7 +310,8 @@ const RidesList = ({
   };
 
   // Handle the actual response after confirmation
-  const handleConfirmResponse = async (selectedChildIds?: string[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleConfirmResponse = async (selectedChildIds?: string[], vehicleInfo?: any) => {
     if (!user || !respondingToRide) return;
     setActionLoading(true);
 
@@ -346,6 +347,14 @@ const RidesList = ({
             ? `I'd like to join your offered ride!`
             : `I can help with your ride request!`,
           selected_children: selectedChildIds || null,
+          // When offering to fulfill a ride request, the sender is the driver — record their vehicle
+          vehicle_info: !isOffer && vehicleInfo ? {
+            car_make: vehicleInfo.car_make,
+            car_model: vehicleInfo.car_model,
+            car_color: vehicleInfo.car_color,
+            license_plate: vehicleInfo.license_plate,
+            vehicle_id: vehicleInfo.vehicle_id,
+          } : null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
 
