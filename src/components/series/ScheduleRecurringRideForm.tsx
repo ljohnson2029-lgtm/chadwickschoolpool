@@ -100,10 +100,13 @@ const ScheduleRecurringRideForm = ({
   const getTimeForDay = (day: string) => {
     const driverId = driverAssignments[day];
     const isWed = day === "Wed";
-    if (driverId === myId) {
+    // The PASSENGER (non-driver) sets the pickup time
+    if (driverId === otherParentId) {
+      // I'm the rider on this day — show my time
       const t = isWed ? myWednesdayTime : myRegularTime;
       return t ? formatTimeStr(t) : "—";
     }
+    // Other parent is the rider on this day — they'll set their time when they accept
     return `${otherParentName} will set their pickup time when they accept`;
   };
 
