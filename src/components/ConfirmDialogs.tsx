@@ -1,5 +1,7 @@
 import { useState, ReactNode } from "react";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import VehicleSelector from "@/components/VehicleSelector";
+import { type VehicleInfo } from "@/hooks/useVehicles";
 import {
   AlertDialog,
   AlertDialogAction,
