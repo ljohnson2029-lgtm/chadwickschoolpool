@@ -550,8 +550,9 @@ const MyRides = () => {
   ];
   const isPending = (r: typeof allRides[number]) => PENDING_STATUSES.includes(r.status as string);
 
-  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && !isPending(r));
-  const pendingRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
+  // Students see ALL upcoming parent-scheduled rides as Upcoming (no Pending split — they have no actions to take)
+  const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && (isStudent || !isPending(r)));
+  const pendingRides = isStudent ? [] : allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && isPending(r));
   const pastRides = allRides.filter(r => r.rideStatus !== 'active' || isRidePast(r.rideDate, r.rideTime))
     .sort((a, b) => new Date(`${b.rideDate}T${b.rideTime}:00`).getTime() - new Date(`${a.rideDate}T${a.rideTime}:00`).getTime());
   
