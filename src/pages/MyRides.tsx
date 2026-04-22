@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,8 +36,30 @@ import { useScrollReveal, useCountUp, useStaggeredAnimation } from "@/lib/animat
 const MyRides = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("active");
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    return t === "pending" || t === "past" || t === "active" ? t : "active";
+  })();
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync tab when URL ?tab= changes (e.g. coming from a notification deep link)
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if ((t === "pending" || t === "past" || t === "active") && t !== activeTab) {
+      setActiveTab(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    const next = new URLSearchParams(searchParams);
+    if (val === "active") next.delete("tab");
+    else next.set("tab", val);
+    setSearchParams(next, { replace: true });
+  };
   const [hasLinkedParent, setHasLinkedParent] = useState<boolean | null>(null);
   const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<string | null>(null);
   const [acceptingDirectRide, setAcceptingDirectRide] = useState<UnifiedRide | null>(null);
