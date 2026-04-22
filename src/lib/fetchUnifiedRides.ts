@@ -244,13 +244,28 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
   }
 
   // ── 2. Joined rides (accepted) ──
+  // For 'helping-out' (I'm driving someone else's request): driver vehicle is in conv.vehicle_info (selected when offering) or ride.vehicle_info (copied on acceptance) — and that's MY car.
+  // For 'joined-ride' (I'm a passenger on someone else's offer): driver vehicle is in ride.vehicle_info — that's the OTHER parent's car.
   if (joinedConvos) {
     for (const conv of joinedConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
       const isHelpingWithRequest = ride.type === 'request';
       const profile = allProfiles[ride.user_id];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convVehicle = (conv as any).vehicle_info;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rideVehicle = (ride as any).vehicle_info;
       
+      const otherParticipant = profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null;
+      // If I'm joining an offer, override otherParent's car with the actual ride vehicle snapshot
+      if (!isHelpingWithRequest && otherParticipant && rideVehicle) {
+        otherParticipant.carMake = rideVehicle.car_make || otherParticipant.carMake;
+        otherParticipant.carModel = rideVehicle.car_model || otherParticipant.carModel;
+        otherParticipant.carColor = rideVehicle.car_color || otherParticipant.carColor;
+        otherParticipant.licensePlate = rideVehicle.license_plate || otherParticipant.licensePlate;
+      }
+
       allRides.push({
         id: conv.id,
         source: 'conversation',
@@ -264,23 +279,27 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
         isDriver: isHelpingWithRequest,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
+        otherParent: otherParticipant,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
-        myCarInfo: extractCarInfo(null, myProfile),
+        // When I'm helping (driving), use the vehicle I selected; otherwise fall back to my profile.
+        myCarInfo: isHelpingWithRequest ? extractCarInfo(convVehicle || rideVehicle, myProfile) : extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
       });
     }
   }
 
   // ── 2b. Pending sent conversations ──
+  // If I sent the offer to help (ride.type === 'request'), I picked a vehicle — show it.
   if (pendingSentConvos) {
     for (const conv of pendingSentConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
       const profile = allProfiles[ride.user_id];
-      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convVehicle = (conv as any).vehicle_info;
+      const iAmDriver = ride.type === 'request';
+
       allRides.push({
         id: conv.id,
         source: 'conversation',
@@ -293,27 +312,45 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
         rideTime: ride.ride_time,
         seatsAvailable: ride.seats_available,
         seatsNeeded: ride.seats_needed,
-        isDriver: ride.type === 'request',
+        isDriver: iAmDriver,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         otherParent: profile ? toParticipant(profile, filterChildrenBySelection(allChildren[ride.user_id] || [], (ride as any).selected_children)) : null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         myChildren: filterChildrenBySelection(myChildren, (conv as any).selected_children),
-        myCarInfo: extractCarInfo(null, myProfile),
+        myCarInfo: iAmDriver ? extractCarInfo(convVehicle, myProfile) : extractCarInfo(null, myProfile),
         originalData: { conversation: conv, ride },
       });
     }
   }
 
   // ── 2c. Received accepted conversations ──
+  // I posted the ride, someone joined.
+  // If my ride was a 'request' (I need a ride), the joiner is the driver — show THEIR vehicle from conv/ride vehicle_info on otherParent.
+  // If my ride was an 'offer' (I'm driving), my own vehicle was already on the ride — show it as myCarInfo.
   if (receivedConvos) {
     for (const conv of receivedConvos) {
       if (!conv.rides) continue;
       const ride = conv.rides;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convVehicle = (conv as any).vehicle_info;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rideVehicle = (ride as any).vehicle_info;
 
       const existingIdx = allRides.findIndex(r => r.source === 'posted' && r.id === ride.id);
       const joiner = allProfiles[conv.sender_id];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const participant = joiner ? toParticipant(joiner, filterChildrenBySelection(allChildren[conv.sender_id] || [], (conv as any).selected_children)) : null;
+
+      // If I requested a ride and someone offered to drive, override participant's car with the selected vehicle
+      if (ride.type === 'request' && participant) {
+        const driverVehicle = rideVehicle || convVehicle;
+        if (driverVehicle) {
+          participant.carMake = driverVehicle.car_make || participant.carMake;
+          participant.carModel = driverVehicle.car_model || participant.carModel;
+          participant.carColor = driverVehicle.car_color || participant.carColor;
+          participant.licensePlate = driverVehicle.license_plate || participant.licensePlate;
+        }
+      }
 
       if (existingIdx !== -1) {
         allRides[existingIdx].status = ride.type === 'request' ? 'helping-out' : 'joined-ride';
@@ -335,7 +372,8 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           otherParent: participant,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           myChildren: filterChildrenBySelection(myChildren, (ride as any).selected_children),
-          myCarInfo: extractCarInfo(null, myProfile),
+          // If I posted an offer, my vehicle is on the ride
+          myCarInfo: ride.type === 'offer' ? extractCarInfo(rideVehicle, myProfile) : extractCarInfo(null, myProfile),
           originalData: { conversation: conv, ride },
         });
       }
