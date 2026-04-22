@@ -824,9 +824,22 @@ const MyRides = () => {
 
       const { data: conv } = await supabase
         .from('ride_conversations')
-        .select('sender_id, ride_id, rides(ride_date, ride_time)')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .select('sender_id, ride_id, vehicle_info, rides(ride_date, ride_time, type)' as any)
         .eq('id', conversationId)
         .single();
+
+      // If sender of the conversation is the driver (i.e. this is a ride REQUEST being fulfilled),
+      // copy their selected vehicle onto the ride so the confirmed card shows the right car.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const convAny = conv as any;
+      if (convAny?.rides?.type === 'request' && convAny?.vehicle_info) {
+        await supabase
+          .from('rides')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .update({ vehicle_info: convAny.vehicle_info } as any)
+          .eq('id', convAny.ride_id);
+      }
 
       if (conv) {
         const { data: otherPending } = await supabase
