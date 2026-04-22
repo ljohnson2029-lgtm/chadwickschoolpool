@@ -592,7 +592,7 @@ export const InstantJoinRideDialog = ({
 interface InstantOfferRideDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (selectedChildIds?: string[]) => void | Promise<void>;
+  onConfirm: (selectedChildIds?: string[], vehicleInfo?: VehicleInfo) => void | Promise<void>;
   requesterName: string;
   rideDate: string;
   rideTime: string;
@@ -623,6 +623,8 @@ export const InstantOfferRideDialog = ({
 }: InstantOfferRideDialogProps) => {
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [childError, setChildError] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState<VehicleInfo | null>(null);
 
   const handleClose = () => {
     onClose?.();
@@ -635,7 +637,7 @@ export const InstantOfferRideDialog = ({
       return;
     }
     setChildError(null);
-    onConfirm(selectedChildIds);
+    onConfirm(selectedChildIds, selectedVehicleInfo || undefined);
   };
 
   const copyToClipboard = (text: string) => {
