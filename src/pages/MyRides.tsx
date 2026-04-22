@@ -374,10 +374,13 @@ const MyRides = () => {
             const isWed = day === 'Wed';
 
             let pickupTime: string | null = null;
+            // Pickup time is set by the PASSENGER (non-driver)
             if (driverId === sched.proposer_id) {
-              pickupTime = isWed ? sched.proposer_wednesday_time : sched.proposer_regular_time;
-            } else {
+              // Recipient is the passenger → recipient's time
               pickupTime = isWed ? sched.recipient_wednesday_time : sched.recipient_regular_time;
+            } else {
+              // Proposer is the passenger → proposer's time
+              pickupTime = isWed ? sched.proposer_wednesday_time : sched.proposer_regular_time;
             }
             if (!pickupTime) pickupTime = '08:00';
 

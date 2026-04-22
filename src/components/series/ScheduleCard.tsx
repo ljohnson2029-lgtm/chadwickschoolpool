@@ -144,12 +144,15 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     const driverId = assignment.driver_id;
     const isWed = day === "Wed";
 
+    // The PASSENGER (non-driver) sets the pickup time for the day they're being picked up
     if (driverId === schedule.proposer_id) {
-      const t = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
-      return t ? formatTimeStr(t) : "—";
+      // Proposer drives → recipient is the rider → show recipient's time
+      const t = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+      return t ? formatTimeStr(t) : (isPending ? "To be confirmed" : "—");
     }
-    const t = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
-    return t ? formatTimeStr(t) : (isPending ? "To be confirmed" : "—");
+    // Recipient drives → proposer is the rider → show proposer's time
+    const t = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
+    return t ? formatTimeStr(t) : "—";
   };
 
   const formatTimeStr = (t: string) => {
@@ -163,20 +166,20 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     }
   };
 
-  // Determine if recipient drives on regular or Wednesday days
-  const recipientDrivesRegular = assignments.some(
-    (a) => a.driver_id === schedule.recipient_id && a.day !== "Wed"
+  // The recipient is a RIDER on days the PROPOSER drives — those are the days the recipient sets a pickup time for
+  const recipientRidesRegular = assignments.some(
+    (a) => a.driver_id === schedule.proposer_id && a.day !== "Wed"
   );
-  const recipientDrivesWed = assignments.some(
-    (a) => a.driver_id === schedule.recipient_id && a.day === "Wed"
+  const recipientRidesWed = assignments.some(
+    (a) => a.driver_id === schedule.proposer_id && a.day === "Wed"
   );
 
   const handleAccept = async () => {
-    if (recipientDrivesRegular && !acceptRegularTime) {
+    if (recipientRidesRegular && !acceptRegularTime) {
       toast.error("Please set your pickup time for regular days");
       return;
     }
-    if (recipientDrivesWed && !acceptWedTime) {
+    if (recipientRidesWed && !acceptWedTime) {
       toast.error("Please set your pickup time for Wednesday");
       return;
     }
@@ -204,8 +207,8 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
       .update({
         status: "accepted",
         recipient_children: [],
-        recipient_regular_time: recipientDrivesRegular ? acceptRegularTime : null,
-        recipient_wednesday_time: recipientDrivesWed ? acceptWedTime : null,
+        recipient_regular_time: recipientRidesRegular ? acceptRegularTime : null,
+        recipient_wednesday_time: recipientRidesWed ? acceptWedTime : null,
         recipient_vehicle: recipientVehicle,
       })
       .eq("id", schedule.id);
@@ -279,10 +282,13 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
 
     const isWed = dayName === "Wed";
     let timeStr: string | null = null;
+    // Time is stored on the PASSENGER side (non-driver)
     if (assignment.driver_id === schedule.proposer_id) {
-      timeStr = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
-    } else {
+      // Recipient is the rider — read recipient's time
       timeStr = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+    } else {
+      // Proposer is the rider — read proposer's time
+      timeStr = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
     }
 
     if (timeStr) {
@@ -434,21 +440,21 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
           {/* Accept Form */}
           {showAcceptForm && (
             <div className="space-y-3 border-t pt-3">
-              {recipientDrivesRegular && (
+              {recipientRidesRegular && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Your pickup time for regular days</Label>
+                  <Label className="text-xs">Your pickup time for regular days — when {proposerName} picks you up</Label>
                   <Input type="time" value={acceptRegularTime} onChange={(e) => setAcceptRegularTime(e.target.value)} />
                   <p className="text-[10px] text-muted-foreground">
-                    Pickup time from your home address to arrive at Chadwick School on time
+                    The time you want {proposerName} to pick you up from your home address
                   </p>
                 </div>
               )}
-              {recipientDrivesWed && (
+              {recipientRidesWed && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Your pickup time for Wednesday (Late Start)</Label>
+                  <Label className="text-xs">Your pickup time for Wednesday (Late Start) — when {proposerName} picks you up</Label>
                   <Input type="time" value={acceptWedTime} onChange={(e) => setAcceptWedTime(e.target.value)} />
                   <p className="text-[10px] text-muted-foreground">
-                    Pickup time from your home address to arrive at Chadwick School on time
+                    The time you want {proposerName} to pick you up from your home address
                   </p>
                 </div>
               )}

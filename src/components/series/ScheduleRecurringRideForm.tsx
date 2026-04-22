@@ -73,6 +73,10 @@ const ScheduleRecurringRideForm = ({
   const myDrivingWed = hasWednesday && driverAssignments["Wed"] === myId;
   const otherDrivingWed = hasWednesday && driverAssignments["Wed"] === otherParentId;
 
+  // I am a RIDER on days the OTHER parent drives — those are the days I need to set my pickup time
+  const myRidingRegular = otherDrivingRegular;
+  const myRidingWed = otherDrivingWed;
+
   const allDaysAssigned = selectedDays.every((d) => driverAssignments[d]);
   const myDriveCount = selectedDays.filter((d) => driverAssignments[d] === myId).length;
   const otherDriveCount = selectedDays.filter((d) => driverAssignments[d] === otherParentId).length;
@@ -80,8 +84,8 @@ const ScheduleRecurringRideForm = ({
 
   const step1Valid = selectedDays.length > 0 && allDaysAssigned && bothDrive;
   const step2Valid = (() => {
-    if (myDrivingRegular.length > 0 && !myRegularTime) return false;
-    if (myDrivingWed && !myWednesdayTime) return false;
+    if (myRidingRegular.length > 0 && !myRegularTime) return false;
+    if (myRidingWed && !myWednesdayTime) return false;
     return true;
   })();
 
@@ -96,10 +100,13 @@ const ScheduleRecurringRideForm = ({
   const getTimeForDay = (day: string) => {
     const driverId = driverAssignments[day];
     const isWed = day === "Wed";
-    if (driverId === myId) {
+    // The PASSENGER (non-driver) sets the pickup time
+    if (driverId === otherParentId) {
+      // I'm the rider on this day — show my time
       const t = isWed ? myWednesdayTime : myRegularTime;
       return t ? formatTimeStr(t) : "—";
     }
+    // Other parent is the rider on this day — they'll set their time when they accept
     return `${otherParentName} will set their pickup time when they accept`;
   };
 
@@ -135,8 +142,9 @@ const ScheduleRecurringRideForm = ({
       proposer_id: myId,
       recipient_id: otherParentId,
       day_assignments: dayAssignments,
-      proposer_regular_time: myDrivingRegular.length > 0 ? myRegularTime || null : null,
-      proposer_wednesday_time: myDrivingWed ? myWednesdayTime || null : null,
+      // proposer_*_time = the time the PROPOSER (rider on those days) wants to be picked up
+      proposer_regular_time: myRidingRegular.length > 0 ? myRegularTime || null : null,
+      proposer_wednesday_time: myRidingWed ? myWednesdayTime || null : null,
       recipient_regular_time: null,
       recipient_wednesday_time: null,
       proposer_children: [],
@@ -231,34 +239,36 @@ const ScheduleRecurringRideForm = ({
       {step === 2 && (
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
-            Set your pickup times for the days you are driving. {otherParentName} will set their own times when they accept.
+            Set the pickup times for the days <strong>{otherParentName}</strong> drives you. They will set their own pickup times for the days you drive them when they accept.
           </p>
 
-          {myDrivingRegular.length > 0 && (
+          {myRidingRegular.length > 0 && (
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">
-                Your pickup time for regular days ({myDrivingRegular.join(", ")})
+                Your pickup time for regular days ({myRidingRegular.join(", ")}) — when {otherParentName} picks you up
               </Label>
               <Input type="time" value={myRegularTime} onChange={(e) => setMyRegularTime(e.target.value)} />
               <p className="text-[10px] text-muted-foreground">
-                Pickup time from your home address to arrive at Chadwick School on time
+                The time you want {otherParentName} to pick you up from your home address
               </p>
             </div>
           )}
 
-          {myDrivingWed && (
+          {myRidingWed && (
             <div className="space-y-1 border-t pt-3">
-              <Label className="text-xs text-muted-foreground">Your pickup time for Wednesday (Late Start)</Label>
+              <Label className="text-xs text-muted-foreground">
+                Your pickup time for Wednesday (Late Start) — when {otherParentName} picks you up
+              </Label>
               <Input type="time" value={myWednesdayTime} onChange={(e) => setMyWednesdayTime(e.target.value)} />
               <p className="text-[10px] text-muted-foreground">
-                Pickup time from your home address to arrive at Chadwick School on time
+                The time you want {otherParentName} to pick you up from your home address
               </p>
             </div>
           )}
 
-          {(otherDrivingRegular.length > 0 || otherDrivingWed) && (
+          {(myDrivingRegular.length > 0 || myDrivingWed) && (
             <p className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/40">
-              {otherParentName} will set their own pickup times for their driving days ({[...otherDrivingRegular, ...(otherDrivingWed ? ["Wed"] : [])].join(", ")}) when they accept this schedule.
+              {otherParentName} will set their own pickup times for the days you drive them ({[...myDrivingRegular, ...(myDrivingWed ? ["Wed"] : [])].join(", ")}) when they accept this schedule.
             </p>
           )}
 

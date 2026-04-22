@@ -498,12 +498,14 @@ export async function fetchUnifiedRides(userId: string): Promise<FetchResult> {
           const isUserDriver = driverId === userId;
           const isWed = occ.day === 'Wed';
 
-          // Get the pickup time for this day
+          // Get the pickup time for this day — set by the PASSENGER (non-driver)
           let pickupTime: string | null = null;
           if (driverId === schedule.proposer_id) {
-            pickupTime = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
-          } else {
+            // Recipient is the passenger → recipient's time
             pickupTime = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+          } else {
+            // Proposer is the passenger → proposer's time
+            pickupTime = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
           }
           if (!pickupTime) pickupTime = '08:00';
 
