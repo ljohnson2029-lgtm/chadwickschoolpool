@@ -1,5 +1,7 @@
 import { useState, ReactNode } from "react";
 import ChildrenRidingSelector from "@/components/ChildrenRidingSelector";
+import VehicleSelector from "@/components/VehicleSelector";
+import { type VehicleInfo } from "@/hooks/useVehicles";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -590,7 +592,7 @@ export const InstantJoinRideDialog = ({
 interface InstantOfferRideDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (selectedChildIds?: string[]) => void | Promise<void>;
+  onConfirm: (selectedChildIds?: string[], vehicleInfo?: VehicleInfo) => void | Promise<void>;
   requesterName: string;
   rideDate: string;
   rideTime: string;
@@ -621,6 +623,8 @@ export const InstantOfferRideDialog = ({
 }: InstantOfferRideDialogProps) => {
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   const [childError, setChildError] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedVehicleInfo, setSelectedVehicleInfo] = useState<VehicleInfo | null>(null);
 
   const handleClose = () => {
     onClose?.();
@@ -633,7 +637,7 @@ export const InstantOfferRideDialog = ({
       return;
     }
     setChildError(null);
-    onConfirm(selectedChildIds);
+    onConfirm(selectedChildIds, selectedVehicleInfo || undefined);
   };
 
   const copyToClipboard = (text: string) => {
@@ -751,6 +755,10 @@ export const InstantOfferRideDialog = ({
                 selectedChildIds={selectedChildIds}
                 onSelectionChange={(ids) => { setSelectedChildIds(ids); setChildError(null); }}
                 error={childError}
+              />
+              <VehicleSelector
+                selectedVehicleId={selectedVehicleId}
+                onSelect={(id, info) => { setSelectedVehicleId(id); setSelectedVehicleInfo(info); }}
               />
               <p className="text-sm text-muted-foreground">
                 You'll be connected immediately and can coordinate pickup details.

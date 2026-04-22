@@ -1,0 +1,1 @@
+ALTER TABLE public.ride_conversations ADD COLUMN IF NOT EXISTS vehicle_info jsonb;

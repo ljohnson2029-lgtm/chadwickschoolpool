@@ -700,6 +700,7 @@ export type Database = {
           sender_id: string
           status: string
           updated_at: string | null
+          vehicle_info: Json | null
         }
         Insert: {
           created_at?: string | null
@@ -712,6 +713,7 @@ export type Database = {
           sender_id: string
           status?: string
           updated_at?: string | null
+          vehicle_info?: Json | null
         }
         Update: {
           created_at?: string | null
@@ -724,6 +726,7 @@ export type Database = {
           sender_id?: string
           status?: string
           updated_at?: string | null
+          vehicle_info?: Json | null
         }
         Relationships: [
           {
