@@ -832,9 +832,9 @@ export const UnifiedRideCard = ({ ride, onCancel, isPast, topConnectionIds, onAc
           {cancelConfig && (
             <div className="pt-2 border-t border-border space-y-1.5">
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="sm"
-                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-full"
+                className="w-full"
                 onClick={() => setConfirmOpen(true)}
                 disabled={isTimeRestricted}
               >
