@@ -1298,14 +1298,12 @@ const MyRides = () => {
           <TabsList className="mb-4 bg-white/80 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger value="active" className="gap-1.5 rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white">
               <Car className="h-4 w-4" />
-              {isStudent ? 'Upcoming' : 'Active'} ({activeRides.length})
+              Active ({activeRides.length})
             </TabsTrigger>
-            {!isStudent && (
-              <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
-                <Clock className="h-4 w-4" />
-                Pending ({pendingRides.length})
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="pending" className="gap-1.5 rounded-lg data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+              <Clock className="h-4 w-4" />
+              Pending ({pendingRides.length})
+            </TabsTrigger>
             <TabsTrigger value="past" className="gap-1.5 rounded-lg data-[state=active]:bg-gray-500 data-[state=active]:text-white">
               <History className="h-4 w-4" />
               Past ({pastRides.length})
