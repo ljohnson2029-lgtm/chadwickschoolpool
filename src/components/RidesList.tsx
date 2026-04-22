@@ -190,42 +190,15 @@ const RidesList = ({
 
   const fetchRides = async () => {
     try {
-      let parentIds: string[] = [];
-
-      // If student, get rides from linked parents
-      if (userRole === 'student' && user) {
-        const { data: links } = await supabase
-          .from('account_links')
-          .select('parent_id')
-          .eq('student_id', user.id)
-          .eq('status', 'approved');
-
-        if (links && links.length > 0) {
-          parentIds = links.map(link => link.parent_id);
-        }
-      }
-
-      // Build the query
+      // Both parents and students see ALL active community rides.
+      // Students are read-only — action buttons are disabled in the UI.
       const today = new Date().toISOString().split('T')[0];
-      let query = supabase
+      const { data, error } = await supabase
         .from("rides")
         .select("*")
         .eq("status", "active")
         .eq("is_fulfilled", false)
-        .gte("ride_date", today);
-
-      // If student with linked parents, only show parent's rides
-      if (userRole === 'student') {
-        if (parentIds.length > 0) {
-          query = query.in('user_id', parentIds);
-        } else {
-          setRides([]);
-          setLoading(false);
-          return;
-        }
-      }
-
-      const { data, error } = await query
+        .gte("ride_date", today)
         .order("ride_date", { ascending: true })
         .order("ride_time", { ascending: true });
 
