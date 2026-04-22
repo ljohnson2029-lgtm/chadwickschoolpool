@@ -439,19 +439,19 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
             <div className="space-y-3 border-t pt-3">
               {recipientRidesRegular && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Your pickup time for regular days</Label>
+                  <Label className="text-xs">Your pickup time for regular days — when {proposerName} picks you up</Label>
                   <Input type="time" value={acceptRegularTime} onChange={(e) => setAcceptRegularTime(e.target.value)} />
                   <p className="text-[10px] text-muted-foreground">
-                    Pickup time from your home address to arrive at Chadwick School on time
+                    The time you want {proposerName} to pick you up from your home address
                   </p>
                 </div>
               )}
               {recipientRidesWed && (
                 <div className="space-y-1">
-                  <Label className="text-xs">Your pickup time for Wednesday (Late Start)</Label>
+                  <Label className="text-xs">Your pickup time for Wednesday (Late Start) — when {proposerName} picks you up</Label>
                   <Input type="time" value={acceptWedTime} onChange={(e) => setAcceptWedTime(e.target.value)} />
                   <p className="text-[10px] text-muted-foreground">
-                    Pickup time from your home address to arrive at Chadwick School on time
+                    The time you want {proposerName} to pick you up from your home address
                   </p>
                 </div>
               )}
