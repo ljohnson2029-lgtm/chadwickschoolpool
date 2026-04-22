@@ -144,12 +144,15 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     const driverId = assignment.driver_id;
     const isWed = day === "Wed";
 
+    // The PASSENGER (non-driver) sets the pickup time for the day they're being picked up
     if (driverId === schedule.proposer_id) {
-      const t = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
-      return t ? formatTimeStr(t) : "—";
+      // Proposer drives → recipient is the rider → show recipient's time
+      const t = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
+      return t ? formatTimeStr(t) : (isPending ? "To be confirmed" : "—");
     }
-    const t = isWed ? schedule.recipient_wednesday_time : schedule.recipient_regular_time;
-    return t ? formatTimeStr(t) : (isPending ? "To be confirmed" : "—");
+    // Recipient drives → proposer is the rider → show proposer's time
+    const t = isWed ? schedule.proposer_wednesday_time : schedule.proposer_regular_time;
+    return t ? formatTimeStr(t) : "—";
   };
 
   const formatTimeStr = (t: string) => {
@@ -163,12 +166,12 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
     }
   };
 
-  // Determine if recipient drives on regular or Wednesday days
-  const recipientDrivesRegular = assignments.some(
-    (a) => a.driver_id === schedule.recipient_id && a.day !== "Wed"
+  // The recipient is a RIDER on days the PROPOSER drives — those are the days the recipient sets a pickup time for
+  const recipientRidesRegular = assignments.some(
+    (a) => a.driver_id === schedule.proposer_id && a.day !== "Wed"
   );
-  const recipientDrivesWed = assignments.some(
-    (a) => a.driver_id === schedule.recipient_id && a.day === "Wed"
+  const recipientRidesWed = assignments.some(
+    (a) => a.driver_id === schedule.proposer_id && a.day === "Wed"
   );
 
   const handleAccept = async () => {
