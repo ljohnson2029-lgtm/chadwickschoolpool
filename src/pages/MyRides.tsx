@@ -513,7 +513,16 @@ const MyRides = () => {
   const allStudentRides = studentRideData ? [...studentRideData.active, ...studentRideData.past] : [];
   const allRides = isStudent ? allStudentRides : allParentRides;
 
-  const PENDING_STATUSES = ['pending-approval', 'pending-direct-sent', 'pending-direct-received'];
+  // A ride is Pending until the original poster has explicitly accepted one party.
+  // Posted rides (posted-looking / posted-offering) stay Pending — they only graduate
+  // to 'helping-out' / 'joined-ride' (Active) once the poster accepts a join request.
+  const PENDING_STATUSES = [
+    'pending-approval',
+    'pending-direct-sent',
+    'pending-direct-received',
+    'posted-looking',
+    'posted-offering',
+  ];
   const isPending = (r: typeof allRides[number]) => PENDING_STATUSES.includes(r.status as string);
 
   const activeRides = allRides.filter(r => r.rideStatus === 'active' && !isRidePast(r.rideDate, r.rideTime) && !isPending(r));
