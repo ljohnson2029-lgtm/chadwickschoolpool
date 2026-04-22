@@ -239,34 +239,36 @@ const ScheduleRecurringRideForm = ({
       {step === 2 && (
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground bg-muted/40 rounded-md px-3 py-2 border border-border/50">
-            Set your pickup times for the days you are driving. {otherParentName} will set their own times when they accept.
+            Set the pickup times for the days <strong>{otherParentName}</strong> drives you. They will set their own pickup times for the days you drive them when they accept.
           </p>
 
-          {myDrivingRegular.length > 0 && (
+          {myRidingRegular.length > 0 && (
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">
-                Your pickup time for regular days ({myDrivingRegular.join(", ")})
+                Your pickup time for regular days ({myRidingRegular.join(", ")}) — when {otherParentName} picks you up
               </Label>
               <Input type="time" value={myRegularTime} onChange={(e) => setMyRegularTime(e.target.value)} />
               <p className="text-[10px] text-muted-foreground">
-                Pickup time from your home address to arrive at Chadwick School on time
+                The time you want {otherParentName} to pick you up from your home address
               </p>
             </div>
           )}
 
-          {myDrivingWed && (
+          {myRidingWed && (
             <div className="space-y-1 border-t pt-3">
-              <Label className="text-xs text-muted-foreground">Your pickup time for Wednesday (Late Start)</Label>
+              <Label className="text-xs text-muted-foreground">
+                Your pickup time for Wednesday (Late Start) — when {otherParentName} picks you up
+              </Label>
               <Input type="time" value={myWednesdayTime} onChange={(e) => setMyWednesdayTime(e.target.value)} />
               <p className="text-[10px] text-muted-foreground">
-                Pickup time from your home address to arrive at Chadwick School on time
+                The time you want {otherParentName} to pick you up from your home address
               </p>
             </div>
           )}
 
-          {(otherDrivingRegular.length > 0 || otherDrivingWed) && (
+          {(myDrivingRegular.length > 0 || myDrivingWed) && (
             <p className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2 border border-border/40">
-              {otherParentName} will set their own pickup times for their driving days ({[...otherDrivingRegular, ...(otherDrivingWed ? ["Wed"] : [])].join(", ")}) when they accept this schedule.
+              {otherParentName} will set their own pickup times for the days you drive them ({[...myDrivingRegular, ...(myDrivingWed ? ["Wed"] : [])].join(", ")}) when they accept this schedule.
             </p>
           )}
 
