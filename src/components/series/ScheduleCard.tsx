@@ -175,11 +175,11 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
   );
 
   const handleAccept = async () => {
-    if (recipientDrivesRegular && !acceptRegularTime) {
+    if (recipientRidesRegular && !acceptRegularTime) {
       toast.error("Please set your pickup time for regular days");
       return;
     }
-    if (recipientDrivesWed && !acceptWedTime) {
+    if (recipientRidesWed && !acceptWedTime) {
       toast.error("Please set your pickup time for Wednesday");
       return;
     }
@@ -207,8 +207,8 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
       .update({
         status: "accepted",
         recipient_children: [],
-        recipient_regular_time: recipientDrivesRegular ? acceptRegularTime : null,
-        recipient_wednesday_time: recipientDrivesWed ? acceptWedTime : null,
+        recipient_regular_time: recipientRidesRegular ? acceptRegularTime : null,
+        recipient_wednesday_time: recipientRidesWed ? acceptWedTime : null,
         recipient_vehicle: recipientVehicle,
       })
       .eq("id", schedule.id);
@@ -437,7 +437,7 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
           {/* Accept Form */}
           {showAcceptForm && (
             <div className="space-y-3 border-t pt-3">
-              {recipientDrivesRegular && (
+              {recipientRidesRegular && (
                 <div className="space-y-1">
                   <Label className="text-xs">Your pickup time for regular days</Label>
                   <Input type="time" value={acceptRegularTime} onChange={(e) => setAcceptRegularTime(e.target.value)} />
@@ -446,7 +446,7 @@ const ScheduleCard = ({ schedule, otherParentName, proposerName, proposerAddress
                   </p>
                 </div>
               )}
-              {recipientDrivesWed && (
+              {recipientRidesWed && (
                 <div className="space-y-1">
                   <Label className="text-xs">Your pickup time for Wednesday (Late Start)</Label>
                   <Input type="time" value={acceptWedTime} onChange={(e) => setAcceptWedTime(e.target.value)} />
